@@ -70,11 +70,154 @@ El formato está basado en Keep a Changelog.
 - ✅ Npgsql funcionando.
 - ✅ API validada mediante Postman.
 
+
+### Seguridad
+
+Se implementaron dos roles:
+
+#### Administrador
+
+Acceso completo a operaciones CRUD.
+
+#### Cliente
+
+Acceso limitado a lectura y creación de registros.
+
+#### Validaciones realizadas
+
+- ✅ JWT Authentication
+- ✅ Role-Based Authorization
+- ✅ 401 Unauthorized
+- ✅ 403 Forbidden
+
 ### 🚧 Próximos Pasos
 
-- Implementar autenticación JWT completa.
+-
 - Integrar Google Sign-In.
 - Conectar Angular con CafeApi.
 - Implementar roles y autorización.
 - Documentar endpoints.
 - Despliegue en producción.
+
+## [1.2.0] - 2026-09-25
+ 
+### 🚀 Añadido
+ 
+- Swagger UI.
+- OpenAPI Documentation.
+- JWT Authentication.
+- Endpoint POST /api/auth/login.
+- Roles Administrador y Cliente.
+- Role-Based Authorization.
+ 
+### 🔐 Seguridad
+ 
+Administrador:
+ 
+- GET
+- POST
+- PUT
+- DELETE
+ 
+Cliente:
+ 
+- GET
+- POST
+- PUT (403 Forbidden)
+- DELETE (403 Forbidden)
+ 
+### ✅ Validado
+ 
+JWT Authentication:
+ 
+- ✅ Generación de Token
+- ✅ Bearer Token
+- ✅ Claims
+- ✅ Roles
+ 
+Autorización:
+ 
+- ✅ 401 Unauthorized
+- ✅ 403 Forbidden
+- ✅ Protección de POST
+- ✅ Protección de PUT
+- ✅ Protección de DELETE
+ 
+Swagger:
+ 
+- ✅ Swagger UI
+- ✅ OpenAPI
+- ✅ Documentación automática de endpoints
+ 
+### 🗄 Base de Datos
+ 
+- PostgreSQL funcionando correctamente.
+- Supabase funcionando correctamente.
+- CRUD completamente validado.
+ 
+---
+
+## [1.3.0] - 2026-09-25
+
+### 🚀 Añadido
+
+#### DTOs
+
+- CreateCafeDto
+- UpdateCafeDto
+- CafeResponseDto
+
+#### Validaciones
+
+Implementadas mediante DataAnnotations:
+
+- Required
+- StringLength
+- Range
+
+#### Reglas de negocio
+
+Nuevo sistema de disponibilidad de stock:
+
+- Agotado
+- Pocas unidades
+- Disponible
+- Alta disponibilidad
+
+#### Información de respuesta
+
+Los endpoints GET ahora utilizan CafeResponseDto en lugar de exponer directamente la entidad Cafe.
+
+Campos añadidos:
+
+- StockDisponible
+- Disponible
+- EstadoStock
+
+### ✅ Validado
+
+POST /api/cafes
+
+- DTO de creación
+- Validaciones automáticas
+- Respuestas 400 Bad Request
+
+PUT /api/cafes/{id}
+
+- DTO de actualización
+- Validaciones automáticas
+- Respuestas 400 Bad Request
+
+GET /api/cafes
+
+- DTO de respuesta
+- Información orientada al cliente
+- Estado de stock calculado
+
+### 🏗 Arquitectura
+
+Separación completa entre:
+
+- Entidades de dominio
+- DTOs de entrada
+- DTOs de salida

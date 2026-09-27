@@ -122,3 +122,178 @@ El sistema implementa autenticación mediante JSON Web Tokens (JWT).
 - Consultar cafés
 - Crear cafés
 - Sin permisos de modificación o eliminación
+
+## 🔐 Seguridad
+ 
+### JWT Authentication
+ 
+La API utiliza JSON Web Tokens (JWT) para proteger los endpoints que modifican datos.
+ 
+### Roles
+ 
+#### Administrador
+ 
+Permisos:
+ 
+- Crear cafés
+- Actualizar cafés
+- Eliminar cafés
+ 
+#### Cliente
+ 
+Permisos:
+ 
+- Consultar cafés
+- Crear cafés
+ 
+Restricciones:
+ 
+- No puede actualizar cafés
+- No puede eliminar cafés
+ 
+---
+ 
+## ✅ Endpoints
+ 
+### Auth
+ 
+```http
+POST /api/auth/login
+POST /api/auth/google
+```
+ 
+### Cafés
+ 
+```http
+GET /api/cafes
+GET /api/cafes/{id}
+POST /api/cafes
+PUT /api/cafes/{id}
+DELETE /api/cafes/{id}
+```
+ 
+### Especialidades
+ 
+```http
+GET /api/especialidades
+```
+ 
+---
+ 
+## 📖 Documentación
+ 
+Swagger disponible en:
+ 
+```text
+/swagger
+```
+ 
+OpenAPI JSON:
+ 
+```text
+/openapi/v1.json
+```
+ 
+---
+ 
+## ✅ Estado Actual
+ 
+### Base de Datos
+ 
+- ✅ PostgreSQL
+- ✅ Supabase
+- ✅ Npgsql
+ 
+### API
+ 
+- ✅ CRUD Cafés
+- ✅ CRUD Especialidades
+ 
+### Seguridad
+ 
+- ✅ JWT Authentication
+- ✅ Authorization
+- ✅ Roles Administrador y Cliente
+ 
+### Documentación
+ 
+- ✅ OpenAPI
+- ✅ Swagger UI
+ 
+---
+ 
+## 🚧 Próximos Pasos
+ 
+- Integración completa JWT en Swagger (Authorize)
+- Login con Google
+- Angular Frontend
+- Deploy
+ 
+---
+
+## DTOs y Validaciones
+
+La API implementa DTOs para separar los modelos de entrada y salida de las entidades de base de datos.
+
+### DTOs de Entrada
+
+#### CreateCafeDto
+
+Utilizado para la creación de cafés.
+
+Validaciones:
+
+- Especialidad obligatoria.
+- Nombre obligatorio.
+- Origen obligatorio.
+- Stock mayor o igual a cero.
+- Precio mayor que cero.
+
+#### UpdateCafeDto
+
+Utilizado para la actualización de cafés.
+
+Validaciones:
+
+- Especialidad obligatoria.
+- Nombre obligatorio.
+- Origen obligatorio.
+- Stock mayor o igual a cero.
+- Precio mayor que cero.
+
+### DTOs de Respuesta
+
+#### CafeResponseDto
+
+Expone información orientada al cliente:
+
+- Id
+- Especialidad
+- Nombre
+- Origen
+- StockDisponible
+- Disponible
+- EstadoStock
+- Precio
+
+### Estado de Stock
+
+La API calcula automáticamente el estado del inventario:
+
+| Stock | Estado |
+|---------|---------|
+| 0 | Agotado |
+| 1 - 10 | Pocas unidades |
+| 11 - 50 | Disponible |
+| 51+ | Alta disponibilidad |
+
+### Beneficios
+
+- Validación automática mediante DataAnnotations.
+- Separación entre entidades y contratos de API.
+- No se exponen propiedades internas innecesarias.
+- Respuestas orientadas al negocio.
+ 
+## 👨‍💻 Autor
+ 
+Pablo Santamaría

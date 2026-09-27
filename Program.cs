@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
+using CafeApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -163,6 +164,10 @@ if (app.Environment.IsDevelopment())
     // ✅ Interfaz gráfica Swagger.
     app.UseSwaggerUI();
 }
+
+// ✅ Middleware global de excepciones.
+// Captura errores no controlados en toda la aplicación.
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseCors("AllowAngularLocalhost");
 
