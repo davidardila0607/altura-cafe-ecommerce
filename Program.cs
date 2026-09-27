@@ -2,6 +2,7 @@ using CafeApi.Interfaces;
 using CafeApi.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,11 +51,11 @@ else
 }
 
 Console.WriteLine();
-Console.WriteLine("========DATOS DE CONEXIÓN=========");
+Console.WriteLine("======== DATOS DE CONEXIÓN ========");
 Console.WriteLine($"Entorno       : {builder.Environment.EnvironmentName}");
 Console.WriteLine($"Base de Datos : {databaseProvider}");
 Console.WriteLine($"Puerto        : {databasePort}");
-Console.WriteLine("========================================");
+Console.WriteLine("===================================");
 Console.WriteLine();
 
 builder.Services.AddScoped<IEspecialidadRepository>(_ =>
@@ -62,6 +63,10 @@ builder.Services.AddScoped<IEspecialidadRepository>(_ =>
 
 builder.Services.AddScoped<ICafeRepository>(_ =>
     new CafeRepository(connectionString));
+
+//
+// ===== JWT AUTHENTICATION =====
+//
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -83,19 +88,80 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(
-                            builder.Configuration["Jwt:Key"]!))
+                            builder.Configuration["Jwt:Key"]!
+                        )
+                    )
             };
     });
 
 builder.Services.AddControllers();
 
+//
+// ===== SWAGGER =====
+//
+
+// ✅ NUEVO
+// Permite que Swagger descubra automáticamente los endpoints.
+builder.Services.AddEndpointsApiExplorer();
+
+// ✅ NUEVO
+// Genera la documentación Swagger.
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "CafeApi",
+        Version = "v1",
+        Description = "API REST para gestión de cafés y especialidades."
+    });
+
+    // ✅ NUEVO
+    // Configuración JWT para Swagger.
+    /*options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description =
+            "Introduce únicamente el token JWT. Swagger añadirá automáticamente 'Bearer '."
+    }); 
+    
+
+    // ✅ NUEVO
+    // Requiere JWT para endpoints protegidos.
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });*/
+});
+
+// ✅ Conservamos OpenAPI nativo.
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    // ✅ Mantiene disponible el JSON OpenAPI.
     app.MapOpenApi();
+
+    // ✅ Swagger JSON.
+    app.UseSwagger();
+
+    // ✅ Interfaz gráfica Swagger.
+    app.UseSwaggerUI();
 }
 
 app.UseCors("AllowAngularLocalhost");

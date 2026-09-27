@@ -102,3 +102,23 @@ Esto permite verificar la configuración sin exponer credenciales.
 ### Cafés
 
 #### Obtener 
+
+## Seguridad
+
+### JWT Authentication
+
+El sistema implementa autenticación mediante JSON Web Tokens (JWT).
+
+### Roles
+
+#### Administrador
+
+- Crear cafés
+- Actualizar cafés
+- Eliminar cafés
+
+#### Cliente
+
+- Consultar cafés
+- Crear cafés
+- Sin permisos de modificación o eliminación
