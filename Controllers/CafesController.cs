@@ -53,11 +53,13 @@ namespace CafeApi.Controllers
         // Devuelve un café por Id utilizando CafeResponseDto.
         [HttpGet("{id}")]
         [AllowAnonymous]
+       
         public ActionResult<CafeResponseDto> Get(int id)
         {
             // ✅ Buscar el café.
             var cafe = _cafeRepository.GetById(id);
 
+         
             // ✅ Si no existe devolvemos 404.
             if (cafe == null)
             {
