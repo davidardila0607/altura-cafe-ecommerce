@@ -309,6 +309,25 @@ Ejemplo:
 "detail": "Descripción del error"
 }
 
+## Logging y Auditoría
+ 
+La API implementa logging mediante ILogger de ASP.NET Core.
+ 
+### Operaciones auditadas
+ 
+- Consulta de todos los cafés.
+- Consulta de cafés por identificador.
+- Creación de cafés.
+- Actualización de cafés.
+- Eliminación de cafés.
+ 
+### Beneficios
+ 
+- Seguimiento de operaciones.
+- Diagnóstico de incidencias.
+- Auditoría de actividad.
+- Preparación para producción.
+
 ## 👨‍💻 Autor
  
 Pablo Santamaría
