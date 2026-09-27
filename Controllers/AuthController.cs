@@ -19,93 +19,128 @@ namespace CafeApi.Controllers
             _configuration = configuration;
         }
 
-        // ✅ NUEVO
-        // Endpoint de login para pruebas JWT.
-        // Nos permitirá generar tokens sin depender todavía de Google.
+        // ✅ LOGIN PARA PRUEBAS JWT Y ROLES
+        // Permite iniciar sesión como Administrador o Cliente.
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
-            // ✅ NUEVO
-            // Usuario de prueba.
-            // Más adelante estos datos se consultarán desde PostgreSQL.
-            if (request.Email != "admin@cafeapi.com" ||
-            request.Password != "123456")
+            // ✅ Almacenará el rol del usuario autenticado.
+            string role;
+
+            // ✅ Usuario Administrador
+            if (request.Email == "admin@cafeapi.com" &&
+            request.Password == "123456")
             {
-                // ✅ NUEVO
-                // Si las credenciales son incorrectas devolvemos 401.
+                role = "Administrador";
+            }
+
+            // ✅ Usuario Cliente
+            else if (request.Email == "cliente@cafeapi.com" &&
+            request.Password == "123456")
+            {
+                role = "Cliente";
+            }
+
+            // ✅ Credenciales incorrectas
+            else
+            {
                 return Unauthorized("Credenciales inválidas.");
             }
 
-            // ✅ NUEVO
-            // Generamos un JWT utilizando el método existente.
+            // ✅ Genera JWT incluyendo el rol.
             var token = GenerateJwt(
             request.Email,
-            "Administrador"
+            request.Email,
+            role
             );
 
-            // ✅ NUEVO
-            // Devolvemos el token al cliente.
             return Ok(new
             {
-                token
+                token,
+                role
             });
         }
 
+        // ✅ LOGIN CON GOOGLE
         [HttpPost("google")]
-        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        public async Task<IActionResult> GoogleLogin(
+        [FromBody] GoogleLoginRequest request)
         {
             GoogleJsonWebSignature.Payload payload;
 
             try
             {
-                var settings = new GoogleJsonWebSignature.ValidationSettings
+                var settings =
+                new GoogleJsonWebSignature.ValidationSettings
                 {
-                    Audience = new[] { _configuration["Google:ClientId"] }
+                    Audience = new[]
+                {
+_configuration["Google:ClientId"]
+                }
                 };
 
-                payload = await GoogleJsonWebSignature.ValidateAsync(
+                payload =
+                await GoogleJsonWebSignature.ValidateAsync(
                 request.IdToken,
                 settings
                 );
             }
             catch (InvalidJwtException)
             {
-                return Unauthorized("Token de Google inválido.");
+                return Unauthorized(
+                "Token de Google inválido."
+                );
             }
 
+            // ✅ Los usuarios Google entran inicialmente como Cliente.
             var jwt = GenerateJwt(
             payload.Email,
-            payload.Name
+            payload.Name,
+            "Cliente"
             );
 
             return Ok(new
             {
                 token = jwt,
                 email = payload.Email,
-                name = payload.Name
+                name = payload.Name,
+                role = "Cliente"
             });
         }
 
-        // ✅ Método reutilizable para crear JWT
-        private string GenerateJwt(string email, string name)
+        // ✅ GENERADOR DE JWT CON ROLES
+        private string GenerateJwt(
+        string email,
+        string name,
+        string role)
         {
+            // ✅ Claims incluidos dentro del JWT.
             var claims = new[]
             {
+// ✅ Correo electrónico.
 new Claim(ClaimTypes.Email, email),
-new Claim(ClaimTypes.Name, name)
+ 
+// ✅ Nombre del usuario.
+new Claim(ClaimTypes.Name, name),
+ 
+// ✅ Rol del usuario.
+new Claim(ClaimTypes.Role, role)
 };
 
+            // ✅ Clave secreta utilizada para firmar el JWT.
             var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(
             _configuration["Jwt:Key"]!
             )
             );
 
+            // ✅ Algoritmo de firma.
             var creds = new SigningCredentials(
             key,
             SecurityAlgorithms.HmacSha256
             );
 
+            // ✅ Construcción del Token.
             var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
@@ -118,6 +153,7 @@ new Claim(ClaimTypes.Name, name)
             signingCredentials: creds
             );
 
+            // ✅ Convertir JWT a string.
             return new JwtSecurityTokenHandler()
             .WriteToken(token);
         }
