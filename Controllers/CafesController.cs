@@ -1,11 +1,13 @@
 using CafeApi.Interfaces;
 using CafeApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CafeApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] 
     public class CafesController : ControllerBase
     {
         private readonly ICafeRepository _cafeRepository;

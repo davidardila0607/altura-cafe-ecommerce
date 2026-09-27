@@ -19,6 +19,38 @@ namespace CafeApi.Controllers
             _configuration = configuration;
         }
 
+        // ✅ NUEVO
+        // Endpoint de login para pruebas JWT.
+        // Nos permitirá generar tokens sin depender todavía de Google.
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] LoginRequest request)
+        {
+            // ✅ NUEVO
+            // Usuario de prueba.
+            // Más adelante estos datos se consultarán desde PostgreSQL.
+            if (request.Email != "admin@cafeapi.com" ||
+            request.Password != "123456")
+            {
+                // ✅ NUEVO
+                // Si las credenciales son incorrectas devolvemos 401.
+                return Unauthorized("Credenciales inválidas.");
+            }
+
+            // ✅ NUEVO
+            // Generamos un JWT utilizando el método existente.
+            var token = GenerateJwt(
+            request.Email,
+            "Administrador"
+            );
+
+            // ✅ NUEVO
+            // Devolvemos el token al cliente.
+            return Ok(new
+            {
+                token
+            });
+        }
+
         [HttpPost("google")]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
         {
@@ -30,43 +62,64 @@ namespace CafeApi.Controllers
                 {
                     Audience = new[] { _configuration["Google:ClientId"] }
                 };
-                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+
+                payload = await GoogleJsonWebSignature.ValidateAsync(
+                request.IdToken,
+                settings
+                );
             }
             catch (InvalidJwtException)
             {
                 return Unauthorized("Token de Google inválido.");
             }
 
-            var jwt = GenerateJwt(payload.Email, payload.Name);
+            var jwt = GenerateJwt(
+            payload.Email,
+            payload.Name
+            );
 
             return Ok(new
             {
                 token = jwt,
                 email = payload.Email,
-                name = payload.Name,
+                name = payload.Name
             });
         }
 
+        // ✅ Método reutilizable para crear JWT
         private string GenerateJwt(string email, string name)
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.Email, email),
-                new Claim(ClaimTypes.Name, name),
-            };
+new Claim(ClaimTypes.Email, email),
+new Claim(ClaimTypes.Name, name)
+};
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(double.Parse(_configuration["Jwt:ExpiresInMinutes"]!)),
-                signingCredentials: creds
+            var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(
+            _configuration["Jwt:Key"]!
+            )
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var creds = new SigningCredentials(
+            key,
+            SecurityAlgorithms.HmacSha256
+            );
+
+            var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(
+            double.Parse(
+            _configuration["Jwt:ExpiresInMinutes"]!
+            )
+            ),
+            signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler()
+            .WriteToken(token);
         }
     }
 }
