@@ -221,3 +221,23 @@ Separación completa entre:
 - Entidades de dominio
 - DTOs de entrada
 - DTOs de salida
+
+
+## [1.4.0] - 2026-09-25
+
+### Añadido
+
+- Middleware global de manejo de excepciones.
+- Captura centralizada de errores no controlados.
+- Respuestas JSON uniformes para errores.
+
+### Validado
+
+- Captura de excepciones mediante ExceptionMiddleware.
+- Respuestas HTTP 500 estandarizadas.
+
+### Beneficios
+
+- Menos código repetido.
+- Mejor integración con Angular.
+- API más preparada para producción.

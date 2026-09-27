@@ -13,10 +13,23 @@ namespace CafeApi.Controllers
     {
         private readonly ICafeRepository _cafeRepository;
 
-        public CafesController(ICafeRepository cafeRepository)
+        // ✅ Logger del controlador.
+        private readonly ILogger<CafesController> _logger;
+
+        public CafesController(
+        ICafeRepository cafeRepository,
+        ILogger<CafesController> logger)
         {
             _cafeRepository = cafeRepository;
+
+            // ✅ Inyección del logger.
+            _logger = logger;
         }
+
+        /*public CafesController(ICafeRepository cafeRepository)
+        {
+            _cafeRepository = cafeRepository;
+        }*/
 
         // ✅ PÚBLICO
         // Devuelve información preparada para el cliente.
@@ -25,6 +38,11 @@ namespace CafeApi.Controllers
         public ActionResult<IEnumerable<CafeResponseDto>> Get()
         {
             var cafes = _cafeRepository.GetAll();
+
+            // ✅ Registrar consulta de cafés.
+            _logger.LogInformation(
+            "Se consultó la lista de cafés."
+            );
 
             var response = cafes.Select(cafe => new CafeResponseDto
             {
@@ -59,10 +77,21 @@ namespace CafeApi.Controllers
             // ✅ Buscar el café.
             var cafe = _cafeRepository.GetById(id);
 
-         
+                _logger.LogInformation(
+                   "Se consultó el café con Id: {Id}",
+                   id
+                );
+
             // ✅ Si no existe devolvemos 404.
             if (cafe == null)
             {
+                _logger.LogWarning(
+                    "No se encontró el café con Id: {Id}",
+                    id
+                   );
+
+
+
                 return NotFound();
             }
 
@@ -113,6 +142,11 @@ namespace CafeApi.Controllers
             // ✅ Guardamos la entidad en la base de datos.
             var created = _cafeRepository.Create(cafe);
 
+                _logger.LogInformation(
+                    "Se creó el café: {Nombre}",
+                     cafe.Nombre
+                 );
+
             // ✅ Devuelve HTTP 201 Created.
             return CreatedAtAction(
                 nameof(Get),
@@ -140,30 +174,64 @@ namespace CafeApi.Controllers
                 Precio = dto.Precio
             };
 
+            _logger.LogInformation(
+            "Solicitud de actualización para el café con Id: {Id}",
+            id
+            );
+
             // ✅ Actualizamos el registro.
             var result = _cafeRepository.Update(id, cafe);
 
-            // ✅ Si no existe el registro devolvemos 404.
+            // ✅ Si no existe devolvemos 404.
             if (!result)
-                return NotFound();
+            {
+                _logger.LogWarning(
+                "No se pudo actualizar el café con Id: {Id} porque no existe.",
+                id
+                );
 
-            // ✅ Actualización correcta.
+                return NotFound();
+            }
+
+            _logger.LogInformation(
+            "Se actualizó correctamente el café con Id: {Id}",
+            id
+            );
+
             return NoContent();
         }
 
-        // ✅ SOLO ADMINISTRADOR
-        // Requiere JWT válido + Role = Administrador.
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrador")]
-        public IActionResult Delete(int id)
-        {
+        
+           // ✅ SOLO ADMINISTRADOR
+           // Requiere JWT válido + Role = Administrador.
+           [HttpDelete("{id}")]
+           [Authorize(Roles = "Administrador")]
+           public IActionResult Delete(int id)
+           {
+            _logger.LogInformation(
+            "Solicitud de eliminación para el café con Id: {Id}",
+            id
+            );
+
             var result = _cafeRepository.Delete(id);
 
             if (!result)
+            {
+                _logger.LogWarning(
+                "No se pudo eliminar el café con Id: {Id} porque no existe.",
+                id
+                );
+
                 return NotFound();
+            }
+
+            _logger.LogInformation(
+            "Se eliminó correctamente el café con Id: {Id}",
+            id
+            );
 
             return NoContent();
-        }
+           }
 
         // ✅ Calcula el estado del stock según la cantidad disponible.
         private static string ObtenerEstadoStock(int stock)

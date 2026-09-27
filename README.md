@@ -294,6 +294,21 @@ La API calcula automáticamente el estado del inventario:
 - No se exponen propiedades internas innecesarias.
 - Respuestas orientadas al negocio.
  
+## Manejo Global de Errores
+ 
+La API implementa un middleware global de excepciones.
+ 
+Todas las excepciones no controladas son interceptadas y transformadas en respuestas JSON uniformes.
+ 
+Ejemplo:
+ 
+```json
+{
+"success": false,
+"message": "Ha ocurrido un error inesperado.",
+"detail": "Descripción del error"
+}
+
 ## 👨‍💻 Autor
  
 Pablo Santamaría
