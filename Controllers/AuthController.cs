@@ -117,15 +117,15 @@ _configuration["Google:ClientId"]
             // ✅ Claims incluidos dentro del JWT.
             var claims = new[]
             {
-// ✅ Correo electrónico.
-new Claim(ClaimTypes.Email, email),
+            // ✅ Correo electrónico.
+            new Claim(ClaimTypes.Email, email),
  
-// ✅ Nombre del usuario.
-new Claim(ClaimTypes.Name, name),
+            // ✅ Nombre del usuario.
+            new Claim(ClaimTypes.Name, name),
  
-// ✅ Rol del usuario.
-new Claim(ClaimTypes.Role, role)
-};
+            // ✅ Rol del usuario.
+            new Claim(ClaimTypes.Role, role)
+            };
 
             // ✅ Clave secreta utilizada para firmar el JWT.
             var key = new SymmetricSecurityKey(

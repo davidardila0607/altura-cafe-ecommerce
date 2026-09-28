@@ -241,3 +241,69 @@ Separación completa entre:
 - Menos código repetido.
 - Mejor integración con Angular.
 - API más preparada para producción.
+
+
+## [1.5.0] - 2026-09-25
+ 
+### Añadido
+ 
+#### Logging
+ 
+Implementación de auditoría mediante ILogger.
+ 
+Eventos registrados:
+ 
+- Consulta de lista de cafés.
+- Consulta de café por Id.
+- Creación de cafés.
+- Actualización de cafés.
+- Eliminación de cafés.
+ 
+### Validado
+ 
+- LogInformation
+- LogWarning
+- Inyección de ILogger
+- Auditoría CRUD completa
+ 
+### Beneficios
+ 
+- Trazabilidad de operaciones.
+- Diagnóstico de incidencias.
+- Preparación para producción.
+
+## [1.5.0] - 2026-09-25
+ 
+### Añadido
+ 
+#### Logging
+ 
+Implementación de auditoría mediante ILogger.
+ 
+Se registran los siguientes eventos:
+ 
+- Consulta de lista de cafés.
+- Consulta de cafés por identificador.
+- Creación de cafés.
+- Actualización de cafés.
+- Eliminación de cafés.
+- Recursos no encontrados.
+- Excepciones no controladas.
+ 
+#### Middleware
+ 
+Integración del middleware global de excepciones con logging.
+ 
+### Validado
+ 
+- LogInformation
+- LogWarning
+- LogError
+- Auditoría completa CRUD
+- Registro de errores globales
+ 
+### Beneficios
+ 
+- Trazabilidad de operaciones.
+- Diagnóstico de incidencias.
+- Preparación para producción.

@@ -328,6 +328,35 @@ La API implementa logging mediante ILogger de ASP.NET Core.
 - Auditoría de actividad.
 - Preparación para producción.
 
+## Logging y Auditoría
+ 
+La API implementa auditoría mediante ILogger de ASP.NET Core.
+ 
+### Eventos registrados
+ 
+#### Consultas
+ 
+- Listado de cafés.
+- Consulta por identificador.
+ 
+#### Escritura
+ 
+- Creación de registros.
+- Actualización de registros.
+- Eliminación de registros.
+ 
+#### Errores
+ 
+- Recursos inexistentes.
+- Excepciones capturadas por el middleware global.
+ 
+### Beneficios
+ 
+- Seguimiento de operaciones.
+- Diagnóstico de fallos.
+- Trazabilidad.
+- Base para despliegues productivos.
+
 ## 👨‍💻 Autor
  
 Pablo Santamaría
