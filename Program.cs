@@ -27,9 +27,8 @@ if (string.IsNullOrWhiteSpace(connectionString))
         "Configura la cadena de conexión en ConnectionStrings:CafeDatabase.");
 }
 
-//
-// ===== DIAGNÓSTICO SEGURO DE BASE DE DATOS =====
-//
+
+// ===== DIAGNÓSTICO SEGURO DE BASE DE DATOS ====//
 
 string databaseProvider;
 string databasePort;
