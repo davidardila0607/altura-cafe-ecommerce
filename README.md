@@ -397,6 +397,34 @@ Representa la información del usuario autenticado:
 }
 ```
 
+## Dominio de Usuario
+
+Se ha incorporado la entidad Usuario como base para la evolución de CafeApi hacia ecommerce.
+
+### Usuario
+
+Representa a un usuario autenticado dentro del sistema.
+
+Campos actuales:
+
+- Id
+- Email
+- Nombre
+- Role
+- EsGoogleUser
+- FechaCreacion
+
+### Objetivo
+
+Preparar futuras funcionalidades:
+
+- Carrito de compras.
+- Pedidos.
+- Historial de compras.
+- Direcciones de envío.
+- Integración con Google Login.
+`
+
 ## 👨‍💻 Autor
  
 Pablo Santamaría

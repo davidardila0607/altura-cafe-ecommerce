@@ -330,3 +330,35 @@ Integración del middleware global de excepciones con logging.
 - Mejor integración con Swagger.
 - Contratos estables para frontend.
 - Base para futuras funcionalidades de usuario autenticado.
+
+## [1.7.0] - 2026-09-25
+
+### Añadido
+
+#### Dominio Usuario
+
+Nueva entidad:
+
+- Usuario
+
+Campos:
+
+- Id
+- Email
+- Nombre
+- Role
+- EsGoogleUser
+- FechaCreacion
+
+#### DTOs
+
+- UserDto
+
+### Arquitectura
+
+Preparación del dominio para futuras capacidades ecommerce:
+
+- Cart
+- CartItem
+- Orders
+- Users
