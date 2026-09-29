@@ -389,3 +389,37 @@ Preparación para futuras funcionalidades:
 - Orders
 - Checkout
 - Payments
+
+## [1.8.0] - 2026-09-25
+
+### Añadido
+
+#### Dominio Ecommerce
+
+- Usuario
+- Cart
+- CartItem
+
+#### DTOs
+
+- UserDto
+- CartResponseDto
+- CartItemResponseDto
+
+#### Repositorios
+
+- ICartRepository
+- CartRepository
+
+### Arquitectura
+
+Preparación para:
+
+- Carrito de compras
+- Pedidos
+- Checkout
+- Pagos
+
+### Mejoras
+
+- Contratos asíncronos mediante Task<T>.

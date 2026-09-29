@@ -449,6 +449,39 @@ Objetivo:
 
 - Gestionar el carrito de compras.
 - Preparar futuras funcionalidades de pedidos y pagos.
+## Dominio Ecommerce
+
+### Usuario
+
+Entidad base para autenticación y futuras funcionalidades ecommerce.
+
+### Cart
+
+Representa el carrito activo de un usuario.
+
+### CartItem
+
+Representa una línea del carrito.
+
+### DTOs de Carrito
+
+#### CartItemResponseDto
+
+- CafeId
+- CafeNombre
+- ImagenUrl
+- Precio
+- Cantidad
+- Subtotal
+
+#### CartResponseDto
+
+- CartId
+- UserId
+- Items
+- CantidadItems
+- Total
+
 
 ## 👨‍💻 Autor
  
