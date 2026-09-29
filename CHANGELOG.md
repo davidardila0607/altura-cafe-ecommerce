@@ -307,3 +307,26 @@ Integración del middleware global de excepciones con logging.
 - Trazabilidad de operaciones.
 - Diagnóstico de incidencias.
 - Preparación para producción.
+
+## [1.6.0] - 2026-09-25
+
+### Añadido
+
+#### DTOs de autenticación
+
+- LoginRequestDto
+- LoginResponseDto
+- UserDto
+
+### Cambios
+
+- AuthController migrado para utilizar contratos DTO.
+- Eliminados objetos de respuesta anónimos.
+- Contratos preparados para Angular.
+
+### Beneficios
+
+- Tipado fuerte.
+- Mejor integración con Swagger.
+- Contratos estables para frontend.
+- Base para futuras funcionalidades de usuario autenticado.

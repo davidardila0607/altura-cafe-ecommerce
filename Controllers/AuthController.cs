@@ -1,3 +1,4 @@
+using CafeApi.DTOs;
 using CafeApi.Models;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
@@ -22,26 +23,30 @@ namespace CafeApi.Controllers
         // ✅ LOGIN PARA PRUEBAS JWT Y ROLES
         // Permite iniciar sesión como Administrador o Cliente.
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public IActionResult Login([FromBody] LoginRequestDto request)
         {
             // ✅ Almacenará el rol del usuario autenticado.
             string role;
 
-            // ✅ Usuario Administrador
-            if (request.Email == "admin@cafeapi.com" &&
-            request.Password == "123456")
+            // ✅ Usuario Administrador.
+            if (
+            request.Email == "admin@cafeapi.com" &&
+            request.Password == "123456"
+            )
             {
                 role = "Administrador";
             }
 
-            // ✅ Usuario Cliente
-            else if (request.Email == "cliente@cafeapi.com" &&
-            request.Password == "123456")
+            // ✅ Usuario Cliente.
+            else if (
+            request.Email == "cliente@cafeapi.com" &&
+            request.Password == "123456"
+            )
             {
                 role = "Cliente";
             }
 
-            // ✅ Credenciales incorrectas
+            // ✅ Credenciales incorrectas.
             else
             {
                 return Unauthorized("Credenciales inválidas.");
@@ -54,12 +59,19 @@ namespace CafeApi.Controllers
             role
             );
 
-            return Ok(new
+            // ✅ Construimos la respuesta utilizando DTO.
+            var response = new LoginResponseDto
             {
-                token,
-                role
-            });
+                Token = token,
+
+                Email = request.Email,
+
+                Role = role
+            };
+
+            return Ok(response);
         }
+
 
         // ✅ LOGIN CON GOOGLE
         [HttpPost("google")]
@@ -75,7 +87,7 @@ namespace CafeApi.Controllers
                 {
                     Audience = new[]
                 {
-_configuration["Google:ClientId"]
+                 _configuration["Google:ClientId"]
                 }
                 };
 

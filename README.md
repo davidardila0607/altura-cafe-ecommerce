@@ -357,6 +357,46 @@ La API implementa auditoría mediante ILogger de ASP.NET Core.
 - Trazabilidad.
 - Base para despliegues productivos.
 
+## DTOs de Autenticación
+
+La API implementa contratos específicos para autenticación.
+
+### LoginRequestDto
+
+Utilizado para recibir credenciales:
+
+```json
+{
+  "email": "admin@cafeapi.com",
+  "password": "123456"
+}
+```
+
+### LoginResponseDto
+
+Devuelto tras una autenticación exitosa:
+
+```json
+{
+  "token": "jwt",
+  "email": "admin@cafeapi.com",
+  "role": "Administrador"
+}
+```
+
+### UserDto
+
+Representa la información del usuario autenticado:
+
+```json
+{
+  "id": 1,
+  "email": "admin@cafeapi.com",
+  "nombre": "Administrador",
+  "role": "Administrador"
+}
+```
+
 ## 👨‍💻 Autor
  
 Pablo Santamaría
