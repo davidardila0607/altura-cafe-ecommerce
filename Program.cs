@@ -6,6 +6,7 @@ using Microsoft.OpenApi;
 using System.Text;
 using CafeApi.Middleware;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
@@ -146,6 +147,11 @@ builder.Services.AddSwaggerGen(options =>
         }
     });*/
 });
+
+builder.Services.AddScoped<ICartRepository>(_ =>
+    new CartRepository(connectionString));
+
+    
 
 // ✅ Conservamos OpenAPI nativo.
 builder.Services.AddOpenApi();

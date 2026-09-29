@@ -482,6 +482,26 @@ Representa una línea del carrito.
 - CantidadItems
 - Total
 
+## Persistencia de usuarios
+
+CafeApi utiliza la tabla:
+
+public.users
+
+para representar los usuarios del dominio de negocio.
+
+Nota:
+
+Supabase mantiene adicionalmente la tabla:
+
+auth.users
+
+para servicios internos de autenticación.
+
+El carrito, pedidos y futuras funcionalidades ecommerce utilizarán:
+
+public.users
+
 
 ## 👨‍💻 Autor
  

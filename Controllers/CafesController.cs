@@ -52,6 +52,8 @@ namespace CafeApi.Controllers
 
                 Nombre = cafe.Nombre,
 
+                ImagenUrl = cafe.ImagenUrl,
+
                 Origen = cafe.Origen,
 
                 StockDisponible = cafe.Stock,
@@ -104,6 +106,8 @@ namespace CafeApi.Controllers
 
                 Nombre = cafe.Nombre,
 
+                ImagenUrl = cafe.ImagenUrl,
+
                 Origen = cafe.Origen,
 
                 StockDisponible = cafe.Stock,
@@ -131,6 +135,8 @@ namespace CafeApi.Controllers
                 EspecialidadId = dto.EspecialidadId,
 
                 Nombre = dto.Nombre,
+
+                ImagenUrl = dto.ImagenUrl,
 
                 Origen = dto.Origen,
 
@@ -166,6 +172,8 @@ namespace CafeApi.Controllers
                 EspecialidadId = dto.EspecialidadId,
 
                 Nombre = dto.Nombre,
+
+                ImagenUrl = dto.ImagenUrl,
 
                 Origen = dto.Origen,
 

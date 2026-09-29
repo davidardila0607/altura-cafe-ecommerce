@@ -423,3 +423,17 @@ Preparación para:
 ### Mejoras
 
 - Contratos asíncronos mediante Task<T>.
+
+### Arquitectura
+
+Se definió oficialmente el uso de la tabla:
+
+- public.users
+
+como origen de datos para el dominio ecommerce.
+
+La tabla:
+
+- auth.users
+
+permanece reservada para autenticación interna de Supabase.

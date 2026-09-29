@@ -18,6 +18,15 @@ namespace CafeApi.DTOs
         )]
         public string Nombre { get; set; } = string.Empty;
 
+        // ✅ URL de la imagen principal del café.
+        // La imagen se almacenará en Cloudinary.
+        // En la base de datos solo guardaremos la URL.
+        [StringLength(
+            500,
+            ErrorMessage = "La URL de la imagen no puede superar los 500 caracteres."
+        )]
+        public string ImagenUrl { get; set; } = string.Empty;
+
         // ✅ Origen obligatorio.
         [Required(ErrorMessage = "El origen es obligatorio.")]
         [StringLength(

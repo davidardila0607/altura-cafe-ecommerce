@@ -10,6 +10,9 @@
         // ✅ Nombre de la especialidad.
         public string Especialidad { get; set; } = string.Empty;
 
+        // ✅ URL de la imagen principal del producto.
+        public string ImagenUrl { get; set; } = string.Empty;
+
         // ✅ Nombre comercial del café.
         public string Nombre { get; set; } = string.Empty;
 

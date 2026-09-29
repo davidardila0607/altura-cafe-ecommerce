@@ -15,6 +15,15 @@ namespace CafeApi.DTOs
         // Evita nombres vacíos.
         [Required(ErrorMessage = "El nombre es obligatorio.")]
 
+        // ✅ URL de la imagen principal del café.
+        // La imagen se almacenará en Cloudinary.
+        // En la base de datos solo guardaremos la URL.
+        [StringLength(
+        500,
+        ErrorMessage = "La URL de la imagen no puede superar los 500 caracteres."
+        )]
+        public string ImagenUrl { get; set; } = string.Empty;
+
         // ✅ Máximo 100 caracteres.
         [StringLength(
             100,
@@ -47,5 +56,7 @@ namespace CafeApi.DTOs
             ErrorMessage = "El precio debe ser mayor que cero."
         )]
         public decimal Precio { get; set; }
+
+        
     }
 }

@@ -13,9 +13,19 @@ namespace CafeApi.Repositories
             _connectionString = connectionString;
         }
 
+        // ✅ Consulta base utilizada para obtener cafés.
+        // Incluye la especialidad asociada y la URL de la imagen.
         private const string SelectBase =
-            "SELECT c.id, c.especialidad_id, e.nombre AS especialidad, c.nombre, c.origen, c.stock, c.precio " +
-            "FROM cafes c INNER JOIN especialidades e ON e.id = c.especialidad_id";
+            "SELECT c.id, " +
+            "c.especialidad_id, " +
+            "e.nombre AS especialidad, " +
+            "c.nombre, " +
+            "c.imagen_url, " +
+            "c.origen, " +
+            "c.stock, " +
+            "c.precio " +
+            "FROM cafes c " +
+            "INNER JOIN especialidades e ON e.id = c.especialidad_id";
 
         public IEnumerable<Cafe> GetAll()
         {
@@ -48,11 +58,15 @@ namespace CafeApi.Repositories
             using var connection = new NpgsqlConnection(_connectionString);
             connection.Open();
             using var command = new NpgsqlCommand(
-                "INSERT INTO cafes (especialidad_id, nombre, origen, stock, precio) " +
-                "VALUES (@especialidadId, @nombre, @origen, @stock, @precio) RETURNING id;",
+               "INSERT INTO cafes " +
+               "(especialidad_id, nombre, imagen_url, origen, stock, precio) " +
+                "VALUES " +
+               "(@especialidadId, @nombre, @imagenUrl, @origen, @stock, @precio) " +
+                 "RETURNING id;",
                 connection);
             command.Parameters.AddWithValue("especialidadId", cafe.EspecialidadId);
             command.Parameters.AddWithValue("nombre", cafe.Nombre);
+            command.Parameters.AddWithValue("imagenUrl", cafe.ImagenUrl);
             command.Parameters.AddWithValue("origen", cafe.Origen);
             command.Parameters.AddWithValue("stock", cafe.Stock);
             command.Parameters.AddWithValue("precio", cafe.Precio);
@@ -66,11 +80,18 @@ namespace CafeApi.Repositories
             using var connection = new NpgsqlConnection(_connectionString);
             connection.Open();
             using var command = new NpgsqlCommand(
-                "UPDATE cafes SET especialidad_id = @especialidadId, nombre = @nombre, origen = @origen, " +
-                "stock = @stock, precio = @precio WHERE id = @id;",
-                connection);
+                   "UPDATE cafes SET " +
+                   "especialidad_id = @especialidadId, " +
+                   "nombre = @nombre, " +
+                   "imagen_url = @imagenUrl, " +
+                   "origen = @origen, " +
+                   "stock = @stock, " +
+                   "precio = @precio " +
+                   "WHERE id = @id;",
+            connection);
             command.Parameters.AddWithValue("especialidadId", cafe.EspecialidadId);
             command.Parameters.AddWithValue("nombre", cafe.Nombre);
+            command.Parameters.AddWithValue("imagenUrl", cafe.ImagenUrl);
             command.Parameters.AddWithValue("origen", cafe.Origen);
             command.Parameters.AddWithValue("stock", cafe.Stock);
             command.Parameters.AddWithValue("precio", cafe.Precio);
@@ -95,9 +116,13 @@ namespace CafeApi.Repositories
             EspecialidadId = reader.GetInt32(1),
             Especialidad = reader.GetString(2),
             Nombre = reader.GetString(3),
-            Origen = reader.GetString(4),
-            Stock = reader.GetInt32(5),
-            Precio = reader.GetDecimal(6),
+            // ✅ URL de la imagen.
+            ImagenUrl = reader.IsDBNull(4)
+                      ? string.Empty
+                    : reader.GetString(4),
+            Origen = reader.GetString(5),
+            Stock = reader.GetInt32(6),
+            Precio = reader.GetDecimal(7),
         };
     }
 }
