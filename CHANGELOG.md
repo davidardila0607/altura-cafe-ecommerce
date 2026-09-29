@@ -362,3 +362,30 @@ Preparación del dominio para futuras capacidades ecommerce:
 - CartItem
 - Orders
 - Users
+
+## [1.8.0] - 2026-09-25
+
+### Añadido
+
+#### Dominio Ecommerce
+
+Nueva entidad:
+
+- Cart
+
+Campos:
+
+- Id
+- UserId
+- FechaCreacion
+- FechaActualizacion
+- Estado
+
+### Arquitectura
+
+Preparación para futuras funcionalidades:
+
+- CartItem
+- Orders
+- Checkout
+- Payments

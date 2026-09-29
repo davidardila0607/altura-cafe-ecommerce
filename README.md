@@ -423,7 +423,32 @@ Preparar futuras funcionalidades:
 - Historial de compras.
 - Direcciones de envío.
 - Integración con Google Login.
-`
+
+## Dominio Ecommerce
+
+### Cart
+
+Representa el carrito activo de un usuario.
+
+Campos:
+
+- Id
+- UserId
+- FechaCreacion
+- FechaActualizacion
+- Estado
+
+Estados previstos:
+
+- Activo
+- ConvertidoAPedido
+- Cancelado
+- Abandonado
+
+Objetivo:
+
+- Gestionar el carrito de compras.
+- Preparar futuras funcionalidades de pedidos y pagos.
 
 ## 👨‍💻 Autor
  
