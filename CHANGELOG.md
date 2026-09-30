@@ -437,3 +437,26 @@ La tabla:
 - auth.users
 
 permanece reservada para autenticación interna de Supabase.
+
+## [1.10.0] - 2026-09-26
+
+### Añadido
+
+#### Cloudinary
+
+- CloudinarySettings
+- ICloudinaryService
+- CloudinaryService
+- UploadImageDto
+- ImagesController
+
+### Catálogo
+
+- Integración de ImagenUrl en cafés.
+- Almacenamiento de imágenes mediante Cloudinary.
+- La base de datos almacena únicamente la URL.
+
+### Infraestructura
+
+- Registro de Cloudinary en Program.cs.
+- Preparado para integración con Angular.

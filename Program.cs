@@ -5,7 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
 using CafeApi.Middleware;
-
+using CafeApi.Configurations;
+using CafeApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,8 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException(
         "Configura la cadena de conexión en ConnectionStrings:CafeDatabase.");
 }
+builder.Services.Configure<CloudinarySettings>(
+ builder.Configuration.GetSection("CloudinarySettings"));
 
 
 // ===== DIAGNÓSTICO SEGURO DE BASE DE DATOS ====//
@@ -64,6 +67,11 @@ builder.Services.AddScoped<IEspecialidadRepository>(_ =>
 
 builder.Services.AddScoped<ICafeRepository>(_ =>
     new CafeRepository(connectionString));
+
+// ✅ Registro del servicio Cloudinary.
+builder.Services.AddScoped<
+ICloudinaryService,
+CloudinaryService>();
 
 //
 // ===== JWT AUTHENTICATION =====
@@ -151,7 +159,8 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<ICartRepository>(_ =>
     new CartRepository(connectionString));
 
-    
+builder.Services.AddScoped<IUserRepository>(_ =>
+  new UserRepository(connectionString));
 
 // ✅ Conservamos OpenAPI nativo.
 builder.Services.AddOpenApi();

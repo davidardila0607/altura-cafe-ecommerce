@@ -502,6 +502,24 @@ El carrito, pedidos y futuras funcionalidades ecommerce utilizarán:
 
 public.users
 
+## Gestión de imágenes
+
+CafeApi utiliza Cloudinary para el almacenamiento de imágenes.
+
+Flujo:
+
+Cliente
+↓
+POST /api/images
+↓
+Cloudinary
+↓
+URL
+↓
+POST /api/cafes
+
+La base de datos únicamente almacena la URL de la imagen.
+
 
 ## 👨‍💻 Autor
  

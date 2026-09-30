@@ -6,8 +6,8 @@ namespace CafeApi.Interfaces
     public interface ICartRepository
     {
         // ✅ Obtiene el carrito activo del usuario.
-        Task<CartResponseDto> GetCartByUserIdAsync(
-            int userId
+        Task<CartResponseDto?> GetCartByUserIdAsync(
+        int userId
         );
 
         // ✅ Agrega un producto al carrito.
