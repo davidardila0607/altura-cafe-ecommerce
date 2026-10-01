@@ -547,3 +547,42 @@ permanece reservada para autenticación interna de Supabase.
 
 - README con la puesta en marcha paso a paso de backend, productos de ejemplo y frontend.
 - CLAUDE.md con la nueva estructura, la marca, el frontend, el seed, las decisiones y los problemas encontrados.
+
+## [1.13.0] - 2026-09-30
+
+### 🎨 Rediseño del frontend
+
+#### Inicio (`/`) y Productos (`/productos`) en vistas separadas
+
+- Layout compartido (navbar + footer) con enlaces Inicio y Productos con estado activo; el buscador lleva a `/productos?q=` desde cualquier vista.
+- Transiciones de ruta con View Transitions (sin animación cuando solo cambian los filtros o con "reducir movimiento").
+- **Inicio**: hero asimétrico con fotografía, "Selección de la casa" (3 cafés de la API: con stock primero, precio descendente), "De la montaña a tu taza" (lámina editorial de 4 fotos), mapa de orígenes de Colombia con marcadores calculados de la API y enlace al catálogo filtrado, variedades desde la API con su color y texto editorial, cierre y footer completo.
+- **Productos**: filtros combinables (variedad, presentación, origen, solo disponibles), orden (destacados, precio, nombre) y búsqueda sin tildes, todo reflejado en la URL; hoja de filtros en móvil con contador; estado vacío; grilla con un café destacado 2×2 y reordenamiento animado.
+- **Vista rápida**: panel lateral (escritorio) u hoja inferior (móvil) con los datos de `GET /api/cafes/{id}`, selector de cantidad y "Agregar al carrito" deshabilitado ("Próximamente"); se cierra con X, Escape y clic fuera, con el foco atrapado.
+- Cards con imagen grande, variedad con su color, origen, precio en COP y disponibilidad ("Quedan N" en tono de alerta si stock ≤ 5, "Agotado").
+
+#### Login y Registro
+
+- Panel de marca con fotografía a sangre; formularios con mejor jerarquía, errores con ícono y aparición suave, y foco más visible. Misma funcionalidad: validaciones, mostrar/ocultar contraseña y aviso "próximamente", sin llamadas a la API.
+
+#### Sistema de diseño
+
+- Tokens en `styles.css`: paleta con derivados documentados, escala tipográfica fluida, espaciado, regla de radios, sombras teñidas, curvas y duraciones de movimiento, capas.
+- Fraunces e Inter en sus versiones variables (eje óptico de Fraunces).
+- Textura de grano de papel; movimiento reducido sin desplazamientos.
+
+#### Imágenes
+
+- Nuevo set de imágenes de producto: bolsa kraft en tres cuartos con un grabado de la región de origen en cada etiqueta (PNG 1600×1600).
+- `seed-productos.ps1 -ActualizarImagenes`: reemplaza la imagen de los cafés existentes (sin dejar huérfanas en Cloudinary).
+- Fotografías del sitio de Unsplash subidas a Cloudinary (carpeta `sitio`) con `seed/subir-imagenes-sitio.ps1`; créditos en CLAUDE.md.
+- Mapa de Colombia generado de Natural Earth (dominio público).
+
+### ✅ Calidad
+
+- Accesibilidad verificada con axe-core en las 4 vistas y la vista rápida (1440 y 375 px): 0 violaciones; objetivos táctiles ≥ 44 px; sin desbordamiento horizontal.
+- 24 pruebas unitarias (Vitest) y 16 e2e (Playwright) para la nueva estructura.
+
+### 🗑️ Eliminado
+
+- Página `home` (reemplazada por `inicio`), ilustración SVG de bolsas del banner y servicio `Busqueda` (la búsqueda vive en la URL).

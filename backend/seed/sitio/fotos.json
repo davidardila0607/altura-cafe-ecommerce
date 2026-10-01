@@ -1,0 +1,83 @@
+{
+  "carpeta": "sitio",
+  "fotos": [
+    {
+      "clave": "hero",
+      "publicId": "sitio/hero",
+      "alt": "Mano abierta con cerezas de café maduras sobre un canasto lleno de granos rojos y amarillos",
+      "unsplashId": "XRY4giMaDoA",
+      "autor": "George Dagerotip",
+      "perfil": "https://unsplash.com/@dagerotip",
+      "url": "https://unsplash.com/photos/a-person-holding-a-handful-of-berries-in-their-hand-XRY4giMaDoA",
+      "ancho": 4160,
+      "alto": 6240,
+      "descarga": "https://images.unsplash.com/photo-1670758611084-e216510c5433?ixid=XRY4giMaDoA&fm=jpg&q=85&w=2400",
+      "licencia": "Unsplash License (https://unsplash.com/license)"
+    },
+    {
+      "clave": "origen",
+      "publicId": "sitio/origen",
+      "alt": "Ladera cubierta de cafetales y bosque con niebla, y un caminante en el sendero",
+      "unsplashId": "5HG67luOwFE",
+      "autor": "Phạm Trọng Họ",
+      "perfil": "https://unsplash.com/@trongho",
+      "url": "https://unsplash.com/photos/person-walking-on-misty-hillside-plantation-5HG67luOwFE",
+      "ancho": 2944,
+      "alto": 4416,
+      "descarga": "https://images.unsplash.com/photo-1788529304004-f6b7095336aa?ixid=5HG67luOwFE&fm=jpg&q=85&w=2400",
+      "licencia": "Unsplash License (https://unsplash.com/license)"
+    },
+    {
+      "clave": "cosecha",
+      "publicId": "sitio/cosecha",
+      "alt": "Manos recogiendo cerezas de café maduras de la rama hacia un canasto",
+      "unsplashId": "0-SWia-_xjA",
+      "autor": "Gerson Cifuentes",
+      "perfil": "https://unsplash.com/@gtk1x",
+      "url": "https://unsplash.com/photos/a-person-picking-coffee-beans-from-a-tree-0-SWia-_xjA",
+      "ancho": 4160,
+      "alto": 6240,
+      "descarga": "https://images.unsplash.com/photo-1642613630414-1d9938f4fe02?ixid=0-SWia-_xjA&fm=jpg&q=85&w=2400",
+      "licencia": "Unsplash License (https://unsplash.com/license)"
+    },
+    {
+      "clave": "tueste",
+      "publicId": "sitio/tueste",
+      "alt": "Granos recién tostados girando en la bandeja de enfriamiento de un tostador",
+      "unsplashId": "YC6RVdoTtIk",
+      "autor": "Tim Mossholder",
+      "perfil": "https://unsplash.com/@timmossholder",
+      "url": "https://unsplash.com/photos/coffee-roasting-in-playa-del-carmen-YC6RVdoTtIk",
+      "ancho": 6771,
+      "alto": 4515,
+      "descarga": "https://images.unsplash.com/photo-1607681034540-2c46cc71896d?ixid=YC6RVdoTtIk&fm=jpg&q=85&w=2400",
+      "licencia": "Unsplash License (https://unsplash.com/license)"
+    },
+    {
+      "clave": "taza",
+      "publicId": "sitio/taza",
+      "alt": "Café filtrado cayendo desde el cono a la jarra de vidrio",
+      "unsplashId": "KGR2u2rG6c4",
+      "autor": "Beau Carpenter",
+      "perfil": "https://unsplash.com/@btcarpenter",
+      "url": "https://unsplash.com/photos/a-coffee-maker-pouring-coffee-into-a-cup-KGR2u2rG6c4",
+      "ancho": 2774,
+      "alto": 4161,
+      "descarga": "https://images.unsplash.com/photo-1729277133095-bff46b56c29a?ixid=KGR2u2rG6c4&fm=jpg&q=85&w=2400",
+      "licencia": "Unsplash License (https://unsplash.com/license)"
+    },
+    {
+      "clave": "acceso",
+      "publicId": "sitio/acceso",
+      "alt": "Granos de café tostado de cerca sobre una superficie oscura",
+      "unsplashId": "fmc-tFMMiBs",
+      "autor": "Łukasz Rawa",
+      "perfil": "https://unsplash.com/@lukasz_rawa",
+      "url": "https://unsplash.com/photos/brown-coffee-beans-on-black-surface-fmc-tFMMiBs",
+      "ancho": 4036,
+      "alto": 6054,
+      "descarga": "https://images.unsplash.com/photo-1606486544554-164d98da4889?ixid=fmc-tFMMiBs&fm=jpg&q=85&w=2400",
+      "licencia": "Unsplash License (https://unsplash.com/license)"
+    }
+  ]
+}

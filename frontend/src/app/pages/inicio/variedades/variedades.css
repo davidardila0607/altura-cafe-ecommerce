@@ -1,0 +1,89 @@
+.seccion {
+  padding-block: var(--seccion);
+  background: var(--alt-crema);
+}
+
+.titulo-seccion {
+  max-width: 22ch;
+  margin: 0 0 var(--esp-7);
+  font-size: var(--fs-700);
+}
+
+.filas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--alt-linea-fuerte);
+}
+
+/* Bandas tipográficas: muestra de trama, nombre grande, texto editorial y acción. */
+.fila {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 3fr) minmax(0, 5fr) minmax(0, 2.4fr);
+  align-items: center;
+  gap: var(--esp-4) clamp(1.25rem, 3vw, 3rem);
+  padding-block: clamp(1.75rem, 3vw, 2.75rem);
+  border-bottom: 1px solid var(--alt-linea-fuerte);
+}
+
+.muestra {
+  width: 4rem;
+  height: 4rem;
+}
+
+.nombre {
+  margin: 0;
+  font-size: clamp(2.2rem, 1.6rem + 2.4vw, 3.4rem);
+  font-weight: 440;
+  font-style: italic;
+  line-height: 1;
+}
+
+.texto {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--alt-texto-suave);
+}
+
+.accion {
+  display: grid;
+  justify-items: end;
+  gap: var(--esp-2);
+  text-align: right;
+}
+
+.conteo {
+  font-size: var(--fs-200);
+  color: var(--alt-texto-suave);
+}
+
+.fila-esqueleto {
+  height: 7rem;
+  margin-bottom: var(--esp-3);
+}
+
+@media (max-width: 991.98px) {
+  .fila {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .muestra {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .nombre {
+    align-self: center;
+  }
+
+  .texto,
+  .accion {
+    grid-column: 2;
+  }
+
+  .accion {
+    justify-items: start;
+    text-align: left;
+  }
+}

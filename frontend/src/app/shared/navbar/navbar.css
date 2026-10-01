@@ -1,57 +1,82 @@
 :host {
   position: sticky;
   top: 0;
-  z-index: 1030;
+  z-index: var(--z-nav);
   display: block;
 }
 
 .barra {
-  background: rgb(251 248 243 / 0.92);
-  backdrop-filter: blur(10px);
+  background: rgb(246 241 233 / 0.9);
+  backdrop-filter: blur(12px) saturate(1.1);
   border-bottom: 1px solid var(--alt-linea);
-  padding-block: 0.7rem;
 }
 
-.navbar-brand {
-  font-size: 1rem;
-  margin-right: 2.5rem;
-  padding: 0;
-}
-
-.acciones {
+.fila {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
+  gap: var(--esp-5);
+  min-height: 4.25rem;
 }
 
-.boton-icono {
-  display: inline-grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--alt-espresso);
-  font-size: 1.3rem;
+.marca {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: 0.95rem;
   text-decoration: none;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  flex-shrink: 0;
 }
 
-.boton-icono:hover {
-  background: var(--alt-crema);
-  border-color: var(--alt-linea);
+.menu {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-5);
+  flex: 1;
 }
 
-.enlaces .nav-link {
+.enlaces {
+  display: flex;
+  gap: var(--esp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.enlaces a {
+  position: relative;
+  display: inline-block;
+  padding: 0.5rem 0.85rem;
   color: var(--alt-espresso);
-  font-weight: 500;
-  padding-inline: 0.9rem;
+  font-weight: 520;
+  text-decoration: none;
 }
 
-.enlaces .nav-link:hover {
-  color: var(--alt-terracota-texto);
+/* Estado activo: subrayado terracota que se dibuja desde la izquierda. */
+.enlaces a::after {
+  content: '';
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: 0.3rem;
+  height: 2px;
+  background: var(--alt-terracota);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms var(--ease-salida);
+}
+
+.enlaces a.activo::after {
+  transform: scaleX(1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .enlaces a:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+.enlaces a.activo {
+  font-weight: 620;
 }
 
 .buscador {
@@ -71,34 +96,104 @@
 
 .buscador .form-control {
   padding: 0.6rem 1rem 0.6rem 2.6rem;
-  border-radius: 999px;
-  background: var(--alt-crema);
+  border-radius: var(--radio-pildora);
+  border-color: var(--alt-linea);
+  background-color: rgb(251 248 243 / 0.9);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.boton-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-pildora);
+  background: transparent;
+  color: var(--alt-espresso);
+  font-size: 1.3rem;
+  text-decoration: none;
+  transition: background-color var(--dur-rapida) ease, border-color var(--dur-rapida) ease,
+    transform var(--dur-presion) var(--ease-salida);
+}
+
+.boton-icono:hover {
+  background: var(--alt-papel);
   border-color: var(--alt-linea);
 }
 
-.buscador .form-control::placeholder {
-  color: rgb(43 29 20 / 0.6);
+.boton-icono:active {
+  transform: scale(0.94);
 }
 
-@media (min-width: 992px) {
-  .acciones {
-    margin-left: 0.75rem;
-  }
+.alternar {
+  display: none;
 }
 
+/* ===== Móvil y tableta: menú desplegable controlado por un signal ===== */
 @media (max-width: 991.98px) {
-  .navbar-collapse {
-    padding-block: 0.75rem 0.25rem;
+  .fila {
+    flex-wrap: wrap;
+    gap: 0 var(--esp-3);
   }
 
-  .enlaces .nav-link {
-    padding-inline: 0;
-    padding-block: 0.6rem;
+  .acciones {
+    margin-left: auto;
+  }
+
+  .alternar {
+    display: inline-grid;
+  }
+
+  .menu {
+    order: 3;
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--esp-3);
+    display: none;
+    padding-bottom: var(--esp-4);
+  }
+
+  .menu.abierto {
+    display: flex;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .menu.abierto {
+      transition: opacity 220ms var(--ease-salida), transform 220ms var(--ease-salida);
+
+      @starting-style {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+    }
+  }
+
+  .enlaces {
+    flex-direction: column;
+  }
+
+  .enlaces a {
+    display: block;
+    padding: 0.8rem 0;
     border-bottom: 1px solid var(--alt-linea);
+  }
+
+  .enlaces a::after {
+    left: 0;
+    right: auto;
+    width: 2rem;
+    bottom: -1px;
   }
 
   .buscador {
     width: 100%;
-    margin-top: 0.85rem;
+    margin-left: 0;
   }
 }

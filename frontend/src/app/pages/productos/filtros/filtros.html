@@ -1,0 +1,103 @@
+<div class="filtros">
+  @if (conBuscador()) {
+    <div class="grupo">
+      <label class="titulo-grupo" [for]="prefijo() + '-buscar'">Buscar</label>
+      <div class="buscador">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          [id]="prefijo() + '-buscar'"
+          type="search"
+          class="form-control"
+          placeholder="Nombre, origen o variedad"
+          autocomplete="off"
+          [value]="filtros().q"
+          (input)="buscar($event)"
+        />
+      </div>
+    </div>
+  }
+
+  <fieldset class="grupo">
+    <legend class="titulo-grupo">Variedad</legend>
+    <div class="chips">
+      <button type="button" class="chip" [attr.aria-pressed]="filtros().variedad === null" (click)="cambiar.emit({ variedad: null })">
+        Todas
+      </button>
+      @for (v of variedades(); track v.id) {
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="filtros().variedad === normalizar(v.nombre)"
+          (click)="cambiar.emit({ variedad: normalizar(v.nombre) })"
+        >
+          <span class="muestra" [style.background-color]="colorVariedad(v.nombre)" aria-hidden="true"></span>
+          {{ v.nombre }}
+        </button>
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="grupo">
+    <legend class="titulo-grupo">Presentación</legend>
+    <div class="chips">
+      <button
+        type="button"
+        class="chip"
+        [attr.aria-pressed]="filtros().presentacion === null"
+        (click)="cambiar.emit({ presentacion: null })"
+      >
+        Todas
+      </button>
+      @for (p of presentaciones(); track p.value) {
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="filtros().presentacion === p.value"
+          (click)="cambiar.emit({ presentacion: p.value })"
+        >
+          {{ p.label }}
+        </button>
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="grupo">
+    <legend class="titulo-grupo">Origen</legend>
+    <div class="chips">
+      <button type="button" class="chip" [attr.aria-pressed]="filtros().origen === null" (click)="cambiar.emit({ origen: null })">
+        Todos
+      </button>
+      @for (o of origenes(); track o.clave) {
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="filtros().origen === o.clave"
+          (click)="cambiar.emit({ origen: o.clave })"
+        >
+          {{ o.nombre }}
+        </button>
+      }
+    </div>
+  </fieldset>
+
+  <div class="grupo">
+    <div class="form-check form-switch interruptor">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        role="switch"
+        [id]="prefijo() + '-disponibles'"
+        [checked]="filtros().disponibles"
+        (change)="alternarDisponibles($event)"
+      />
+      <label class="form-check-label" [for]="prefijo() + '-disponibles'">Solo disponibles</label>
+    </div>
+  </div>
+
+  <button type="button" class="btn btn-outline-dark limpiar" [disabled]="activos() === 0 && !filtros().q" (click)="limpiar.emit()">
+    Limpiar filtros
+    @if (activos() > 0) {
+      <span class="contador">{{ activos() }}</span>
+    }
+  </button>
+</div>

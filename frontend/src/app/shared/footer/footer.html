@@ -1,11 +1,31 @@
 <footer class="pie">
-  <div class="container contenido">
-    <div>
+  <div class="contenedor rejilla">
+    <div class="marca">
       <a routerLink="/" class="enlace-marca" aria-label="Altura, ir al inicio">
         <app-logo tono="claro" />
       </a>
       <p class="frase">Café de especialidad colombiano, tostado con intención.</p>
     </div>
-    <p class="derechos">© {{ anio }} Altura</p>
+
+    <nav class="columna" aria-label="Tienda">
+      <p class="titulo-columna">Tienda</p>
+      <ul>
+        <li><a routerLink="/">Inicio</a></li>
+        <li><a routerLink="/productos">Nuestros cafés</a></li>
+      </ul>
+    </nav>
+
+    <nav class="columna" aria-label="Cuenta">
+      <p class="titulo-columna">Cuenta</p>
+      <ul>
+        <li><a routerLink="/login">Iniciar sesión</a></li>
+        <li><a routerLink="/registro">Crear cuenta</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="contenedor legal">
+    <p>© {{ anio }} Altura · Café de especialidad colombiano</p>
+    <p>Fotografías de Unsplash</p>
   </div>
 </footer>

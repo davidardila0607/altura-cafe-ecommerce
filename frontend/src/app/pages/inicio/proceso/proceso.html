@@ -1,0 +1,34 @@
+<section id="proceso" class="seccion" tabindex="-1" aria-labelledby="proceso-titulo">
+  <div class="contenedor">
+    <header class="encabezado">
+      <h2 id="proceso-titulo" class="titulo-seccion">De la montaña a tu taza</h2>
+      <p class="bajada">
+        Cuatro momentos separan una ladera colombiana de tu cocina. En cada uno se decide algo de lo que vas a
+        sentir en la taza.
+      </p>
+    </header>
+
+    <ol class="pasos">
+      @for (paso of pasos; track paso.titulo) {
+        <li class="paso" appRevelar>
+          <figure class="foto revelar-imagen">
+            <img
+              [src]="paso.src"
+              [attr.srcset]="paso.srcset"
+              sizes="(min-width: 992px) 40vw, 100vw"
+              [alt]="paso.foto.alt"
+              width="1200"
+              height="1200"
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+          <div class="texto revelar-texto">
+            <h3 class="nombre-paso">{{ paso.titulo }}</h3>
+            <p>{{ paso.texto }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  </div>
+</section>

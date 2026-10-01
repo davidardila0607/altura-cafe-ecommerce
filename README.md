@@ -3,7 +3,7 @@
 E-commerce de café de especialidad colombiano **Altura**:
 
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
-- **frontend/**: aplicación Angular 22 (`altura-web`) con el catálogo de cafés y las vistas de inicio de sesión y registro.
+- **frontend/**: aplicación Angular 22 (`altura-web`): Inicio editorial, catálogo de cafés con filtros y vista rápida, e inicio de sesión y registro (visuales).
 
 ---
 
@@ -13,7 +13,7 @@ E-commerce de café de especialidad colombiano **Altura**:
 CafeApi
 ├── backend/                  API .NET (Controllers, Data, DTOs, Repositories, Services, ...)
 │   ├── .config/              dotnet-ef como herramienta local
-│   ├── seed/                 Script e imágenes de los productos de ejemplo
+│   ├── seed/                 Productos de ejemplo (script + imágenes) y fotos del sitio
 │   └── appsettings.example.json
 ├── frontend/                 Aplicación Angular (src/, e2e/)
 ├── CLAUDE.md                 Guía técnica detallada (arquitectura, decisiones, pendientes)
@@ -103,6 +103,24 @@ El script pide el correo y la contraseña de la cuenta **Administrador**. Despu�
 
 Comprueba el resultado en http://localhost:5031/api/cafes: deben aparecer 6 cafés con imágenes de `res.cloudinary.com`.
 
+**¿Cambiaron las imágenes de `seed/imagenes/`?** Para reemplazar las imágenes de los cafés que ya existen (conservando sus datos), usa:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1 -ActualizarImagenes
+```
+
+Sube cada imagen nueva y actualiza el café con `PUT /api/cafes/{id}`; la API borra la imagen anterior de Cloudinary, así que no quedan imágenes huérfanas.
+
+### 5b. Subir las fotografías del sitio
+
+El Inicio, el Login y el Registro usan fotos de Unsplash alojadas en tu Cloudinary (carpeta `sitio`). Desde `backend/`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\seed\subir-imagenes-sitio.ps1
+```
+
+Lee las credenciales de Cloudinary de `appsettings.Development.json` y pide a Cloudinary que descargue cada foto desde Unsplash (no hace falta la API corriendo). Es idempotente: puedes repetirlo. La lista de fotos, autores y licencias está en `seed/sitio/fotos.json`.
+
 ### 6. Ejecutar el frontend
 
 En otra terminal, desde `frontend/`:
@@ -133,15 +151,18 @@ Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
 
 | Ruta | Vista |
 |---|---|
-| `/` | Home: navbar con buscador, banner y catálogo "Nuestros cafés" con filtros por variedad |
+| `/` | Inicio: hero, selección de la casa (3 cafés de la API), proceso "De la montaña a tu taza", mapa de orígenes, variedades y cierre |
+| `/productos` | Catálogo: filtros por variedad, presentación, origen y disponibilidad, orden, búsqueda y vista rápida |
 | `/login` | Iniciar sesión (solo visual) |
 | `/registro` | Crear cuenta (solo visual) |
 
-- Los productos y las variedades vienen de la API (`GET /api/cafes` y `GET /api/variedades`).
-- El buscador filtra por nombre, origen o variedad, sin importar tildes ni mayúsculas.
-- Los precios se muestran en pesos colombianos (`$ 42.000`) y la disponibilidad como "24 disponibles" o "Agotado".
+- Productos, variedades y presentaciones vienen de la API; nada de eso está escrito en el código.
+- El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen o variedad sin importar tildes ni mayúsculas.
+- Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=geisha&presentacion=500`): se pueden compartir y sobreviven a recargar.
+- "Ver producto" abre una vista rápida (panel lateral en escritorio, hoja inferior en móvil) con todos los datos del café. "Agregar al carrito" aparece deshabilitado ("Próximamente").
+- Precios en pesos colombianos (`$ 42.000`); disponibilidad "N disponibles", "Quedan N" (5 o menos) o "Agotado".
 - Login y Registro validan los campos, pero **todavía no llaman a la API**: al enviar muestran "… estará disponible próximamente."
-- Stack: Angular 22 (componentes standalone, signals, `@if`/`@for`), Bootstrap 5 (solo CSS), Bootstrap Icons y las fuentes Fraunces e Inter vía npm.
+- Stack: Angular 22 (standalone, signals, `@if`/`@for`), Bootstrap 5 (solo CSS, muy personalizado), Bootstrap Icons y las fuentes variables Fraunces e Inter vía npm. Transiciones con View Transitions; todo respeta "reducir movimiento".
 
 ---
 
@@ -223,7 +244,7 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 
 - Si un `PUT` cambia la imagen, la anterior se borra de Cloudinary.
 - Al eliminar un café, también se borra su imagen.
-- El frontend pide las imágenes optimizadas (`f_auto,q_auto,w_600`).
+- El frontend pide las imágenes optimizadas (`f_auto,q_auto,w_600` y `srcset` con varios anchos).
 
 ---
 
@@ -237,8 +258,7 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 ## 🚧 Próximos Pasos
 
 - Autenticación real en el frontend (login, registro y sesión)
-- Detalle de producto
-- Carrito de compras y pedidos
+- Carrito de compras y pedidos (la vista rápida ya tiene el selector de cantidad)
 - Rotación de `Jwt:Key`
 - Deploy
 

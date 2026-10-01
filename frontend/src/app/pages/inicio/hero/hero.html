@@ -1,0 +1,26 @@
+<section class="hero" aria-labelledby="hero-titulo">
+  <div class="texto">
+    <h1 id="hero-titulo" class="titulo-hero">Café de altura, tostado con intención</h1>
+    <p class="bajada">
+      Lotes de fincas colombianas de ladera, tostados en tandas pequeñas para que cada taza sepa a su origen.
+    </p>
+    <div class="acciones">
+      <a class="btn btn-primary btn-lg" routerLink="/productos">Explorar cafés</a>
+      <button type="button" class="btn btn-outline-dark btn-lg" (click)="irAHistoria()">Nuestra historia</button>
+    </div>
+  </div>
+
+  <figure class="foto">
+    <img
+      [src]="src"
+      [attr.srcset]="srcset"
+      sizes="(min-width: 992px) 54vw, 100vw"
+      [alt]="foto.alt"
+      width="1600"
+      height="2400"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+    />
+  </figure>
+</section>

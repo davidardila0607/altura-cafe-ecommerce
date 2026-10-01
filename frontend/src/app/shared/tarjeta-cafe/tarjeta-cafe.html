@@ -1,12 +1,15 @@
-<article class="tarjeta" [class.agotada]="!cafe().disponible">
+<article class="tarjeta" [class.agotada]="disponibilidad().tipo === 'agotado'">
   <div class="tarjeta-imagen">
     @if (imagen(); as url) {
       <img
         [src]="url"
-        [alt]="'Bolsa de café ' + cafe().nombre + ', ' + cafe().presentacionGramos + ' g'"
+        [attr.srcset]="srcset()"
+        [attr.sizes]="sizes()"
+        [alt]="'Bolsa de café ' + cafe().nombre + ', variedad ' + cafe().variedadNombre + ', ' + cafe().presentacionGramos + ' g'"
         width="600"
-        height="600"
-        loading="lazy"
+        height="750"
+        [attr.loading]="prioridad() ? 'eager' : 'lazy'"
+        [attr.fetchpriority]="prioridad() ? 'high' : null"
         decoding="async"
       />
     } @else {
@@ -15,27 +18,31 @@
   </div>
 
   <div class="tarjeta-cuerpo">
-    <p class="meta">{{ cafe().variedadNombre }} · {{ cafe().presentacionGramos }} g</p>
+    <p class="variedad" [style.color]="marca().colorTexto">
+      <span class="muestra" [style.background-color]="marca().color" aria-hidden="true"></span>
+      {{ cafe().variedadNombre }}
+      <span class="separador" aria-hidden="true">·</span>
+      <span class="gramos">{{ cafe().presentacionGramos }} g</span>
+    </p>
+
     <h3 class="nombre">{{ cafe().nombre }}</h3>
+
     <p class="origen">
       <i class="bi bi-geo-alt" aria-hidden="true"></i>
       <span class="visually-hidden">Origen:</span>
       {{ cafe().origen }}
     </p>
 
-    <div class="pie-tarjeta">
+    <div class="pie">
       <p class="precio">{{ cafe().precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</p>
-      @if (cafe().disponible) {
-        <p class="disponibilidad">{{ textoDisponibles() }}</p>
-      } @else {
-        <span class="badge-agotado">Agotado</span>
-      }
+      <p class="disponibilidad" [attr.data-tipo]="disponibilidad().tipo">{{ disponibilidad().texto }}</p>
     </div>
 
     <button
       type="button"
-      class="btn btn-outline-dark w-100"
+      class="btn btn-outline-dark ver"
       [attr.aria-label]="'Ver producto ' + cafe().nombre + ' ' + cafe().presentacionGramos + ' g'"
+      (click)="ver.emit(cafe().id)"
     >
       Ver producto
     </button>

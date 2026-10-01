@@ -3,22 +3,19 @@ import { of } from 'rxjs';
 import { Cafes } from '../../core/services/cafes';
 import { Variedades } from '../../core/services/variedades';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Home } from './home';
+import { Inicio } from './inicio';
 
-describe('Home', () => {
-  let component: Home;
-  let fixture: ComponentFixture<Home>;
+describe('Inicio', () => {
+  let component: Inicio;
+  let fixture: ComponentFixture<Inicio>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideRouter([]),
-        { provide: Cafes, useValue: { listar: () => of([]) } },
-        { provide: Variedades, useValue: { listar: () => of([]) } },
-      ],
-      imports: [Home],
+      providers: [provideRouter([]), { provide: Cafes, useValue: { listar: () => of([]), obtener: () => of() } }, { provide: Variedades, useValue: { listar: () => of([]), obtener: () => of() } }],
+      imports: [Inicio],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Home);
+    fixture = TestBed.createComponent(Inicio);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

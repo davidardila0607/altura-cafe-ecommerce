@@ -1,0 +1,118 @@
+/* Asimétrico: texto alineado al contenedor, foto a sangre hasta el borde derecho. */
+.hero {
+  display: grid;
+  grid-template-columns:
+    [inicio] minmax(var(--margen-lateral), 1fr)
+    [texto] minmax(0, 33rem)
+    [hueco] clamp(2rem, 5vw, 5.5rem)
+    [foto] minmax(0, 46rem)
+    [fin] minmax(0, 1fr);
+  align-items: center;
+  min-height: min(calc(100dvh - 4.25rem), 54rem);
+}
+
+.texto {
+  grid-column: texto;
+  padding-block: var(--esp-8);
+}
+
+.titulo-hero {
+  margin: 0 0 var(--esp-5);
+  font-size: var(--fs-800);
+  font-weight: 430;
+  line-height: var(--lh-ajustado);
+  letter-spacing: -0.03em;
+  font-variation-settings: 'SOFT' 80, 'WONK' 0;
+}
+
+.bajada {
+  max-width: 30rem;
+  margin: 0 0 var(--esp-6);
+  font-size: var(--fs-400);
+  color: var(--alt-texto-suave);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+}
+
+.foto {
+  position: relative;
+  grid-column: foto / -1;
+  align-self: stretch;
+  margin: 0;
+  overflow: hidden;
+  background: var(--alt-crema-hondo);
+  border-radius: var(--radio-tarjeta) 0 0 var(--radio-tarjeta);
+}
+
+/* La foto no aporta altura a la fila: el hero cabe en la primera pantalla. */
+.foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 55%;
+}
+
+/* Un solo momento de entrada: el texto sube en cascada y la foto se descubre desde abajo. */
+@media (prefers-reduced-motion: no-preference) {
+  .texto > * {
+    animation: subir 700ms var(--ease-salida) both;
+  }
+  .texto > :nth-child(2) {
+    animation-delay: 70ms;
+  }
+  .texto > :nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .foto img {
+    animation: descubrir 1100ms var(--ease-salida) both 80ms;
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes descubrir {
+  from {
+    clip-path: inset(100% 0 0 0);
+    transform: scale(1.06);
+  }
+}
+
+/* ===== Móvil y tableta: apilado, foto a sangre en ambos lados ===== */
+@media (max-width: 991.98px) {
+  .hero {
+    grid-template-columns: var(--margen-lateral) minmax(0, 1fr) var(--margen-lateral);
+    min-height: 0;
+  }
+
+  .texto {
+    grid-column: 2;
+    padding-block: var(--esp-7) var(--esp-6);
+  }
+
+  .foto {
+    grid-column: 1 / -1;
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .acciones .btn {
+    flex: 1 1 100%;
+  }
+
+  .foto {
+    aspect-ratio: 4 / 5;
+  }
+}

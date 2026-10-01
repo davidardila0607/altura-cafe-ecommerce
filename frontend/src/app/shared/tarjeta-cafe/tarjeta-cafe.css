@@ -8,41 +8,49 @@
   flex-direction: column;
   height: 100%;
   background: var(--alt-papel);
-  border: 1px solid var(--alt-linea);
-  border-radius: var(--alt-radio);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra-1);
   overflow: hidden;
-  box-shadow: var(--alt-sombra);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 260ms var(--ease-salida), box-shadow 260ms var(--ease-salida);
 }
 
-.tarjeta:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--alt-sombra-alta);
-}
-
-/* La imagen ya tiene fondo crema: se funde con su contenedor. */
+/* La foto ya trae fondo cálido: se funde con su contenedor. */
 .tarjeta-imagen {
-  aspect-ratio: 1;
-  background: var(--alt-crema);
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background: var(--alt-crema-hondo);
+  overflow: hidden;
   display: grid;
   place-items: center;
-  overflow: hidden;
 }
 
 .tarjeta-imagen img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.45s ease;
+  object-position: 50% 62%;
+  transition: transform 520ms var(--ease-salida);
 }
 
-.tarjeta:hover .tarjeta-imagen img {
-  transform: scale(1.035);
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .tarjeta:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sombra-2);
+  }
+
+  .tarjeta:hover .tarjeta-imagen img {
+    transform: scale(1.04);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  .tarjeta:hover {
+    box-shadow: var(--sombra-2);
+  }
 }
 
 .agotada .tarjeta-imagen img {
-  filter: saturate(0.55);
-  opacity: 0.85;
+  filter: saturate(0.45) brightness(1.03);
 }
 
 .sin-imagen {
@@ -54,19 +62,34 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  padding: 1.25rem 1.35rem 1.4rem;
+  padding: var(--esp-5) var(--esp-5) var(--esp-5);
 }
 
-.meta {
-  margin: 0 0 0.35rem;
-  font-size: 0.875rem;
+.variedad {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 var(--esp-2);
+  font-size: var(--fs-200);
+  font-weight: 600;
+}
+
+.muestra {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+}
+
+.separador,
+.gramos {
+  color: var(--alt-texto-suave);
   font-weight: 500;
-  color: var(--alt-cafe);
 }
 
 .nombre {
-  margin: 0 0 0.45rem;
-  font-size: 1.45rem;
+  margin: 0 0 var(--esp-2);
+  font-size: var(--fs-500);
+  font-weight: 480;
 }
 
 .origen {
@@ -75,38 +98,100 @@
   gap: 0.35rem;
   margin: 0;
   color: var(--alt-texto-suave);
-  font-size: 0.95rem;
+  font-size: var(--fs-200);
 }
 
-.pie-tarjeta {
+.pie {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--esp-3);
   margin-top: auto;
-  padding-block: 1.1rem;
+  padding-block: var(--esp-5) var(--esp-4);
 }
 
 .precio {
   margin: 0;
   font-family: var(--alt-fuente-titulos);
-  font-size: 1.4rem;
-  font-weight: 600;
+  font-size: var(--fs-500);
+  font-weight: 560;
+  font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
 }
 
 .disponibilidad {
   margin: 0;
+  font-size: var(--fs-200);
+  font-weight: 560;
   color: var(--alt-verde);
-  font-size: 0.9rem;
-  font-weight: 500;
+  white-space: nowrap;
 }
 
-.badge-agotado {
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
+.disponibilidad[data-tipo='bajo'] {
+  color: var(--alt-terracota-texto);
+}
+
+.disponibilidad[data-tipo='agotado'] {
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radio-pildora);
   background: var(--alt-espresso);
   color: var(--alt-crema);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: var(--fs-100);
+}
+
+.ver {
+  width: 100%;
+}
+
+/* ===== Variante destacada ===== */
+:host(.destacada) .tarjeta-imagen {
+  aspect-ratio: 5 / 4;
+}
+
+:host(.destacada) .tarjeta-imagen img {
+  object-position: 50% 66%;
+}
+
+:host(.destacada) .nombre {
+  font-size: var(--fs-700);
+  line-height: var(--lh-ajustado);
+}
+
+:host(.destacada) .precio {
+  font-size: var(--fs-600);
+}
+
+@media (min-width: 768px) {
+  :host(.destacada) .tarjeta-cuerpo {
+    padding: var(--esp-6);
+  }
+}
+
+/* En escritorio la destacada ocupa dos filas: la imagen crece para llenar el alto. */
+@media (min-width: 992px) {
+  :host(.destacada) .tarjeta-imagen {
+    flex: 1 1 auto;
+    aspect-ratio: auto;
+    min-height: 22rem;
+  }
+}
+
+/* ===== Variante horizontal (solo escritorio) ===== */
+@media (min-width: 992px) {
+  :host(.horizontal) .tarjeta {
+    flex-direction: row;
+  }
+
+  :host(.horizontal) .tarjeta-imagen {
+    flex: 0 0 42%;
+    aspect-ratio: auto;
+  }
+
+  :host(.horizontal) .tarjeta-cuerpo {
+    padding: var(--esp-5) var(--esp-6);
+  }
+
+  :host(.horizontal) .nombre {
+    font-size: var(--fs-600);
+  }
 }

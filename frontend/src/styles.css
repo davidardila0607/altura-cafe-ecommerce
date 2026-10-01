@@ -1,38 +1,90 @@
-/* ===== Altura · tokens de marca =====
-   Bootstrap 5 (solo CSS) se personaliza con sus variables --bs-*. */
+/* =====================================================================
+   Altura · sistema de diseño
+   Bootstrap 5 (solo CSS) es la base: grilla, formularios y utilidades.
+   Todo lo visible se personaliza con estos tokens y con las --bs-*.
+   ===================================================================== */
 :root {
-  /* Paleta */
+  /* ---------- Paleta ---------- */
   --alt-crema: #f6f1e9;
   --alt-papel: #fbf8f3;
   --alt-espresso: #2b1d14;
   --alt-cafe: #6b4226;
   --alt-terracota: #b5562f;
-  /* Terracota para texto sobre crema/papel (contraste AA ≥ 4.5). */
-  --alt-terracota-texto: #97441f;
+  /* Derivados (documentados en CLAUDE.md) */
+  --alt-terracota-texto: #97441f; /* terracota para texto: 5.9:1 sobre crema */
   --alt-terracota-hover: #9c4827;
+  --alt-terracota-activo: #86391b;
   --alt-verde: #3f5a40;
-
+  --alt-crema-hondo: #ede3d3; /* bandas alternas */
+  --alt-kraft: #c49a6c; /* solo decorativo, nunca texto */
+  --alt-blanco-calido: #fffdf9; /* fondo de campos de formulario */
+  --alt-mapa-origen: #e9d2bf; /* departamentos con cafés */
+  --alt-mapa-activo: #ddb197; /* departamento seleccionado */
+  --alt-esqueleto-1: #eadfce;
+  --alt-esqueleto-2: #f4ece0;
   --alt-linea: rgb(43 29 20 / 0.12);
-  --alt-linea-fuerte: rgb(43 29 20 / 0.22);
-  --alt-texto-suave: rgb(43 29 20 / 0.72);
-  --alt-sombra: 0 1px 2px rgb(43 29 20 / 0.05), 0 10px 28px -14px rgb(43 29 20 / 0.22);
-  --alt-sombra-alta: 0 2px 4px rgb(43 29 20 / 0.06), 0 22px 40px -18px rgb(43 29 20 / 0.32);
-  --alt-radio: 16px;
-  --alt-radio-sm: 10px;
+  --alt-linea-fuerte: rgb(43 29 20 / 0.24);
+  --alt-texto-suave: rgb(43 29 20 / 0.74);
 
-  /* Tipografía */
-  --alt-fuente-titulos: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --alt-fuente-texto: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* ---------- Tipografía ---------- */
+  --alt-fuente-titulos: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --alt-fuente-texto: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fs-100: 0.8125rem;
+  --fs-200: 0.875rem;
+  --fs-300: 1rem;
+  --fs-400: 1.125rem;
+  --fs-500: 1.375rem;
+  --fs-600: clamp(1.55rem, 1.25rem + 1vw, 2rem);
+  --fs-700: clamp(2rem, 1.45rem + 2.1vw, 2.85rem);
+  --fs-800: clamp(2.6rem, 1.6rem + 3.9vw, 4.4rem);
+  --lh-ajustado: 1.04;
+  --lh-titulo: 1.14;
+  --lh-texto: 1.62;
 
-  /* Bootstrap */
+  /* ---------- Espaciado ---------- */
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 0.75rem;
+  --esp-4: 1rem;
+  --esp-5: 1.5rem;
+  --esp-6: 2rem;
+  --esp-7: 3rem;
+  --esp-8: 4rem;
+  --esp-9: 6rem;
+  --seccion: clamp(4.5rem, 3rem + 5vw, 8rem);
+  --ancho-max: 1320px;
+  --margen-lateral: clamp(1rem, 0.5rem + 3vw, 2.5rem);
+
+  /* ---------- Forma (regla de radios) ----------
+     tarjetas e imágenes 14px · botones y campos 10px · chips y contadores en píldora */
+  --radio-tarjeta: 14px;
+  --radio-control: 10px;
+  --radio-pildora: 999px;
+  --sombra-1: 0 1px 2px rgb(43 29 20 / 0.06), 0 6px 18px -10px rgb(43 29 20 / 0.24);
+  --sombra-2: 0 2px 4px rgb(43 29 20 / 0.06), 0 22px 44px -20px rgb(43 29 20 / 0.38);
+
+  /* ---------- Movimiento ---------- */
+  --ease-salida: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-cajon: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-movimiento: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-presion: 160ms;
+  --dur-rapida: 200ms;
+  --dur-panel: 340ms;
+
+  /* ---------- Capas ---------- */
+  --z-nav: 100;
+  --z-grano: 300;
+
+  /* ---------- Bootstrap ---------- */
   --bs-body-bg: var(--alt-crema);
   --bs-body-color: var(--alt-espresso);
   --bs-body-font-family: var(--alt-fuente-texto);
-  --bs-body-line-height: 1.6;
+  --bs-body-font-size: var(--fs-300);
+  --bs-body-line-height: var(--lh-texto);
   --bs-emphasis-color: var(--alt-espresso);
   --bs-secondary-color: var(--alt-texto-suave);
   --bs-border-color: var(--alt-linea-fuerte);
-  --bs-border-radius: var(--alt-radio-sm);
+  --bs-border-radius: var(--radio-control);
   --bs-primary: var(--alt-terracota);
   --bs-primary-rgb: 181, 86, 47;
   --bs-link-color: var(--alt-terracota-texto);
@@ -45,30 +97,63 @@
 }
 
 html {
-  scroll-padding-top: 5.5rem;
+  scroll-padding-top: 6rem;
+  scrollbar-color: rgb(43 29 20 / 0.35) var(--alt-crema);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
   background: var(--alt-crema);
   color: var(--alt-espresso);
-  font-size: 1rem;
+  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Grano de papel: capa fija, sin eventos, que no se repinta al hacer scroll. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grano);
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.17 0 0 0 0 0.11 0 0 0 0 0.08 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
 h1,
 h2,
 h3,
+h4,
 .titulo {
   font-family: var(--alt-fuente-titulos);
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  line-height: 1.12;
+  font-optical-sizing: auto;
+  font-variation-settings: 'SOFT' 50;
+  font-weight: 460;
+  letter-spacing: -0.02em;
+  line-height: var(--lh-titulo);
   color: var(--alt-espresso);
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1px;
 }
 
 ::selection {
-  background: rgb(181 86 47 / 0.22);
+  background: rgb(181 86 47 / 0.24);
+  color: var(--alt-espresso);
 }
 
 /* Foco visible y consistente para teclado. */
@@ -78,12 +163,33 @@ h3,
   border-radius: 6px;
 }
 
-.form-control:focus {
-  border-color: var(--alt-terracota);
-  box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
+.contenedor {
+  width: 100%;
+  max-width: var(--ancho-max);
+  margin-inline: auto;
+  padding-inline: var(--margen-lateral);
 }
 
-/* Botón principal: terracota con texto blanco (contraste 4.8). */
+/* ===================== Botones ===================== */
+.btn {
+  --bs-btn-padding-x: 1.35rem;
+  --bs-btn-padding-y: 0.72rem;
+  --bs-btn-font-weight: 560;
+  --bs-btn-border-radius: var(--radio-control);
+  --bs-btn-font-size: var(--fs-300);
+  white-space: nowrap;
+  transition:
+    transform var(--dur-presion) var(--ease-salida),
+    background-color var(--dur-rapida) ease,
+    border-color var(--dur-rapida) ease,
+    color var(--dur-rapida) ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Principal: terracota con texto blanco (contraste 4.8:1). */
 .btn-primary {
   --bs-btn-bg: var(--alt-terracota);
   --bs-btn-border-color: var(--alt-terracota);
@@ -91,15 +197,15 @@ h3,
   --bs-btn-hover-bg: var(--alt-terracota-hover);
   --bs-btn-hover-border-color: var(--alt-terracota-hover);
   --bs-btn-hover-color: #fff;
-  --bs-btn-active-bg: #86391b;
-  --bs-btn-active-border-color: #86391b;
+  --bs-btn-active-bg: var(--alt-terracota-activo);
+  --bs-btn-active-border-color: var(--alt-terracota-activo);
   --bs-btn-active-color: #fff;
   --bs-btn-disabled-bg: var(--alt-terracota);
   --bs-btn-disabled-border-color: var(--alt-terracota);
   --bs-btn-focus-shadow-rgb: 181, 86, 47;
 }
 
-/* Botón secundario: contorno espresso. */
+/* Secundario: contorno espresso. */
 .btn-outline-dark {
   --bs-btn-color: var(--alt-espresso);
   --bs-btn-border-color: var(--alt-linea-fuerte);
@@ -109,30 +215,125 @@ h3,
   --bs-btn-active-bg: var(--alt-espresso);
   --bs-btn-active-border-color: var(--alt-espresso);
   --bs-btn-active-color: var(--alt-crema);
+  --bs-btn-disabled-color: rgb(43 29 20 / 0.55);
+  --bs-btn-disabled-border-color: var(--alt-linea);
 }
 
-.btn {
-  --bs-btn-padding-x: 1.25rem;
-  --bs-btn-padding-y: 0.65rem;
-  --bs-btn-font-weight: 500;
-  --bs-btn-border-radius: var(--alt-radio-sm);
+/* Enlace de texto con subrayado (acciones secundarias dentro de una sección). */
+.enlace-texto {
+  display: inline-block;
+  padding-block: 0.6rem;
+  color: var(--alt-espresso);
+  font-weight: 560;
+  text-decoration: underline;
+  text-decoration-color: var(--alt-terracota);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+  transition: text-underline-offset var(--dur-rapida) var(--ease-salida), color var(--dur-rapida) ease;
 }
 
+.enlace-texto:hover {
+  color: var(--alt-terracota-texto);
+  text-underline-offset: 0.42em;
+}
+
+/* ===================== Formularios ===================== */
+.form-control,
+.form-select {
+  border-radius: var(--radio-control);
+  border-color: var(--alt-linea-fuerte);
+  background-color: var(--alt-blanco-calido);
+  color: var(--alt-espresso);
+  transition: border-color var(--dur-rapida) ease, box-shadow var(--dur-rapida) ease;
+}
+
+.form-control::placeholder {
+  color: rgb(43 29 20 / 0.58);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--alt-terracota);
+  background-color: #fff;
+  box-shadow: 0 0 0 0.22rem var(--bs-focus-ring-color);
+}
+
+/* ===================== Esqueletos de carga ===================== */
+.esqueleto {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--alt-esqueleto-1) 0%, var(--alt-esqueleto-2) 45%, var(--alt-esqueleto-1) 90%);
+  background-size: 220% 100%;
+  animation: esqueleto-brillo 1.5s ease-in-out infinite;
+}
+
+@keyframes esqueleto-brillo {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+/* ===================== Transiciones de ruta (View Transitions) ===================== */
+::view-transition-old(root) {
+  animation: 160ms var(--ease-salida) both ruta-salida;
+}
+
+::view-transition-new(root) {
+  animation: 300ms var(--ease-salida) both ruta-entrada;
+}
+
+/* Navegaciones que solo cambian query params: sin animación de ruta. */
+.transicion-instantanea::view-transition-old(root),
+.transicion-instantanea::view-transition-new(root),
+.transicion-instantanea::view-transition-group(*) {
+  animation: none;
+}
+
+/* Reordenamiento de cards al filtrar (view-transition-class: tarjeta). */
+::view-transition-group(.tarjeta) {
+  animation-duration: 360ms;
+  animation-timing-function: var(--ease-movimiento);
+}
+
+@keyframes ruta-salida {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ruta-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ===================== Movimiento reducido ===================== */
+/* Movimiento reducido: sin desplazamientos (las entradas con keyframes desaparecen y cada
+   componente quita sus traslados); se conservan los fundidos y cambios de color cortos. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 
-/* ===== Autenticación (Login y Registro): layout de dos paneles ===== */
+/* =====================================================================
+   Autenticación (Login y Registro): layout de dos paneles compartido
+   ===================================================================== */
 .auth {
   display: grid;
-  /* Móvil: el encabezado de marca ocupa solo su alto; el formulario, el resto. */
   grid-template-rows: auto 1fr;
   min-height: 100dvh;
   background: var(--alt-papel);
@@ -140,7 +341,7 @@ h3,
 
 @media (min-width: 992px) {
   .auth {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
     grid-template-rows: none;
   }
 }
@@ -149,77 +350,162 @@ h3,
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(2rem, 6vw, 4.5rem) 1.25rem;
+  padding: clamp(2.25rem, 6vw, 5rem) var(--margen-lateral);
 }
 
 .auth-formulario {
   width: 100%;
-  max-width: 26rem;
+  max-width: 25.5rem;
 }
 
 .auth-titulo {
-  font-size: clamp(2.1rem, 3.4vw, 2.6rem);
-  margin-bottom: 0.5rem;
+  font-size: var(--fs-700);
+  margin-bottom: var(--esp-3);
 }
 
 .auth-subtitulo {
   color: var(--alt-texto-suave);
-  margin-bottom: 2rem;
-}
-
-.auth-formulario .form-label {
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-}
-
-.auth-formulario .form-control {
-  padding: 0.7rem 0.95rem;
-  background-color: #fff;
+  margin-bottom: var(--esp-6);
 }
 
 .auth-campo {
-  margin-bottom: 1.15rem;
+  margin-bottom: var(--esp-5);
 }
 
-/* Botón mostrar/ocultar contraseña dentro del input-group. */
+.auth-formulario .form-label {
+  font-weight: 560;
+  font-size: var(--fs-200);
+  margin-bottom: var(--esp-2);
+}
+
+.auth-formulario .form-control {
+  padding: 0.78rem 0.95rem;
+}
+
+.auth-formulario .input-group > .form-control {
+  border-right: 0;
+}
+
 .auth-formulario .boton-ver {
-  border-color: var(--bs-border-color);
-  background: #fff;
+  border: 1px solid var(--alt-linea-fuerte);
+  border-left: 0;
+  background: var(--alt-blanco-calido);
   color: var(--alt-texto-suave);
-  padding-inline: 0.9rem;
+  padding-inline: 0.95rem;
+  border-radius: 0 var(--radio-control) var(--radio-control) 0;
 }
 
 .auth-formulario .boton-ver:hover {
   color: var(--alt-espresso);
 }
 
+.auth-formulario .input-group:focus-within .boton-ver {
+  border-color: var(--alt-terracota);
+}
+
 .auth-formulario .input-group .form-control.is-invalid ~ .boton-ver {
   border-color: var(--bs-form-invalid-border-color);
 }
 
-.auth-formulario .invalid-feedback {
-  font-size: 0.875rem;
+.auth-formulario .form-control.is-invalid {
+  background-image: none;
+  padding-right: 0.95rem;
+}
+
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.4rem;
+  margin-top: var(--esp-2);
+  color: var(--bs-form-invalid-color);
+  font-size: var(--fs-200);
+}
+
+.auth-error:empty {
+  display: none;
+}
+
+.auth-ayuda {
+  margin-top: var(--esp-2);
+  color: var(--alt-texto-suave);
+  font-size: var(--fs-200);
+}
+
+.auth-enviar {
+  width: 100%;
+  margin-top: var(--esp-2);
+  padding-block: 0.85rem;
 }
 
 .auth-aviso {
   display: flex;
   gap: 0.6rem;
   align-items: flex-start;
-  margin-top: 1.25rem;
-  padding: 0.85rem 1rem;
+  margin-top: var(--esp-5);
+  padding: 0.9rem 1rem;
   border: 1px solid rgb(63 90 64 / 0.35);
-  border-radius: var(--alt-radio-sm);
+  border-radius: var(--radio-control);
   background: rgb(63 90 64 / 0.08);
   color: var(--alt-verde);
-  font-weight: 500;
+  font-weight: 520;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-aviso {
+    transition: opacity 240ms var(--ease-salida), transform 240ms var(--ease-salida);
+
+    @starting-style {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  .auth-error {
+    transition: opacity 180ms ease;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
 }
 
 .auth-alterno {
-  margin: 1.75rem 0 0;
-  text-align: center;
+  margin: var(--esp-6) 0 0;
+  padding-top: var(--esp-5);
+  border-top: 1px solid var(--alt-linea);
   color: var(--alt-texto-suave);
+  text-align: center;
 }
 
 .auth-alterno a {
   font-weight: 600;
+}
+
+/* ===================== Revelado al entrar en pantalla (directiva appRevelar) ===================== */
+[data-revelar='pendiente'] .revelar-imagen {
+  clip-path: inset(0 0 100% 0);
+}
+
+[data-revelar='pendiente'] .revelar-texto {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+[data-revelar='visible'] .revelar-imagen {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 900ms var(--ease-salida);
+}
+
+[data-revelar='visible'] .revelar-texto {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 600ms var(--ease-salida) 160ms,
+    transform 600ms var(--ease-salida) 160ms;
+}
+
+/* Con un panel modal abierto (vista rápida, filtros en móvil) la página no se desplaza. */
+:root:has(dialog[open]) {
+  overflow: hidden;
 }

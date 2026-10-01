@@ -1,9 +1,11 @@
-/** Transformaciones de Cloudinary para las imágenes de las cards. */
+import { environment } from '../../../environments/environment';
+
+/** Transformación de Cloudinary para las imágenes de las cards. */
 const TRANSFORMACION_CARD = 'f_auto,q_auto,w_600';
 
 /**
- * Inserta `f_auto,q_auto,w_600` después de `/upload/` en una URL de Cloudinary
- * (formato y calidad automáticos, 600 px de ancho).
+ * Inserta una transformación de Cloudinary después de `/upload/`
+ * (por defecto `f_auto,q_auto,w_600`: formato y calidad automáticos, 600 px de ancho).
  * Devuelve la URL sin cambios si no es de Cloudinary o si ya tiene esa transformación.
  */
 export function optimizarImagenCloudinary(
@@ -29,11 +31,20 @@ export function optimizarImagenCloudinary(
   return `${url.slice(0, indice + marcador.length)}${transformacion}/${resto}`;
 }
 
-/** Normaliza texto para búsquedas: minúsculas y sin tildes ("Volcán" → "volcan"). */
-export function normalizarTexto(texto: string): string {
-  return texto
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+/** `srcset` de una imagen de Cloudinary con varios anchos (f_auto,q_auto,w_N). */
+export function srcsetCloudinary(url: string | null | undefined, anchos: readonly number[]): string | null {
+  if (!url) {
+    return null;
+  }
+  return anchos.map((ancho) => `${optimizarImagenCloudinary(url, `f_auto,q_auto,w_${ancho}`)} ${ancho}w`).join(', ');
+}
+
+/** URL de una fotografía del sitio subida a Cloudinary (carpeta "sitio"). */
+export function urlSitio(publicId: string, ancho: number): string {
+  return `${environment.cloudinaryBase}/f_auto,q_auto,w_${ancho}/${publicId}`;
+}
+
+/** `srcset` de una fotografía del sitio. */
+export function srcsetSitio(publicId: string, anchos: readonly number[]): string {
+  return anchos.map((ancho) => `${urlSitio(publicId, ancho)} ${ancho}w`).join(', ');
 }
