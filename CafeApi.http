@@ -1,6 +1,155 @@
-@ConcesionarioApi_HostAddress = http://localhost:5239
+# CafeApi - peticiones de prueba (perfil "http" de launchSettings.json)
+# Ejecuta primero el login: el token se reutiliza en las peticiones protegidas.
+# Reemplaza TU_CONTRASEÑA por la contraseña de la cuenta de prueba.
 
-GET {{ConcesionarioApi_HostAddress}}/weatherforecast/
-Accept: application/json
+@baseUrl = http://localhost:5031
+@adminEmail = admin@cafeapi.com
+@adminPassword = TU_CONTRASEÑA
+@token = {{login.response.body.$.token}}
 
-###
+### Login (Administrador) - devuelve el JWT
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### ===== Variedades =====
+
+### Listar variedades (público)
+GET {{baseUrl}}/api/variedades
+
+### Obtener variedad por id (público)
+GET {{baseUrl}}/api/variedades/1
+
+### Crear variedad (Administrador)
+# @name crearVariedad
+POST {{baseUrl}}/api/variedades
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Descafeinado",
+  "descripcion": "Cafés con bajo contenido de cafeína"
+}
+
+### Actualizar variedad (Administrador)
+PUT {{baseUrl}}/api/variedades/{{crearVariedad.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Descafeinado",
+  "descripcion": "Proceso de descafeinado natural"
+}
+
+### Eliminar variedad (Administrador) - 409 si tiene cafés asociados
+DELETE {{baseUrl}}/api/variedades/{{crearVariedad.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### ===== Presentaciones =====
+
+### Listar presentaciones (público)
+GET {{baseUrl}}/api/presentaciones
+
+### ===== Imágenes =====
+
+### Subir imagen (Administrador) - Base64 con o sin prefijo data URI
+# Este Base64 es un PNG de 1x1 píxel de prueba.
+# @name subirImagen
+POST {{baseUrl}}/api/images
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "imagenBase64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+}
+
+### ===== Cafés =====
+
+### Listar cafés (público)
+GET {{baseUrl}}/api/cafes
+
+### Crear café (cualquier usuario autenticado)
+# @name crearCafe
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Castillo",
+  "variedadId": 1,
+  "presentacionGramos": 500,
+  "origen": "Huila, Colombia",
+  "stock": 25,
+  "precio": 38000,
+  "imagenUrl": "{{subirImagen.response.body.$.imageUrl}}",
+  "imagenPublicId": "{{subirImagen.response.body.$.publicId}}"
+}
+
+### Obtener café por id (público)
+GET {{baseUrl}}/api/cafes/{{crearCafe.response.body.$.id}}
+
+### Crear café duplicado con otras mayúsculas - 409
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "CAFÉ CASTILLO",
+  "variedadId": 1,
+  "presentacionGramos": 500,
+  "origen": "Huila, Colombia",
+  "stock": 5,
+  "precio": 38000
+}
+
+### Crear café con presentación inválida - 400
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Pergamino",
+  "variedadId": 2,
+  "presentacionGramos": 250,
+  "origen": "Nariño, Colombia",
+  "stock": 10,
+  "precio": 42000
+}
+
+### Actualizar café (Administrador) - devuelve CafeResponseDto
+PUT {{baseUrl}}/api/cafes/{{crearCafe.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Castillo",
+  "variedadId": 1,
+  "presentacionGramos": 340,
+  "origen": "Huila, Colombia",
+  "stock": 30,
+  "precio": 29000,
+  "imagenUrl": "{{subirImagen.response.body.$.imageUrl}}",
+  "imagenPublicId": "{{subirImagen.response.body.$.publicId}}"
+}
+
+### Eliminar café (Administrador) - también borra su imagen de Cloudinary
+DELETE {{baseUrl}}/api/cafes/{{crearCafe.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### Escritura sin token - 401
+POST {{baseUrl}}/api/cafes
+Content-Type: application/json
+
+{
+  "nombre": "Sin token",
+  "variedadId": 1,
+  "presentacionGramos": 340,
+  "origen": "Colombia",
+  "stock": 1,
+  "precio": 1000
+}

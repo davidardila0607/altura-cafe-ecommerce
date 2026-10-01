@@ -460,3 +460,60 @@ permanece reservada para autenticación interna de Supabase.
 
 - Registro de Cloudinary en Program.cs.
 - Preparado para integración con Angular.
+
+## [1.11.0] - 2026-09-30
+
+### 🚀 Añadido
+
+#### Entity Framework Core
+
+- `Data/AppDbContext.cs` con configuraciones Fluent API en `Data/Configurations/` (una por entidad).
+- Paquetes: Npgsql.EntityFrameworkCore.PostgreSQL 10.0.3, Microsoft.EntityFrameworkCore.Design 10.0.12, EFCore.NamingConventions 10.0.1 (snake_case).
+- `dotnet-ef` 10.0.12 como herramienta local (`.config/dotnet-tools.json`).
+- Migración `InitialCreate` con las tablas `variedades` y `cafes`, sus CHECK, la FK `ON DELETE RESTRICT` y el índice único `(lower(nombre), variedad_id, presentacion_gramos)`.
+- Variedades iniciales mediante `HasData`: Castillo, Geisha y Moka.
+
+#### Catálogo
+
+- Enum `Presentacion` (340 g y 500 g), guardado en `presentacion_gramos` con CHECK.
+- `GET /api/presentaciones`.
+- Nuevos campos en cafés: `presentacion_gramos`, `imagen_public_id`, `created_at` y `updated_at` (UTC).
+- Precio en pesos colombianos: `numeric(12,0)`, mayor que cero y sin decimales.
+- DTOs `CreateVariedadDto`, `UpdateVariedadDto`, `PresentacionResponseDto` e `ImagenSubidaDto`.
+- Respuestas 409 en español para cafés duplicados, variedades duplicadas y variedades con cafés asociados.
+- `variedadId` inexistente → 400.
+
+#### Cloudinary
+
+- `POST /api/images` acepta Base64 con o sin prefijo data URI, solo jpg/png/webp y máximo 5 MB, y responde `{ imageUrl, publicId }`. Las imágenes van a la carpeta `cafes`.
+- `ICloudinaryService.DeleteImageAsync`: al cambiar la imagen de un café se borra la anterior, y al eliminar un café se borra su imagen. Los fallos se registran en el log sin romper la operación.
+
+#### Documentación
+
+- `CLAUDE.md` con arquitectura, modelo, endpoints, configuración, decisiones y pendientes.
+- `CafeApi.http` con peticiones reales (login y uso del token).
+
+### 🔄 Cambiado
+
+- Acceso a datos migrado de ADO.NET a EF Core. Los repositorios reciben `AppDbContext` por DI, son 100 % asíncronos y leen con `AsNoTracking`.
+- **Especialidad → Variedad** en todo el proyecto (modelo, DTOs, repositorio, controlador); la ruta pasa a ser `/api/variedades` y la tabla `variedades`.
+- `POST /api/variedades`, `PUT` y `DELETE` ahora requieren el rol Administrador; los `GET` siguen siendo públicos.
+- `POST` y `PUT` de cafés devuelven `CafeResponseDto` (201 y 200) en lugar de la entidad.
+- `CafeResponseDto`: `stock` (antes `stockDisponible`), `variedadId`, `variedadNombre`, `presentacionGramos` e `imagenPublicId`.
+- Microsoft.AspNetCore.Authentication.JwtBearer y Microsoft.AspNetCore.OpenApi alineados en 10.0.12; Npgsql actualizado a 10.0.3.
+- La configuración local va en `appsettings.Development.json` (ignorado por Git) en lugar de User Secrets; `appsettings.example.json` queda solo con marcadores.
+- `ExceptionMiddleware` responde un mensaje genérico en español; el detalle de la excepción solo va al log.
+- Swagger incluye la definición de seguridad Bearer (botón *Authorize*).
+
+### 🗑️ Eliminado
+
+- `database/schema.sql`: ahora las migraciones son la fuente de verdad del esquema.
+- `Models/CloudinarySettings.cs` (duplicado; queda `Configurations/CloudinarySettings.cs`).
+- `Models/LoginRequest.cs` (sin uso) y `OpenApiReference.cs`.
+- `Console.WriteLine` de depuración y constructor comentado en `CafesController`.
+- `<Folder Include="Services\">` del `.csproj`.
+
+### ⏳ Pendiente
+
+- El carrito (`Cart`, `CartItem`, `CartRepository`) y los usuarios (`Usuario`, `UserRepository`) no están en el DbContext ni registrados en DI.
+- Rotar la `Jwt:Key` que quedó en el historial de Git.

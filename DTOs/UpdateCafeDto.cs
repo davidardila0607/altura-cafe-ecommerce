@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using CafeApi.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace CafeApi.DTOs
 {
@@ -6,50 +7,70 @@ namespace CafeApi.DTOs
     // Lo recibirá el endpoint PUT.
     public class UpdateCafeDto
     {
-        // ✅ Obligatorio.
-        [Required(ErrorMessage = "La especialidad es obligatoria.")]
-        public int EspecialidadId { get; set; }
-
-        // ✅ Nombre obligatorio.
+        // ✅ Nombre obligatorio, máximo 100 caracteres.
         [Required(ErrorMessage = "El nombre es obligatorio.")]
         [StringLength(
-        100,
-        ErrorMessage = "El nombre no puede superar los 100 caracteres."
+            100,
+            ErrorMessage = "El nombre no puede superar los 100 caracteres."
         )]
         public string Nombre { get; set; } = string.Empty;
 
-        // ✅ URL de la imagen principal del café.
-        // La imagen se almacenará en Cloudinary.
-        // En la base de datos solo guardaremos la URL.
-        [StringLength(
-            500,
-            ErrorMessage = "La URL de la imagen no puede superar los 500 caracteres."
+        // ✅ Variedad obligatoria. Si no existe, el controlador responde 400.
+        [Range(
+            1,
+            int.MaxValue,
+            ErrorMessage = "La variedad es obligatoria."
         )]
-        public string ImagenUrl { get; set; } = string.Empty;
+        public int VariedadId { get; set; }
 
-        // ✅ Origen obligatorio.
+        // ✅ Solo 340 o 500 gramos.
+        [EnumDataType(
+            typeof(Presentacion),
+            ErrorMessage = "La presentación debe ser de 340 o 500 gramos."
+        )]
+        public Presentacion PresentacionGramos { get; set; }
+
+        // ✅ Origen obligatorio, máximo 100 caracteres.
         [Required(ErrorMessage = "El origen es obligatorio.")]
         [StringLength(
-        100,
-        ErrorMessage = "El origen no puede superar los 100 caracteres."
+            100,
+            ErrorMessage = "El origen no puede superar los 100 caracteres."
         )]
         public string Origen { get; set; } = string.Empty;
 
         // ✅ El stock no puede ser negativo.
         [Range(
-        0,
-        int.MaxValue,
-        ErrorMessage = "El stock no puede ser negativo."
+            0,
+            int.MaxValue,
+            ErrorMessage = "El stock no puede ser negativo."
         )]
         public int Stock { get; set; }
 
-        // ✅ El precio debe ser mayor que cero.
+        // ✅ Pesos colombianos: mayor que cero y sin decimales.
         [Range(
-        typeof(decimal),
-        "0.01",
-        "1000000",
-        ErrorMessage = "El precio debe ser mayor que cero."
+            typeof(decimal),
+            "1",
+            "999999999999",
+            ErrorMessage = "El precio debe ser mayor que cero y no superar 999.999.999.999."
+        )]
+        [SinDecimales(
+            ErrorMessage = "El precio debe ser un valor entero en pesos colombianos (sin decimales)."
         )]
         public decimal Precio { get; set; }
+
+        // ✅ URL de la imagen (opcional).
+        // Si cambia el publicId, la imagen anterior se borra de Cloudinary.
+        [StringLength(
+            500,
+            ErrorMessage = "La URL de la imagen no puede superar los 500 caracteres."
+        )]
+        public string? ImagenUrl { get; set; }
+
+        // ✅ publicId de la imagen (opcional).
+        [StringLength(
+            255,
+            ErrorMessage = "El publicId de la imagen no puede superar los 255 caracteres."
+        )]
+        public string? ImagenPublicId { get; set; }
     }
 }

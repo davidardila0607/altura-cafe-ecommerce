@@ -42,14 +42,15 @@ namespace CafeApi.Middleware
                 );
                 // ✅ Si ocurre una excepción,
                 // la manejamos aquí.
-                await HandleExceptionAsync(context, ex);
+                await HandleExceptionAsync(context);
             }
         }
 
         // ✅ Construye una respuesta uniforme para los errores.
+        // El detalle de la excepción solo va al log, nunca al cliente,
+        // para no exponer información interna (SQL, rutas, etc.).
         private static async Task HandleExceptionAsync(
-        HttpContext context,
-        Exception exception)
+        HttpContext context)
         {
             // ✅ Siempre devolveremos JSON.
             context.Response.ContentType = "application/json";
@@ -63,9 +64,7 @@ namespace CafeApi.Middleware
             {
                 success = false,
 
-                message = "Ha ocurrido un error inesperado.",
-
-                detail = exception.Message
+                message = "Ha ocurrido un error inesperado. Intenta de nuevo más tarde."
             };
 
             // ✅ Convertir objeto a JSON.

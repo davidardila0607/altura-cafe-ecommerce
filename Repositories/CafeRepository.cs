@@ -1,128 +1,93 @@
+using CafeApi.Data;
+using CafeApi.DTOs;
 using CafeApi.Interfaces;
 using CafeApi.Models;
-using Npgsql;
+using Microsoft.EntityFrameworkCore;
 
 namespace CafeApi.Repositories
 {
+    // ✅ Implementación con EF Core del repositorio de cafés.
     public class CafeRepository : ICafeRepository
     {
-        private readonly string _connectionString;
+        private readonly AppDbContext _context;
 
-        public CafeRepository(string connectionString)
+        public CafeRepository(AppDbContext context)
         {
-            _connectionString = connectionString;
+            _context = context;
         }
 
-        // ✅ Consulta base utilizada para obtener cafés.
-        // Incluye la especialidad asociada y la URL de la imagen.
-        private const string SelectBase =
-            "SELECT c.id, " +
-            "c.especialidad_id, " +
-            "e.nombre AS especialidad, " +
-            "c.nombre, " +
-            "c.imagen_url, " +
-            "c.origen, " +
-            "c.stock, " +
-            "c.precio " +
-            "FROM cafes c " +
-            "INNER JOIN especialidades e ON e.id = c.especialidad_id";
-
-        public IEnumerable<Cafe> GetAll()
+        public async Task<IReadOnlyList<CafeResponseDto>> GetAllAsync(
+            CancellationToken cancellationToken)
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
-            using var command = new NpgsqlCommand($"{SelectBase} ORDER BY c.id;", connection);
-            using var reader = command.ExecuteReader();
+            return await ProyectarAResponse(
+                    _context.Cafes.AsNoTracking().OrderBy(c => c.Id)
+                )
+                .ToListAsync(cancellationToken);
+        }
 
-            var cafes = new List<Cafe>();
-            while (reader.Read())
+        public async Task<CafeResponseDto?> GetByIdAsync(
+            int id,
+            CancellationToken cancellationToken)
+        {
+            return await ProyectarAResponse(
+                    _context.Cafes.AsNoTracking().Where(c => c.Id == id)
+                )
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<Cafe?> FindAsync(
+            int id,
+            CancellationToken cancellationToken)
+        {
+            return await _context.Cafes
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        }
+
+        public async Task<int> CreateAsync(
+            Cafe cafe,
+            CancellationToken cancellationToken)
+        {
+            _context.Cafes.Add(cafe);
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return cafe.Id;
+        }
+
+        public async Task UpdateAsync(
+            Cafe cafe,
+            CancellationToken cancellationToken)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task DeleteAsync(
+            Cafe cafe,
+            CancellationToken cancellationToken)
+        {
+            _context.Cafes.Remove(cafe);
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        // ✅ Proyección única a CafeResponseDto.
+        // Se traduce a un solo SELECT con INNER JOIN a variedades.
+        private static IQueryable<CafeResponseDto> ProyectarAResponse(
+            IQueryable<Cafe> cafes)
+        {
+            return cafes.Select(c => new CafeResponseDto
             {
-                cafes.Add(Map(reader));
-            }
-            return cafes;
+                Id = c.Id,
+                Nombre = c.Nombre,
+                VariedadId = c.VariedadId,
+                VariedadNombre = c.Variedad.Nombre,
+                PresentacionGramos = (int)c.Presentacion,
+                Origen = c.Origen,
+                Stock = c.Stock,
+                Precio = c.Precio,
+                ImagenUrl = c.ImagenUrl,
+                ImagenPublicId = c.ImagenPublicId
+            });
         }
-
-        public Cafe? GetById(int id)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
-            using var command = new NpgsqlCommand($"{SelectBase} WHERE c.id = @id;", connection);
-            command.Parameters.AddWithValue("id", id);
-            using var reader = command.ExecuteReader();
-
-            return reader.Read() ? Map(reader) : null;
-        }
-
-        public Cafe Create(Cafe cafe)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
-            using var command = new NpgsqlCommand(
-               "INSERT INTO cafes " +
-               "(especialidad_id, nombre, imagen_url, origen, stock, precio) " +
-                "VALUES " +
-               "(@especialidadId, @nombre, @imagenUrl, @origen, @stock, @precio) " +
-                 "RETURNING id;",
-                connection);
-            command.Parameters.AddWithValue("especialidadId", cafe.EspecialidadId);
-            command.Parameters.AddWithValue("nombre", cafe.Nombre);
-            command.Parameters.AddWithValue("imagenUrl", cafe.ImagenUrl);
-            command.Parameters.AddWithValue("origen", cafe.Origen);
-            command.Parameters.AddWithValue("stock", cafe.Stock);
-            command.Parameters.AddWithValue("precio", cafe.Precio);
-
-            cafe.Id = (int)command.ExecuteScalar()!;
-            return cafe;
-        }
-
-        public bool Update(int id, Cafe cafe)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
-            using var command = new NpgsqlCommand(
-                   "UPDATE cafes SET " +
-                   "especialidad_id = @especialidadId, " +
-                   "nombre = @nombre, " +
-                   "imagen_url = @imagenUrl, " +
-                   "origen = @origen, " +
-                   "stock = @stock, " +
-                   "precio = @precio " +
-                   "WHERE id = @id;",
-            connection);
-            command.Parameters.AddWithValue("especialidadId", cafe.EspecialidadId);
-            command.Parameters.AddWithValue("nombre", cafe.Nombre);
-            command.Parameters.AddWithValue("imagenUrl", cafe.ImagenUrl);
-            command.Parameters.AddWithValue("origen", cafe.Origen);
-            command.Parameters.AddWithValue("stock", cafe.Stock);
-            command.Parameters.AddWithValue("precio", cafe.Precio);
-            command.Parameters.AddWithValue("id", id);
-
-            return command.ExecuteNonQuery() > 0;
-        }
-
-        public bool Delete(int id)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            connection.Open();
-            using var command = new NpgsqlCommand("DELETE FROM cafes WHERE id = @id;", connection);
-            command.Parameters.AddWithValue("id", id);
-
-            return command.ExecuteNonQuery() > 0;
-        }
-
-        private static Cafe Map(NpgsqlDataReader reader) => new()
-        {
-            Id = reader.GetInt32(0),
-            EspecialidadId = reader.GetInt32(1),
-            Especialidad = reader.GetString(2),
-            Nombre = reader.GetString(3),
-            // ✅ URL de la imagen.
-            ImagenUrl = reader.IsDBNull(4)
-                      ? string.Empty
-                    : reader.GetString(4),
-            Origen = reader.GetString(5),
-            Stock = reader.GetInt32(6),
-            Precio = reader.GetDecimal(7),
-        };
     }
 }

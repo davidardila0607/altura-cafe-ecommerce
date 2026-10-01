@@ -6,20 +6,17 @@ namespace CafeApi.Models
         // ✅ Identificador único del café.
         public int Id { get; set; }
 
-        // ✅ Relación con la especialidad.
-        public int EspecialidadId { get; set; }
-
-        // ✅ Nombre de la especialidad.
-        // Se utiliza para consultas y respuestas al cliente.
-        public string Especialidad { get; set; } = string.Empty;
-
         // ✅ Nombre comercial del café.
         public string Nombre { get; set; } = string.Empty;
 
-        // ✅ URL de la imagen principal del producto.
-        // La imagen se almacenará en Cloudinary.
-        // En la base de datos solo guardaremos la URL.
-        public string ImagenUrl { get; set; } = string.Empty;
+        // ✅ Relación con la variedad (FK obligatoria).
+        public int VariedadId { get; set; }
+
+        // ✅ Variedad a la que pertenece el café.
+        public Variedad Variedad { get; set; } = null!;
+
+        // ✅ Presentación en gramos (340 o 500).
+        public Presentacion Presentacion { get; set; }
 
         // ✅ País o región de origen.
         public string Origen { get; set; } = string.Empty;
@@ -27,7 +24,20 @@ namespace CafeApi.Models
         // ✅ Cantidad disponible en inventario.
         public int Stock { get; set; }
 
-        // ✅ Precio de venta.
+        // ✅ Precio de venta en pesos colombianos, sin decimales.
         public decimal Precio { get; set; }
+
+        // ✅ URL de la imagen en Cloudinary (opcional).
+        public string? ImagenUrl { get; set; }
+
+        // ✅ publicId de la imagen en Cloudinary (opcional).
+        // Se necesita para poder borrar la imagen después.
+        public string? ImagenPublicId { get; set; }
+
+        // ✅ Fecha de creación (UTC). La asigna AppDbContext.
+        public DateTime FechaCreacion { get; set; }
+
+        // ✅ Fecha de última modificación (UTC). La asigna AppDbContext.
+        public DateTime FechaActualizacion { get; set; }
     }
 }

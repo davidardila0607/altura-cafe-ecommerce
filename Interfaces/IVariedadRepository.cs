@@ -3,40 +3,48 @@ using CafeApi.Models;
 
 namespace CafeApi.Interfaces
 {
-    // ✅ Contrato de acceso a datos de cafés.
-    public interface ICafeRepository
+    // ✅ Contrato de acceso a datos de variedades.
+    public interface IVariedadRepository
     {
         // ✅ Lecturas sin seguimiento, proyectadas a DTO.
-        Task<IReadOnlyList<CafeResponseDto>> GetAllAsync(
+        Task<IReadOnlyList<VariedadResponseDto>> GetAllAsync(
             CancellationToken cancellationToken
         );
 
-        Task<CafeResponseDto?> GetByIdAsync(
+        Task<VariedadResponseDto?> GetByIdAsync(
             int id,
             CancellationToken cancellationToken
         );
 
         // ✅ Obtiene la entidad con seguimiento para modificarla o eliminarla.
-        Task<Cafe?> FindAsync(
+        Task<Variedad?> FindAsync(
             int id,
             CancellationToken cancellationToken
         );
 
-        // ✅ Inserta el café y devuelve su Id.
-        Task<int> CreateAsync(
-            Cafe cafe,
+        Task<bool> ExistsAsync(
+            int id,
             CancellationToken cancellationToken
         );
 
-        // ✅ Guarda los cambios hechos sobre una entidad obtenida con FindAsync.
+        // ✅ true si la variedad tiene cafés asociados.
+        Task<bool> TieneCafesAsync(
+            int id,
+            CancellationToken cancellationToken
+        );
+
+        Task CreateAsync(
+            Variedad variedad,
+            CancellationToken cancellationToken
+        );
+
         Task UpdateAsync(
-            Cafe cafe,
+            Variedad variedad,
             CancellationToken cancellationToken
         );
 
-        // ✅ Borrado físico.
         Task DeleteAsync(
-            Cafe cafe,
+            Variedad variedad,
             CancellationToken cancellationToken
         );
     }

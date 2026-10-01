@@ -1,12 +1,10 @@
 # ☕ CafeApi
 
-API REST desarrollada con ASP.NET Core 10 para la gestión de cafés y especialidades.
+API REST desarrollada con ASP.NET Core 10 para el e-commerce de café: catálogo de cafés, variedades, presentaciones e imágenes de producto.
 
 ## 🚀 Descripción
 
-CafeApi es una API REST construida siguiendo una arquitectura basada en capas mediante Controllers, Interfaces y Repositories.
-
-El proyecto permite gestionar cafés y sus especialidades mediante operaciones CRUD completas y utiliza PostgreSQL alojado en Supabase como motor de base de datos.
+CafeApi sigue una arquitectura en capas **Controllers → Interfaces → Repositories → AppDbContext (Entity Framework Core)** sobre PostgreSQL. Las imágenes de los productos se almacenan en Cloudinary y la base de datos solo guarda su URL y su `publicId`.
 
 ---
 
@@ -14,24 +12,27 @@ El proyecto permite gestionar cafés y sus especialidades mediante operaciones C
 
 ### Backend
 
-- ASP.NET Core 10
-- C#
-- REST API
-- JWT Authentication
+- ASP.NET Core 10 (C#)
+- REST API con controladores
+- JWT Authentication + roles
+- Login con Google
 
-### Base de Datos
+### Datos
 
-- PostgreSQL
-- Supabase
-- Npgsql
+- PostgreSQL 17 (local)
+- Entity Framework Core 10 + Npgsql
+- Migraciones de EF Core (nombres en snake_case)
+
+### Servicios
+
+- Cloudinary (imágenes)
 
 ### Herramientas
 
-- Visual Studio
-- VS Code
-- Git
-- GitHub
-- Postman
+- Visual Studio / VS Code
+- Git / GitHub
+- Postman / archivo `CafeApi.http`
+- Swagger UI
 
 ---
 
@@ -39,246 +40,172 @@ El proyecto permite gestionar cafés y sus especialidades mediante operaciones C
 
 ```text
 CafeApi
-│
-├── Controllers
-├── Interfaces
-├── Models
-├── Repositories
-├── Properties
-├── database
-│
+├── .config/                  dotnet-tools.json (dotnet-ef local)
+├── Configurations/           CloudinarySettings
+├── Controllers/              Auth, Cafes, Variedades, Presentaciones, Images
+├── Data/
+│   ├── AppDbContext.cs
+│   ├── Configurations/       Fluent API (una clase por entidad)
+│   └── Migrations/           Fuente de verdad del esquema
+├── DTOs/
+├── Interfaces/
+├── Middleware/               ExceptionMiddleware
+├── Models/
+├── Repositories/
+├── Services/                 CloudinaryService
 ├── Program.cs
 ├── appsettings.json
-├── appsettings.Development.json
+├── appsettings.example.json  Plantilla de configuración local
+├── CafeApi.http
+├── CLAUDE.md
 ├── README.md
 └── CHANGELOG.md
 ```
 
 ---
 
-## 🗄️ Configuración de Base de Datos
+## 💻 Cómo levantarlo en local
 
-```text
-Motor     : PostgreSQL
-Proveedor : Supabase
-Conector  : Npgsql
-Puerto    : 5432
+### Requisitos
+
+- .NET SDK 10
+- PostgreSQL 17 corriendo en `localhost:5432`
+- Una cuenta de Cloudinary (para subir imágenes)
+
+### 1. Configuración local
+
+La configuración local va en **`appsettings.Development.json`**, en la raíz del proyecto. Ese archivo está en `.gitignore` y **nunca se sube a Git**. No se usan User Secrets: si alguna vez guardaste algo ahí, bórralo con `dotnet user-secrets clear`, porque tendría prioridad sobre este archivo.
+
+Copia la plantilla y rellena los valores:
+
+```powershell
+Copy-Item appsettings.example.json appsettings.Development.json
 ```
 
-### Diagnóstico de conexión
+| Clave | Qué poner |
+|---|---|
+| `ConnectionStrings:CafeDatabase` | `Host=localhost;Port=5432;Database=cafeapi_dev;Username=postgres;Password=TU_CONTRASEÑA` |
+| `Google:ClientId` | Client ID de Google del proyecto |
+| `Jwt:Key` | Clave aleatoria de 32 bytes en Base64 (ver abajo) |
+| `Jwt:Issuer` / `Jwt:Audience` / `Jwt:ExpiresInMinutes` | `CafeApi` / `CafeApiUsers` / `60` |
+| `CloudinarySettings:CloudName` / `ApiKey` / `ApiSecret` | Credenciales de tu cuenta de Cloudinary |
 
-La aplicación muestra durante el arranque:
+Generar la `Jwt:Key` en PowerShell:
 
-```text
-========================================
-Entorno       : Development
-Base de Datos : PostgreSQL (Supabase)
-Puerto        : 5432
-========================================
+```powershell
+$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
 ```
 
-Esto permite verificar la configuración sin exponer credenciales.
+### 2. Base de datos
+
+Las **migraciones de EF Core son la fuente de verdad del esquema** (ya no existe `database/schema.sql`). Este comando crea la base `cafeapi_dev` si no existe y aplica las migraciones, incluidas las variedades iniciales:
+
+```powershell
+dotnet tool restore
+dotnet ef database update
+```
+
+### 3. Ejecutar
+
+```powershell
+dotnet run --launch-profile http
+```
+
+- API: http://localhost:5031
+- Swagger: http://localhost:5031/swagger (usa el botón **Authorize** y pega solo el token)
+- OpenAPI JSON: http://localhost:5031/openapi/v1.json
+
+El archivo `CafeApi.http` tiene peticiones de ejemplo: primero el login y luego el resto, reutilizando el token.
 
 ---
 
-## ✅ Funcionalidades Implementadas
+## ✅ Endpoints
 
-### Cafés
-
-- Obtener todos los cafés
-- Obtener un café por Id
-- Crear un café
-- Actualizar un café
-- Eliminar un café
-
-### Especialidades
-
-- Obtener especialidades
+| Método | Ruta | Permiso |
+|---|---|---|
+| POST | `/api/auth/login` | Público |
+| POST | `/api/auth/google` | Público |
+| GET | `/api/cafes` | Público |
+| GET | `/api/cafes/{id}` | Público |
+| POST | `/api/cafes` | Usuario autenticado |
+| PUT | `/api/cafes/{id}` | Administrador |
+| DELETE | `/api/cafes/{id}` | Administrador |
+| GET | `/api/variedades` | Público |
+| GET | `/api/variedades/{id}` | Público |
+| POST | `/api/variedades` | Administrador |
+| PUT | `/api/variedades/{id}` | Administrador |
+| DELETE | `/api/variedades/{id}` | Administrador (409 si tiene cafés) |
+| GET | `/api/presentaciones` | Público |
+| POST | `/api/images` | Administrador |
 
 ---
 
-## 📡 Endpoints
+## 🗄️ Modelo de Datos
 
-### Cafés
+### variedades
 
-#### Obtener 
+- `id`, `nombre` (obligatorio, único, máx. 100), `descripcion` (opcional).
+- Variedades iniciales: Castillo, Geisha, Moka.
 
-## Seguridad
+### cafes
 
-### JWT Authentication
+- `id`, `nombre` (máx. 100), `variedad_id` (FK, `ON DELETE RESTRICT`), `presentacion_gramos` (340 o 500), `origen` (máx. 100), `stock` (≥ 0), `precio` (`numeric(12,0)`, > 0, pesos colombianos sin decimales), `imagen_url`, `imagen_public_id`, `created_at`, `updated_at` (UTC).
+- No puede haber dos cafés con el mismo nombre (sin importar mayúsculas), variedad y presentación: la API responde **409**.
 
-El sistema implementa autenticación mediante JSON Web Tokens (JWT).
+### Presentaciones
 
-### Roles
+Enum en código (no es una tabla): `340 g` y `500 g`. `GET /api/presentaciones` devuelve:
 
-#### Administrador
+```json
+[{ "value": 340, "label": "340 g" }, { "value": 500, "label": "500 g" }]
+```
 
-- Crear cafés
-- Actualizar cafés
-- Eliminar cafés
-
-#### Cliente
-
-- Consultar cafés
-- Crear cafés
-- Sin permisos de modificación o eliminación
+---
 
 ## 🔐 Seguridad
- 
-### JWT Authentication
- 
-La API utiliza JSON Web Tokens (JWT) para proteger los endpoints que modifican datos.
- 
+
+La API usa JSON Web Tokens (JWT) para proteger los endpoints que modifican datos.
+
 ### Roles
- 
+
 #### Administrador
- 
-Permisos:
- 
-- Crear cafés
-- Actualizar cafés
-- Eliminar cafés
- 
+
+- Crear, actualizar y eliminar cafés
+- Crear, actualizar y eliminar variedades
+- Subir imágenes
+
 #### Cliente
- 
-Permisos:
- 
-- Consultar cafés
+
+- Consultar cafés, variedades y presentaciones
 - Crear cafés
- 
-Restricciones:
- 
-- No puede actualizar cafés
-- No puede eliminar cafés
- 
----
- 
-## ✅ Endpoints
- 
-### Auth
- 
-```http
-POST /api/auth/login
-POST /api/auth/google
-```
- 
-### Cafés
- 
-```http
-GET /api/cafes
-GET /api/cafes/{id}
-POST /api/cafes
-PUT /api/cafes/{id}
-DELETE /api/cafes/{id}
-```
- 
-### Especialidades
- 
-```http
-GET /api/especialidades
-```
- 
----
- 
-## 📖 Documentación
- 
-Swagger disponible en:
- 
-```text
-/swagger
-```
- 
-OpenAPI JSON:
- 
-```text
-/openapi/v1.json
-```
- 
----
- 
-## ✅ Estado Actual
- 
-### Base de Datos
- 
-- ✅ PostgreSQL
-- ✅ Supabase
-- ✅ Npgsql
- 
-### API
- 
-- ✅ CRUD Cafés
-- ✅ CRUD Especialidades
- 
-### Seguridad
- 
-- ✅ JWT Authentication
-- ✅ Authorization
-- ✅ Roles Administrador y Cliente
- 
-### Documentación
- 
-- ✅ OpenAPI
-- ✅ Swagger UI
- 
----
- 
-## 🚧 Próximos Pasos
- 
-- Integración completa JWT en Swagger (Authorize)
-- Login con Google
-- Angular Frontend
-- Deploy
- 
+- No puede actualizar ni eliminar cafés
+
+### Códigos de respuesta
+
+- `401 Unauthorized`: petición sin token o con token inválido.
+- `403 Forbidden`: token válido pero sin el rol necesario.
+
 ---
 
 ## DTOs y Validaciones
 
-La API implementa DTOs para separar los modelos de entrada y salida de las entidades de base de datos.
+La API separa los contratos de entrada y salida de las entidades. Las validaciones usan DataAnnotations con mensajes en español.
 
-### DTOs de Entrada
+### CreateCafeDto / UpdateCafeDto
 
-#### CreateCafeDto
+- `nombre`: obligatorio, máximo 100 caracteres.
+- `variedadId`: obligatorio y debe existir (si no, 400).
+- `presentacionGramos`: 340 o 500 (otro valor, 400).
+- `origen`: obligatorio, máximo 100 caracteres.
+- `stock`: mayor o igual a cero.
+- `precio`: mayor que cero y sin decimales.
+- `imagenUrl` (máx. 500) e `imagenPublicId` (máx. 255): opcionales.
 
-Utilizado para la creación de cafés.
+### CafeResponseDto
 
-Validaciones:
-
-- Especialidad obligatoria.
-- Nombre obligatorio.
-- Origen obligatorio.
-- Stock mayor o igual a cero.
-- Precio mayor que cero.
-
-#### UpdateCafeDto
-
-Utilizado para la actualización de cafés.
-
-Validaciones:
-
-- Especialidad obligatoria.
-- Nombre obligatorio.
-- Origen obligatorio.
-- Stock mayor o igual a cero.
-- Precio mayor que cero.
-
-### DTOs de Respuesta
-
-#### CafeResponseDto
-
-Expone información orientada al cliente:
-
-- Id
-- Especialidad
-- Nombre
-- Origen
-- StockDisponible
-- Disponible
-- EstadoStock
-- Precio
+`id`, `nombre`, `variedadId`, `variedadNombre`, `presentacionGramos`, `origen`, `stock`, `precio`, `imagenUrl`, `imagenPublicId`, `disponible` y `estadoStock`. `POST` y `PUT` también devuelven este DTO.
 
 ### Estado de Stock
-
-La API calcula automáticamente el estado del inventario:
 
 | Stock | Estado |
 |---------|---------|
@@ -287,94 +214,18 @@ La API calcula automáticamente el estado del inventario:
 | 11 - 50 | Disponible |
 | 51+ | Alta disponibilidad |
 
-### Beneficios
+### DTOs de Autenticación
 
-- Validación automática mediante DataAnnotations.
-- Separación entre entidades y contratos de API.
-- No se exponen propiedades internas innecesarias.
-- Respuestas orientadas al negocio.
- 
-## Manejo Global de Errores
- 
-La API implementa un middleware global de excepciones.
- 
-Todas las excepciones no controladas son interceptadas y transformadas en respuestas JSON uniformes.
- 
-Ejemplo:
- 
-```json
-{
-"success": false,
-"message": "Ha ocurrido un error inesperado.",
-"detail": "Descripción del error"
-}
-
-## Logging y Auditoría
- 
-La API implementa logging mediante ILogger de ASP.NET Core.
- 
-### Operaciones auditadas
- 
-- Consulta de todos los cafés.
-- Consulta de cafés por identificador.
-- Creación de cafés.
-- Actualización de cafés.
-- Eliminación de cafés.
- 
-### Beneficios
- 
-- Seguimiento de operaciones.
-- Diagnóstico de incidencias.
-- Auditoría de actividad.
-- Preparación para producción.
-
-## Logging y Auditoría
- 
-La API implementa auditoría mediante ILogger de ASP.NET Core.
- 
-### Eventos registrados
- 
-#### Consultas
- 
-- Listado de cafés.
-- Consulta por identificador.
- 
-#### Escritura
- 
-- Creación de registros.
-- Actualización de registros.
-- Eliminación de registros.
- 
-#### Errores
- 
-- Recursos inexistentes.
-- Excepciones capturadas por el middleware global.
- 
-### Beneficios
- 
-- Seguimiento de operaciones.
-- Diagnóstico de fallos.
-- Trazabilidad.
-- Base para despliegues productivos.
-
-## DTOs de Autenticación
-
-La API implementa contratos específicos para autenticación.
-
-### LoginRequestDto
-
-Utilizado para recibir credenciales:
+`LoginRequestDto`:
 
 ```json
 {
   "email": "admin@cafeapi.com",
-  "password": "123456"
+  "password": "TU_CONTRASEÑA"
 }
 ```
 
-### LoginResponseDto
-
-Devuelto tras una autenticación exitosa:
+`LoginResponseDto`:
 
 ```json
 {
@@ -384,143 +235,70 @@ Devuelto tras una autenticación exitosa:
 }
 ```
 
-### UserDto
+---
 
-Representa la información del usuario autenticado:
+## 🖼️ Gestión de imágenes
 
-```json
-{
-  "id": 1,
-  "email": "admin@cafeapi.com",
-  "nombre": "Administrador",
-  "role": "Administrador"
-}
-```
-
-## Dominio de Usuario
-
-Se ha incorporado la entidad Usuario como base para la evolución de CafeApi hacia ecommerce.
-
-### Usuario
-
-Representa a un usuario autenticado dentro del sistema.
-
-Campos actuales:
-
-- Id
-- Email
-- Nombre
-- Role
-- EsGoogleUser
-- FechaCreacion
-
-### Objetivo
-
-Preparar futuras funcionalidades:
-
-- Carrito de compras.
-- Pedidos.
-- Historial de compras.
-- Direcciones de envío.
-- Integración con Google Login.
-
-## Dominio Ecommerce
-
-### Cart
-
-Representa el carrito activo de un usuario.
-
-Campos:
-
-- Id
-- UserId
-- FechaCreacion
-- FechaActualizacion
-- Estado
-
-Estados previstos:
-
-- Activo
-- ConvertidoAPedido
-- Cancelado
-- Abandonado
-
-Objetivo:
-
-- Gestionar el carrito de compras.
-- Preparar futuras funcionalidades de pedidos y pagos.
-## Dominio Ecommerce
-
-### Usuario
-
-Entidad base para autenticación y futuras funcionalidades ecommerce.
-
-### Cart
-
-Representa el carrito activo de un usuario.
-
-### CartItem
-
-Representa una línea del carrito.
-
-### DTOs de Carrito
-
-#### CartItemResponseDto
-
-- CafeId
-- CafeNombre
-- ImagenUrl
-- Precio
-- Cantidad
-- Subtotal
-
-#### CartResponseDto
-
-- CartId
-- UserId
-- Items
-- CantidadItems
-- Total
-
-## Persistencia de usuarios
-
-CafeApi utiliza la tabla:
-
-public.users
-
-para representar los usuarios del dominio de negocio.
-
-Nota:
-
-Supabase mantiene adicionalmente la tabla:
-
-auth.users
-
-para servicios internos de autenticación.
-
-El carrito, pedidos y futuras funcionalidades ecommerce utilizarán:
-
-public.users
-
-## Gestión de imágenes
-
-CafeApi utiliza Cloudinary para el almacenamiento de imágenes.
+CafeApi usa Cloudinary para almacenar las imágenes, en la carpeta `cafes`.
 
 Flujo:
 
+```text
 Cliente
 ↓
-POST /api/images
+POST /api/images            (Base64 con o sin prefijo data URI; jpg, png o webp; máx. 5 MB)
 ↓
-Cloudinary
+{ imageUrl, publicId }
 ↓
-URL
-↓
-POST /api/cafes
+POST /api/cafes o PUT /api/cafes/{id}   (imagenUrl + imagenPublicId)
+```
 
-La base de datos únicamente almacena la URL de la imagen.
+- Si un `PUT` cambia la imagen, la anterior se borra de Cloudinary.
+- Al eliminar un café, también se borra su imagen.
+- Si Cloudinary falla al borrar, el error queda en el log pero la operación no falla.
 
+---
+
+## Manejo Global de Errores
+
+Las excepciones no controladas se interceptan con un middleware global. La respuesta es un JSON uniforme sin detalles internos; el detalle queda solo en el log:
+
+```json
+{
+  "success": false,
+  "message": "Ha ocurrido un error inesperado. Intenta de nuevo más tarde."
+}
+```
+
+---
+
+## Logging y Auditoría
+
+La API registra eventos mediante `ILogger`:
+
+- Consultas, creación, actualización y eliminación de cafés.
+- Recursos inexistentes y duplicados.
+- Subida y borrado de imágenes en Cloudinary (incluidos los errores de borrado).
+- Excepciones capturadas por el middleware global.
+
+---
+
+## Dominio Ecommerce (pendiente)
+
+Las entidades `Usuario`, `Cart` y `CartItem`, y los DTOs de carrito, ya existen como base del e-commerce, pero **aún no están en la base de datos ni expuestos en la API**. El carrito se implementará más adelante sobre EF Core, usando la tabla `public.users` (en Supabase, la tabla `auth.users` quedaba reservada a su autenticación interna).
+
+---
+
+## 🚧 Próximos Pasos
+
+- Carrito de compras y pedidos
+- Persistencia de usuarios (login con cuentas reales)
+- Rotación de `Jwt:Key`
+- Frontend en Angular
+- Deploy
+
+---
 
 ## 👨‍💻 Autor
- 
+
 Pablo Santamaría
