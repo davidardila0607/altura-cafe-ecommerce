@@ -562,7 +562,10 @@ test.describe('Capturas', () => {
     await pagina.goto('/productos');
     await expect(pagina.getByTestId('catalogo').locator('app-tarjeta-cafe')).toHaveCount(6);
     await pagina.waitForTimeout(1200);
-    await pagina.getByRole('button', { name: 'Ver producto Tierradentro 500 g' }).click();
+    const bolsa = (await pagina.locator('img[data-bolsa]').first().boundingBox())!;
+    await pagina.mouse.move(bolsa.x + bolsa.width / 2, bolsa.y + bolsa.height / 3, { steps: 12 }); // inclinación de la card
+    await pagina.waitForTimeout(600);
+    await pagina.mouse.click(bolsa.x + bolsa.width / 2, bolsa.y + bolsa.height / 3);
     await pagina.waitForTimeout(1500);
     await pagina.keyboard.press('Escape');
     await pagina.waitForTimeout(1200);
