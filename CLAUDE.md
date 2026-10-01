@@ -2,6 +2,15 @@
 
 Guía para trabajar en este repositorio. **Mantenla actualizada** cuando cambie la arquitectura, el modelo, los endpoints o la configuración.
 
+## Regla principal: código explicable
+
+El proyecto es universitario y quienes lo entregan deben poder explicar cada parte. Por eso:
+
+- Prefiere soluciones **simples y legibles** sobre patrones avanzados.
+- **No agregues capas ni abstracciones** que no se necesiten hoy (nada de "por si acaso").
+- **Comenta en español** las partes no obvias (el porqué, no el qué).
+- Cuando algo complejo sea realmente necesario (por ejemplo, la configuración de GSAP o el altímetro), explícalo en el resumen del cambio **en palabras sencillas**.
+
 ## Descripción
 
 E-commerce de café de especialidad **Altura** (proyecto universitario en grupo):

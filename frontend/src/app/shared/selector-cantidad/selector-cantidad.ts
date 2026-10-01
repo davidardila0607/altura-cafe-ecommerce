@@ -27,14 +27,14 @@ import { Component, input, model } from '@angular/core';
       display: block;
       margin-bottom: var(--esp-2);
       font-size: var(--fs-200);
-      font-weight: 560;
+      font-weight: 650;
     }
     .selector {
       display: inline-flex;
       align-items: center;
-      border: 1px solid var(--alt-linea-fuerte);
-      border-radius: var(--radio-control);
-      background: var(--alt-blanco-calido);
+      border: 1px solid var(--linea-fuerte);
+      border-radius: var(--radio-pildora);
+      background: var(--blanco-niebla);
     }
     button {
       display: grid;
@@ -42,19 +42,19 @@ import { Component, input, model } from '@angular/core';
       width: 2.75rem;
       height: 2.75rem;
       border: 0;
-      border-radius: var(--radio-control);
+      border-radius: var(--radio-pildora);
       background: transparent;
-      color: var(--alt-espresso);
+      color: var(--bosque);
       transition: transform var(--dur-presion) var(--ease-salida), background-color var(--dur-rapida) ease;
     }
     button:hover:not(:disabled) {
-      background: var(--alt-crema-hondo);
+      background: var(--niebla-honda);
     }
     button:active:not(:disabled) {
       transform: scale(0.92);
     }
     button:disabled {
-      color: rgb(43 29 20 / 0.32);
+      color: rgb(19 40 31 / 0.32);
     }
     output {
       min-width: 2.25rem;

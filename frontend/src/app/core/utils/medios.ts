@@ -19,3 +19,11 @@ export function cambiosDeMedia(consulta: string): Observable<boolean> {
 export function movimientoReducido(): boolean {
   return coincideMedia('(prefers-reduced-motion: reduce)');
 }
+
+/**
+ * true si hay un mouse o trackpad (puntero fino que puede "pasar por encima").
+ * En pantallas táctiles es false: ahí no existen la inclinación ni el efecto magnético.
+ */
+export function punteroFino(): boolean {
+  return coincideMedia('(hover: hover) and (pointer: fine)') && !movimientoReducido();
+}
