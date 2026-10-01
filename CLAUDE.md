@@ -9,7 +9,7 @@ E-commerce de café de especialidad **Altura** (proyecto universitario en grupo)
 - **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés, sus variedades y presentaciones, y las imágenes de producto en Cloudinary.
 - **frontend/**: aplicación Angular 22 (`altura-web`). Inicio editorial, catálogo de Productos con filtros en la URL y vista rápida, y vistas visuales de Login y Registro (sin autenticación real todavía).
 
-Repositorio: https://github.com/pablorja/CafeApi
+Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El repositorio anterior (`pablorja/CafeApi`) ya no se usa. No se hace force push ni se reescribe el historial.
 
 ## Estructura del repositorio
 
@@ -343,7 +343,7 @@ Contradicciones resueltas a favor del brief: design-taste-frontend e impeccable 
 
 - **Carrito pendiente**: `Cart`, `CartItem`, `ICartRepository`/`CartRepository` (lanza `NotImplementedException`) y los DTOs de carrito existen pero no están en el DbContext ni registrados en DI.
 - **Usuarios pendientes**: `Usuario` e `IUserRepository`/`UserRepository` (ADO.NET contra `public.users`) no están registrados. El login usa **dos cuentas fijas en `AuthController`**; Google Login no persiste usuarios.
-- **Rotar `Jwt:Key`**: una clave antigua quedó en el historial de Git (`appsettings.example.json` y el commit `6829fba`). Cada integrante debe usar una clave nueva; el valor del repo ya no es válido.
+- **Rotar `Jwt:Key`**: dos claves antiguas quedaron en el historial de Git, una en `appsettings.json` (de `6829fba` a `4676745`) y otra en `appsettings.Development.json`, que se subió en `6829fba` y se borró en `a28795a`. Ese archivo también contenía el `Google:ClientId`, que es público. No se reescribió el historial porque el repo es privado. Ninguna de las dos claves está en uso: cada integrante debe generar la suya. Las credenciales de Cloudinary y la contraseña de PostgreSQL nunca se subieron (revisión del 2026-09-30).
 - `POST /api/cafes` permite a cualquier usuario autenticado (también rol Cliente) crear cafés: se conservó el permiso original.
 - `imagenPublicId` lo envía el cliente y no se valida contra Cloudinary: un publicId ajeno se borraría al eliminar/reemplazar el café. Si una creación de café falla (400/409) después de subir la imagen, esa imagen queda huérfana en Cloudinary.
 - Los títulos de los 400 automáticos de validación salen en inglés ("One or more validation errors occurred."); los mensajes de cada campo sí están en español.

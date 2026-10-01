@@ -5,12 +5,56 @@ E-commerce de café de especialidad colombiano **Altura**:
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
 - **frontend/**: aplicación Angular 22 (`altura-web`): Inicio editorial, catálogo de cafés con filtros y vista rápida, e inicio de sesión y registro (visuales).
 
+Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (rama principal: `main`).
+
+---
+
+## 🚀 Inicio rápido (si acabas de clonar el repo)
+
+**Stack:** ASP.NET Core 10 · EF Core 10 + PostgreSQL 17 (Npgsql) · JWT · Cloudinary · Angular 22 · Bootstrap 5 (solo CSS) · Vitest · Playwright.
+
+**Requisitos:** .NET SDK 10, PostgreSQL 17 en `localhost:5432`, Node.js 24 / npm 11 y una cuenta de Cloudinary (gratuita).
+
+```powershell
+# 1. Clonar
+git clone https://github.com/davidardila0607/altura-cafe-ecommerce.git
+cd altura-cafe-ecommerce
+
+# 2. Configuración local (este archivo está en .gitignore: nunca lo subas)
+cd backend
+Copy-Item appsettings.example.json appsettings.Development.json
+#    Rellena: contraseña de PostgreSQL, Google:ClientId, una Jwt:Key nueva
+#    y las credenciales de Cloudinary (detalle en el paso 2 de abajo).
+
+# 3. Crear la base cafeapi_dev con las migraciones de EF Core
+dotnet tool restore
+dotnet ef database update
+
+# 4. Levantar la API (déjala corriendo) → http://localhost:5031/swagger
+dotnet run --launch-profile http
+
+# 5. En otra terminal, desde backend/: cargar los 6 cafés de ejemplo
+powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1
+powershell -ExecutionPolicy Bypass -File .\seed\subir-imagenes-sitio.ps1
+
+# 6. En otra terminal: frontend → http://localhost:4200
+cd frontend
+npm install
+npm start
+```
+
+- `seed-productos.ps1` pide el correo y la contraseña de la cuenta Administrador (cuentas de prueba definidas en `backend/Controllers/AuthController.cs`).
+- El frontend debe usar el puerto **4200**: es el único origen permitido por CORS.
+- **No reutilices** valores de `Jwt:Key` que aparezcan en el historial de Git: genera una clave propia.
+
+Cada paso está explicado en detalle en [Cómo levantar el proyecto en local](#-cómo-levantar-el-proyecto-en-local-paso-a-paso). La guía técnica completa (arquitectura, decisiones y pendientes) está en `CLAUDE.md`.
+
 ---
 
 ## 📁 Estructura
 
 ```text
-CafeApi
+altura-cafe-ecommerce
 ├── backend/                  API .NET (Controllers, Data, DTOs, Repositories, Services, ...)
 │   ├── .config/              dotnet-ef como herramienta local
 │   ├── seed/                 Productos de ejemplo (script + imágenes) y fotos del sitio
@@ -38,8 +82,8 @@ CafeApi
 ### 1. Clonar el repositorio
 
 ```powershell
-git clone https://github.com/pablorja/CafeApi.git
-cd CafeApi
+git clone https://github.com/davidardila0607/altura-cafe-ecommerce.git
+cd altura-cafe-ecommerce
 ```
 
 ### 2. Configurar el backend
