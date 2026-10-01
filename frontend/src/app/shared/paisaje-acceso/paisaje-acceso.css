@@ -3,7 +3,7 @@
   display: block;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(180deg, var(--alba) 0%, #ece6dc 45%, var(--niebla) 80%);
+  background: linear-gradient(180deg, var(--alba) 0%, var(--horizonte) 45%, var(--niebla) 80%);
 }
 
 .paisaje {

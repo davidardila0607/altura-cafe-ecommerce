@@ -62,7 +62,7 @@
 
 .lista a {
   display: inline-block;
-  padding: 0.6rem 0;
+  padding: 0.65rem 0;
   font-weight: 600;
   text-decoration: none;
   transition: color var(--dur-rapida) ease;

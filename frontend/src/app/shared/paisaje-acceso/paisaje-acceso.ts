@@ -21,10 +21,12 @@ import { Logo } from '../logo/logo';
       <img class="capa capa-4" src="paisaje/cresta-4.svg" alt="" width="1440" height="600" />
     </div>
 
-    <a routerLink="/" class="enlace-logo" aria-label="Altura, ir al inicio">
-      <app-logo />
-    </a>
-    <p class="frase">{{ frase() }}</p>
+    <header>
+      <a routerLink="/" class="enlace-logo" aria-label="Altura, ir al inicio">
+        <app-logo />
+      </a>
+      <p class="frase">{{ frase() }}</p>
+    </header>
   `,
   styleUrl: './paisaje-acceso.css',
 })

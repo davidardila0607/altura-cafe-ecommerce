@@ -9,7 +9,7 @@
   max-height: 68rem;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(180deg, var(--alba) 0%, #ebe6dc 40%, var(--niebla) 75%);
+  background: linear-gradient(180deg, var(--alba) 0%, var(--horizonte) 40%, var(--niebla) 75%);
 }
 
 /* ===== Capas (de atrás hacia adelante) ===== */
@@ -78,7 +78,7 @@
   font-size: clamp(7.5rem, 31vw, 30rem);
   font-weight: 800;
   font-stretch: 75%;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.04em;
   line-height: 0.8;
   text-align: center;
   white-space: nowrap;
@@ -87,7 +87,7 @@
 .letras {
   display: inline-block;
   /* Compensa el espaciado negativo de la última letra para que quede centrada. */
-  margin-right: -0.06em;
+  margin-right: -0.04em;
 }
 
 .letra {

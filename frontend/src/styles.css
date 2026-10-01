@@ -16,6 +16,9 @@
   --helecho: #8fa58f; /* solo decorativo (crestas) */
   --liquen: #c9d3c6; /* solo decorativo (crestas, esqueletos) */
   --alba: #f2d7c4; /* luz del amanecer, solo decorativo */
+  --horizonte: #ebe6dc; /* franja cálida entre el amanecer y la niebla (cielos) */
+  --liquen-hondo: #b7c7b3; /* departamentos con cafés en el mapa */
+  --ambar: #b7791f; /* nivel "aceptable" del medidor de contraseña, solo relleno */
   --cereza: #b8322a; /* acento: botón principal, enlaces, alertas (4,8:1 sobre niebla) */
   --cereza-hover: #9e2a23;
   --cereza-activo: #86231d;
@@ -48,7 +51,7 @@
   --fs-500: 1.375rem; /* 22 px */
   --fs-600: clamp(1.6rem, 1.3rem + 1vw, 2.1rem);
   --fs-700: clamp(2.2rem, 1.5rem + 2.6vw, 3.6rem);
-  --fs-800: clamp(3rem, 1.8rem + 5vw, 6.5rem);
+  --fs-800: clamp(3rem, 1.8rem + 4.6vw, 6rem);
   --lh-display: 0.88;
   --lh-titulo: 1.05;
   --lh-texto: 1.6;
@@ -68,8 +71,8 @@
   --margen-lateral: clamp(1rem, 0.4rem + 3vw, 2.5rem);
 
   /* ---------- Forma ----------
-     Regla de radios: tarjetas e imágenes 20 px · campos 12 px · botones, chips y contadores en píldora. */
-  --radio-tarjeta: 20px;
+     Regla de radios: tarjetas e imágenes 16 px · paneles grandes 24 px · campos 12 px · botones, chips y contadores en píldora. */
+  --radio-tarjeta: 16px;
   --radio-campo: 12px;
   --radio-pildora: 999px;
   --sombra-1: 0 1px 2px rgb(19 40 31 / 0.06), 0 8px 24px -14px rgb(19 40 31 / 0.3);
@@ -87,7 +90,6 @@
   /* ---------- Capas ---------- */
   --z-altimetro: 90;
   --z-nav: 100;
-  --z-grano: 300;
 
   color-scheme: light;
 }
@@ -115,6 +117,7 @@ html {
 
 body {
   margin: 0;
+  caret-color: var(--cereza);
   background: var(--fondo);
   color: var(--texto);
   font-family: var(--fuente);
@@ -123,18 +126,6 @@ body {
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-/* Grano fino sobre todo el sitio: capa fija, sin eventos, que no se repinta al hacer scroll. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-grano);
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.07 0 0 0 0 0.16 0 0 0 0 0.12 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
 h1,
@@ -547,20 +538,33 @@ select.campo {
 }
 
 /* ===================== Esqueletos de carga ===================== */
+/* El brillo es una franja que cruza con transform (no repinta el fondo en cada fotograma). */
 .esqueleto {
+  position: relative;
   display: block;
+  overflow: hidden;
   border-radius: 8px;
-  background: linear-gradient(100deg, var(--liquen) 0%, #e2e8de 45%, var(--liquen) 90%);
-  background-size: 220% 100%;
+  background: var(--liquen);
+}
+
+.esqueleto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.45) 50%, transparent 80%);
+  transform: translateX(-100%);
   animation: esqueleto-brillo 1.6s ease-in-out infinite;
 }
 
 @keyframes esqueleto-brillo {
-  from {
-    background-position: 100% 0;
-  }
   to {
-    background-position: -120% 0;
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto::after {
+    display: none;
   }
 }
 

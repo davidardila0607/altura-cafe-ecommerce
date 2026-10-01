@@ -19,7 +19,7 @@
   position: relative;
   grid-column: 2;
   padding: clamp(1.75rem, 4vw, 2.75rem);
-  border-radius: 28px;
+  border-radius: 24px;
   background: var(--papel);
   box-shadow: var(--sombra-2);
 }
@@ -51,7 +51,7 @@
 
   .tarjeta-acceso {
     margin-top: -2.5rem;
-    border-radius: 28px 28px 0 0;
+    border-radius: 24px 24px 0 0;
     box-shadow: none;
   }
 }

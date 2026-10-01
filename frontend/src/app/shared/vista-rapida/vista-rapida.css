@@ -38,7 +38,7 @@
   width: min(68rem, calc(100vw - 4rem));
   height: min(42rem, calc(100dvh - 4rem));
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 24px;
   background: var(--papel);
   box-shadow: 0 40px 100px -30px rgb(0 0 0 / 0.55);
   opacity: 1;
@@ -138,7 +138,7 @@
   font-size: var(--fs-700);
   font-weight: 800;
   font-stretch: 75%;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.035em;
   line-height: 0.95;
 }
 
@@ -197,7 +197,6 @@
 .aviso-error .enlace-texto {
   border: 0;
   background: none;
-  padding-block: 0.2rem;
 }
 
 .compra {

@@ -11,7 +11,7 @@ type CampoRegistro = 'nombre' | 'correo' | 'contrasena' | 'confirmacion';
 const NIVELES = [
   { texto: '', color: 'var(--liquen)' },
   { texto: 'débil', color: 'var(--cereza)' },
-  { texto: 'aceptable', color: '#b7791f' },
+  { texto: 'aceptable', color: 'var(--ambar)' },
   { texto: 'buena', color: 'var(--musgo)' },
   { texto: 'fuerte', color: 'var(--musgo)' },
 ];
