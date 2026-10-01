@@ -1,0 +1,112 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--alt-papel);
+  border: 1px solid var(--alt-linea);
+  border-radius: var(--alt-radio);
+  overflow: hidden;
+  box-shadow: var(--alt-sombra);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.tarjeta:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--alt-sombra-alta);
+}
+
+/* La imagen ya tiene fondo crema: se funde con su contenedor. */
+.tarjeta-imagen {
+  aspect-ratio: 1;
+  background: var(--alt-crema);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.tarjeta-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s ease;
+}
+
+.tarjeta:hover .tarjeta-imagen img {
+  transform: scale(1.035);
+}
+
+.agotada .tarjeta-imagen img {
+  filter: saturate(0.55);
+  opacity: 0.85;
+}
+
+.sin-imagen {
+  font-size: 3rem;
+  color: var(--alt-cafe);
+}
+
+.tarjeta-cuerpo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 1.25rem 1.35rem 1.4rem;
+}
+
+.meta {
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--alt-cafe);
+}
+
+.nombre {
+  margin: 0 0 0.45rem;
+  font-size: 1.45rem;
+}
+
+.origen {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--alt-texto-suave);
+  font-size: 0.95rem;
+}
+
+.pie-tarjeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-block: 1.1rem;
+}
+
+.precio {
+  margin: 0;
+  font-family: var(--alt-fuente-titulos);
+  font-size: 1.4rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.disponibilidad {
+  margin: 0;
+  color: var(--alt-verde);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.badge-agotado {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--alt-espresso);
+  color: var(--alt-crema);
+  font-size: 0.8rem;
+  font-weight: 600;
+}

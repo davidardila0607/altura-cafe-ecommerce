@@ -1,0 +1,43 @@
+<article class="tarjeta" [class.agotada]="!cafe().disponible">
+  <div class="tarjeta-imagen">
+    @if (imagen(); as url) {
+      <img
+        [src]="url"
+        [alt]="'Bolsa de café ' + cafe().nombre + ', ' + cafe().presentacionGramos + ' g'"
+        width="600"
+        height="600"
+        loading="lazy"
+        decoding="async"
+      />
+    } @else {
+      <i class="bi bi-cup-hot sin-imagen" aria-hidden="true"></i>
+    }
+  </div>
+
+  <div class="tarjeta-cuerpo">
+    <p class="meta">{{ cafe().variedadNombre }} · {{ cafe().presentacionGramos }} g</p>
+    <h3 class="nombre">{{ cafe().nombre }}</h3>
+    <p class="origen">
+      <i class="bi bi-geo-alt" aria-hidden="true"></i>
+      <span class="visually-hidden">Origen:</span>
+      {{ cafe().origen }}
+    </p>
+
+    <div class="pie-tarjeta">
+      <p class="precio">{{ cafe().precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</p>
+      @if (cafe().disponible) {
+        <p class="disponibilidad">{{ textoDisponibles() }}</p>
+      } @else {
+        <span class="badge-agotado">Agotado</span>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-outline-dark w-100"
+      [attr.aria-label]="'Ver producto ' + cafe().nombre + ' ' + cafe().presentacionGramos + ' g'"
+    >
+      Ver producto
+    </button>
+  </div>
+</article>

@@ -1,0 +1,166 @@
+/* ===== Banner ===== */
+.banner {
+  padding-block: clamp(3rem, 7vw, 6rem) clamp(2.5rem, 5vw, 4.5rem);
+  background: var(--alt-crema);
+  overflow: hidden;
+}
+
+.banner-titulo {
+  font-size: clamp(2.6rem, 5.4vw, 4.4rem);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  max-width: 13ch;
+  margin-bottom: 1.4rem;
+}
+
+.banner-texto {
+  font-size: 1.15rem;
+  color: var(--alt-texto-suave);
+  max-width: 34rem;
+  margin-bottom: 2rem;
+}
+
+.banner-ilustracion {
+  max-width: 600px;
+  margin-inline: auto;
+}
+
+/* ===== Catálogo ===== */
+.catalogo {
+  background: var(--alt-papel);
+  border-top: 1px solid var(--alt-linea);
+  padding-block: clamp(3rem, 6vw, 5rem);
+}
+
+.catalogo-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.catalogo-titulo {
+  font-size: clamp(2rem, 3.6vw, 2.75rem);
+  margin-bottom: 0.4rem;
+}
+
+.catalogo-texto {
+  margin: 0;
+  color: var(--alt-texto-suave);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  min-height: 2.75rem;
+  padding: 0.45rem 1.15rem;
+  border: 1px solid var(--alt-linea-fuerte);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--alt-espresso);
+  font-weight: 500;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.chip:hover {
+  border-color: var(--alt-espresso);
+}
+
+.chip.activo {
+  background: var(--alt-espresso);
+  border-color: var(--alt-espresso);
+  color: var(--alt-crema);
+}
+
+.resumen {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: var(--alt-texto-suave);
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.25rem, 2.4vw, 2rem);
+}
+
+/* 1 columna en móvil, 2 en tableta, 3 en escritorio (6 cafés = 3 + 3). */
+@media (min-width: 576px) {
+  .grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 992px) {
+  .grilla { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ===== Estados ===== */
+.esqueleto {
+  border: 1px solid var(--alt-linea);
+  border-radius: var(--alt-radio);
+  background: var(--alt-papel);
+  overflow: hidden;
+}
+
+.esqueleto-imagen,
+.linea {
+  background: linear-gradient(90deg, #efe7da 0%, #f7f1e8 50%, #efe7da 100%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+.esqueleto-imagen {
+  aspect-ratio: 1;
+}
+
+.esqueleto-cuerpo {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.25rem 1.35rem 1.4rem;
+}
+
+.linea {
+  display: block;
+  height: 0.85rem;
+  border-radius: 6px;
+}
+
+.linea.corta { width: 40%; }
+.linea.larga { width: 80%; height: 1.3rem; }
+.linea.media { width: 55%; }
+.linea.boton { width: 100%; height: 2.6rem; margin-top: 0.8rem; }
+
+@keyframes brillo {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.estado {
+  max-width: 30rem;
+  margin: 1.5rem auto 0;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.estado-icono {
+  display: inline-block;
+  font-size: 2rem;
+  color: var(--alt-cafe);
+  margin-bottom: 0.75rem;
+}
+
+.estado-titulo {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.estado-texto {
+  color: var(--alt-texto-suave);
+  margin-bottom: 1.5rem;
+}

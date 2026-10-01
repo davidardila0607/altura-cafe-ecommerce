@@ -517,3 +517,33 @@ permanece reservada para autenticación interna de Supabase.
 
 - El carrito (`Cart`, `CartItem`, `CartRepository`) y los usuarios (`Usuario`, `UserRepository`) no están en el DbContext ni registrados en DI.
 - Rotar la `Jwt:Key` que quedó en el historial de Git.
+
+
+## [1.12.0] - 2026-09-30
+
+### 🏗 Reorganización
+
+- Repositorio dividido en `backend/` (proyecto .NET, con su `.config/` y `seed/`) y `frontend/` (Angular), con `git mv` para conservar el historial.
+- `.gitignore` actualizado con reglas de Node/Angular (`node_modules/`, `dist/`, `.angular/`) y de Playwright (`test-results/`, `playwright-report/`, `e2e/capturas/`).
+
+### 🚀 Añadido
+
+#### Marca y productos de ejemplo
+
+- Marca **Altura** ("Café de especialidad colombiano") con paleta crema, papel, espresso, café, terracota y verde hoja.
+- 6 ilustraciones de producto (bolsa stand-up con válvula, color por variedad, 500 g más grande) en SVG y PNG de 1200×1200 en `backend/seed/imagenes/`, con su filosofía visual en `DISENO.md`.
+- `backend/seed/seed-productos.ps1`: script idempotente que hace login como Administrador, sube cada imagen a Cloudinary y crea los 6 cafés de ejemplo. Compatible con PowerShell 5.1 (UTF-8 con BOM, cuerpos en bytes UTF-8).
+
+#### Frontend Angular 22 (`frontend/`, `altura-web`)
+
+- Home: navbar con buscador y menú móvil, banner con ilustración SVG propia, catálogo "Nuestros cafés" desde `GET /api/cafes`, filtros por variedad desde `GET /api/variedades`, búsqueda por nombre, origen o variedad (sin tildes), *skeletons*, error con "Reintentar" y estado vacío.
+- Card de café con imagen optimizada de Cloudinary (`f_auto,q_auto,w_600`), precio en COP (`$ 42.000`), disponibilidad y badge "Agotado".
+- Login y Registro visuales en dos paneles, con formularios reactivos, validaciones en español y mostrar/ocultar contraseña. No llaman a la API.
+- Títulos de pestaña por ruta; la ruta `**` redirige al Home.
+- Bootstrap 5 (solo CSS) personalizado con variables, Bootstrap Icons y fuentes Fraunces e Inter vía @fontsource.
+- Pruebas: 14 unitarias (Vitest) y 11 e2e (Playwright, `npm run e2e`) que cubren el catálogo, los filtros, la navegación, los formularios sin llamadas a la API, el estado "API caída", la consola sin errores y las capturas a 1440 y 375 px.
+
+### 🔄 Cambiado
+
+- README con la puesta en marcha paso a paso de backend, productos de ejemplo y frontend.
+- CLAUDE.md con la nueva estructura, la marca, el frontend, el seed, las decisiones y los problemas encontrados.

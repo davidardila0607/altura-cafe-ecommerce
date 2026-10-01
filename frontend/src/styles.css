@@ -1,0 +1,225 @@
+/* ===== Altura · tokens de marca =====
+   Bootstrap 5 (solo CSS) se personaliza con sus variables --bs-*. */
+:root {
+  /* Paleta */
+  --alt-crema: #f6f1e9;
+  --alt-papel: #fbf8f3;
+  --alt-espresso: #2b1d14;
+  --alt-cafe: #6b4226;
+  --alt-terracota: #b5562f;
+  /* Terracota para texto sobre crema/papel (contraste AA ≥ 4.5). */
+  --alt-terracota-texto: #97441f;
+  --alt-terracota-hover: #9c4827;
+  --alt-verde: #3f5a40;
+
+  --alt-linea: rgb(43 29 20 / 0.12);
+  --alt-linea-fuerte: rgb(43 29 20 / 0.22);
+  --alt-texto-suave: rgb(43 29 20 / 0.72);
+  --alt-sombra: 0 1px 2px rgb(43 29 20 / 0.05), 0 10px 28px -14px rgb(43 29 20 / 0.22);
+  --alt-sombra-alta: 0 2px 4px rgb(43 29 20 / 0.06), 0 22px 40px -18px rgb(43 29 20 / 0.32);
+  --alt-radio: 16px;
+  --alt-radio-sm: 10px;
+
+  /* Tipografía */
+  --alt-fuente-titulos: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --alt-fuente-texto: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Bootstrap */
+  --bs-body-bg: var(--alt-crema);
+  --bs-body-color: var(--alt-espresso);
+  --bs-body-font-family: var(--alt-fuente-texto);
+  --bs-body-line-height: 1.6;
+  --bs-emphasis-color: var(--alt-espresso);
+  --bs-secondary-color: var(--alt-texto-suave);
+  --bs-border-color: var(--alt-linea-fuerte);
+  --bs-border-radius: var(--alt-radio-sm);
+  --bs-primary: var(--alt-terracota);
+  --bs-primary-rgb: 181, 86, 47;
+  --bs-link-color: var(--alt-terracota-texto);
+  --bs-link-color-rgb: 151, 68, 31;
+  --bs-link-hover-color: var(--alt-espresso);
+  --bs-link-hover-color-rgb: 43, 29, 20;
+  --bs-focus-ring-color: rgb(181 86 47 / 0.3);
+  --bs-form-invalid-color: #a3361b;
+  --bs-form-invalid-border-color: #a3361b;
+}
+
+html {
+  scroll-padding-top: 5.5rem;
+}
+
+body {
+  background: var(--alt-crema);
+  color: var(--alt-espresso);
+  font-size: 1rem;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+.titulo {
+  font-family: var(--alt-fuente-titulos);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  color: var(--alt-espresso);
+}
+
+::selection {
+  background: rgb(181 86 47 / 0.22);
+}
+
+/* Foco visible y consistente para teclado. */
+:focus-visible {
+  outline: 2px solid var(--alt-terracota);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.form-control:focus {
+  border-color: var(--alt-terracota);
+  box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
+}
+
+/* Botón principal: terracota con texto blanco (contraste 4.8). */
+.btn-primary {
+  --bs-btn-bg: var(--alt-terracota);
+  --bs-btn-border-color: var(--alt-terracota);
+  --bs-btn-color: #fff;
+  --bs-btn-hover-bg: var(--alt-terracota-hover);
+  --bs-btn-hover-border-color: var(--alt-terracota-hover);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: #86391b;
+  --bs-btn-active-border-color: #86391b;
+  --bs-btn-active-color: #fff;
+  --bs-btn-disabled-bg: var(--alt-terracota);
+  --bs-btn-disabled-border-color: var(--alt-terracota);
+  --bs-btn-focus-shadow-rgb: 181, 86, 47;
+}
+
+/* Botón secundario: contorno espresso. */
+.btn-outline-dark {
+  --bs-btn-color: var(--alt-espresso);
+  --bs-btn-border-color: var(--alt-linea-fuerte);
+  --bs-btn-hover-bg: var(--alt-espresso);
+  --bs-btn-hover-border-color: var(--alt-espresso);
+  --bs-btn-hover-color: var(--alt-crema);
+  --bs-btn-active-bg: var(--alt-espresso);
+  --bs-btn-active-border-color: var(--alt-espresso);
+  --bs-btn-active-color: var(--alt-crema);
+}
+
+.btn {
+  --bs-btn-padding-x: 1.25rem;
+  --bs-btn-padding-y: 0.65rem;
+  --bs-btn-font-weight: 500;
+  --bs-btn-border-radius: var(--alt-radio-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== Autenticación (Login y Registro): layout de dos paneles ===== */
+.auth {
+  display: grid;
+  /* Móvil: el encabezado de marca ocupa solo su alto; el formulario, el resto. */
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+  background: var(--alt-papel);
+}
+
+@media (min-width: 992px) {
+  .auth {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-rows: none;
+  }
+}
+
+.auth-contenido {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2rem, 6vw, 4.5rem) 1.25rem;
+}
+
+.auth-formulario {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.auth-titulo {
+  font-size: clamp(2.1rem, 3.4vw, 2.6rem);
+  margin-bottom: 0.5rem;
+}
+
+.auth-subtitulo {
+  color: var(--alt-texto-suave);
+  margin-bottom: 2rem;
+}
+
+.auth-formulario .form-label {
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+.auth-formulario .form-control {
+  padding: 0.7rem 0.95rem;
+  background-color: #fff;
+}
+
+.auth-campo {
+  margin-bottom: 1.15rem;
+}
+
+/* Botón mostrar/ocultar contraseña dentro del input-group. */
+.auth-formulario .boton-ver {
+  border-color: var(--bs-border-color);
+  background: #fff;
+  color: var(--alt-texto-suave);
+  padding-inline: 0.9rem;
+}
+
+.auth-formulario .boton-ver:hover {
+  color: var(--alt-espresso);
+}
+
+.auth-formulario .input-group .form-control.is-invalid ~ .boton-ver {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+.auth-formulario .invalid-feedback {
+  font-size: 0.875rem;
+}
+
+.auth-aviso {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgb(63 90 64 / 0.35);
+  border-radius: var(--alt-radio-sm);
+  background: rgb(63 90 64 / 0.08);
+  color: var(--alt-verde);
+  font-weight: 500;
+}
+
+.auth-alterno {
+  margin: 1.75rem 0 0;
+  text-align: center;
+  color: var(--alt-texto-suave);
+}
+
+.auth-alterno a {
+  font-weight: 600;
+}

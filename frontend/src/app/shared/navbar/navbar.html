@@ -1,0 +1,48 @@
+<nav class="navbar navbar-expand-lg barra" aria-label="Navegación principal">
+  <div class="container">
+    <a class="navbar-brand" routerLink="/" aria-label="Altura, ir al inicio">
+      <app-logo />
+    </a>
+
+    <div class="acciones order-lg-last">
+      <a class="boton-icono" routerLink="/login" aria-label="Iniciar sesión" title="Iniciar sesión">
+        <i class="bi bi-person" aria-hidden="true"></i>
+      </a>
+      <button
+        type="button"
+        class="boton-icono d-lg-none"
+        aria-controls="menu-principal"
+        [attr.aria-expanded]="menuAbierto()"
+        [attr.aria-label]="menuAbierto() ? 'Cerrar menú' : 'Abrir menú'"
+        (click)="alternarMenu()"
+      >
+        <i class="bi" [class.bi-list]="!menuAbierto()" [class.bi-x-lg]="menuAbierto()" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div id="menu-principal" class="collapse navbar-collapse" [class.show]="menuAbierto()">
+      <ul class="navbar-nav enlaces">
+        <li class="nav-item">
+          <a class="nav-link" href="#inicio" (click)="irA($event, 'inicio')">Inicio</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#productos" (click)="irA($event, 'productos')">Productos</a>
+        </li>
+      </ul>
+
+      <form class="buscador" role="search" (submit)="enviarBusqueda($event)">
+        <label for="buscar-cafes" class="visually-hidden">Buscar cafés</label>
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          id="buscar-cafes"
+          type="search"
+          class="form-control"
+          placeholder="Busca por nombre, origen o variedad"
+          autocomplete="off"
+          [value]="busqueda.texto()"
+          (input)="buscar($event)"
+        />
+      </form>
+    </div>
+  </div>
+</nav>

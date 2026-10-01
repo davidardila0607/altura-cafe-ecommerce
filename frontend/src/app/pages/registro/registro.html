@@ -1,0 +1,141 @@
+<div class="auth">
+  <app-panel-marca />
+
+  <main class="auth-contenido">
+    <form class="auth-formulario" [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+      <h1 class="auth-titulo">Crear cuenta</h1>
+      <p class="auth-subtitulo">Regístrate para comprar tus cafés favoritos.</p>
+
+      <div class="auth-campo">
+        <label for="registro-nombre" class="form-label">Nombre completo</label>
+        <input
+          id="registro-nombre"
+          type="text"
+          class="form-control"
+          formControlName="nombre"
+          autocomplete="name"
+          [class.is-invalid]="mostrarError('nombre')"
+          [attr.aria-invalid]="mostrarError('nombre')"
+          aria-describedby="registro-nombre-error"
+        />
+        <div id="registro-nombre-error" class="invalid-feedback d-block" aria-live="polite">
+          @if (mostrarError('nombre')) {
+            @if (formulario.controls.nombre.hasError('required')) {
+              Escribe tu nombre completo.
+            } @else {
+              El nombre debe tener al menos 3 caracteres.
+            }
+          }
+        </div>
+      </div>
+
+      <div class="auth-campo">
+        <label for="registro-correo" class="form-label">Correo electrónico</label>
+        <input
+          id="registro-correo"
+          type="email"
+          class="form-control"
+          formControlName="correo"
+          autocomplete="email"
+          placeholder="tucorreo@ejemplo.com"
+          [class.is-invalid]="mostrarError('correo')"
+          [attr.aria-invalid]="mostrarError('correo')"
+          aria-describedby="registro-correo-error"
+        />
+        <div id="registro-correo-error" class="invalid-feedback d-block" aria-live="polite">
+          @if (mostrarError('correo')) {
+            @if (formulario.controls.correo.hasError('required')) {
+              Escribe tu correo electrónico.
+            } @else {
+              Escribe un correo válido, por ejemplo nombre@dominio.com.
+            }
+          }
+        </div>
+      </div>
+
+      <div class="auth-campo">
+        <label for="registro-contrasena" class="form-label">Contraseña</label>
+        <div class="input-group">
+          <input
+            id="registro-contrasena"
+            class="form-control"
+            formControlName="contrasena"
+            autocomplete="new-password"
+            [type]="mostrarContrasena() ? 'text' : 'password'"
+            [class.is-invalid]="mostrarError('contrasena')"
+            [attr.aria-invalid]="mostrarError('contrasena')"
+            aria-describedby="registro-contrasena-ayuda registro-contrasena-error"
+          />
+          <button
+            type="button"
+            class="btn boton-ver"
+            [attr.aria-label]="mostrarContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="mostrarContrasena()"
+            aria-controls="registro-contrasena"
+            (click)="alternarContrasena()"
+          >
+            <i class="bi" [class.bi-eye]="!mostrarContrasena()" [class.bi-eye-slash]="mostrarContrasena()" aria-hidden="true"></i>
+          </button>
+        </div>
+        @if (!mostrarError('contrasena')) {
+          <div id="registro-contrasena-ayuda" class="form-text">Mínimo {{ longitudMinima }} caracteres.</div>
+        }
+        <div id="registro-contrasena-error" class="invalid-feedback d-block" aria-live="polite">
+          @if (mostrarError('contrasena')) {
+            @if (formulario.controls.contrasena.hasError('required')) {
+              Escribe una contraseña.
+            } @else {
+              La contraseña debe tener al menos {{ longitudMinima }} caracteres.
+            }
+          }
+        </div>
+      </div>
+
+      <div class="auth-campo">
+        <label for="registro-confirmacion" class="form-label">Confirmar contraseña</label>
+        <div class="input-group">
+          <input
+            id="registro-confirmacion"
+            class="form-control"
+            formControlName="confirmacion"
+            autocomplete="new-password"
+            [type]="mostrarConfirmacion() ? 'text' : 'password'"
+            [class.is-invalid]="mostrarError('confirmacion')"
+            [attr.aria-invalid]="mostrarError('confirmacion')"
+            aria-describedby="registro-confirmacion-error"
+          />
+          <button
+            type="button"
+            class="btn boton-ver"
+            [attr.aria-label]="mostrarConfirmacion() ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'"
+            [attr.aria-pressed]="mostrarConfirmacion()"
+            aria-controls="registro-confirmacion"
+            (click)="alternarConfirmacion()"
+          >
+            <i class="bi" [class.bi-eye]="!mostrarConfirmacion()" [class.bi-eye-slash]="mostrarConfirmacion()" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div id="registro-confirmacion-error" class="invalid-feedback d-block" aria-live="polite">
+          @if (mostrarError('confirmacion')) {
+            @if (formulario.controls.confirmacion.hasError('required')) {
+              Confirma tu contraseña.
+            } @else {
+              Las contraseñas no coinciden.
+            }
+          }
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-2">Registrarse</button>
+
+      @if (aviso(); as mensaje) {
+        <div class="auth-aviso" role="status">
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
+          <span>{{ mensaje }}</span>
+        </div>
+      }
+
+      <p class="auth-alterno">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
+    </form>
+  </main>
+</div>

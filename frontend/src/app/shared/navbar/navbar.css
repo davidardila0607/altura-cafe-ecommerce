@@ -1,0 +1,104 @@
+:host {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  display: block;
+}
+
+.barra {
+  background: rgb(251 248 243 / 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--alt-linea);
+  padding-block: 0.7rem;
+}
+
+.navbar-brand {
+  font-size: 1rem;
+  margin-right: 2.5rem;
+  padding: 0;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.boton-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--alt-espresso);
+  font-size: 1.3rem;
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.boton-icono:hover {
+  background: var(--alt-crema);
+  border-color: var(--alt-linea);
+}
+
+.enlaces .nav-link {
+  color: var(--alt-espresso);
+  font-weight: 500;
+  padding-inline: 0.9rem;
+}
+
+.enlaces .nav-link:hover {
+  color: var(--alt-terracota-texto);
+}
+
+.buscador {
+  position: relative;
+  margin-left: auto;
+  width: min(100%, 22rem);
+}
+
+.buscador .bi-search {
+  position: absolute;
+  left: 0.95rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--alt-texto-suave);
+  pointer-events: none;
+}
+
+.buscador .form-control {
+  padding: 0.6rem 1rem 0.6rem 2.6rem;
+  border-radius: 999px;
+  background: var(--alt-crema);
+  border-color: var(--alt-linea);
+}
+
+.buscador .form-control::placeholder {
+  color: rgb(43 29 20 / 0.6);
+}
+
+@media (min-width: 992px) {
+  .acciones {
+    margin-left: 0.75rem;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    padding-block: 0.75rem 0.25rem;
+  }
+
+  .enlaces .nav-link {
+    padding-inline: 0;
+    padding-block: 0.6rem;
+    border-bottom: 1px solid var(--alt-linea);
+  }
+
+  .buscador {
+    width: 100%;
+    margin-top: 0.85rem;
+  }
+}

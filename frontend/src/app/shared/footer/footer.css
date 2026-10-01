@@ -1,0 +1,32 @@
+.pie {
+  background: var(--alt-espresso);
+  color: var(--alt-crema);
+  padding-block: 3rem 2.5rem;
+}
+
+.contenido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.enlace-marca {
+  display: inline-block;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.frase {
+  margin: 0.85rem 0 0;
+  font-family: var(--alt-fuente-titulos);
+  font-size: 1.15rem;
+  color: rgb(246 241 233 / 0.85);
+}
+
+.derechos {
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgb(246 241 233 / 0.7);
+}
