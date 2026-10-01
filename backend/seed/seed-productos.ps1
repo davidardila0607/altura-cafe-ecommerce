@@ -10,6 +10,13 @@
        y crea el café con POST /api/cafes enviando imagenUrl e imagenPublicId.
 
     Es idempotente: se puede ejecutar varias veces sin duplicar cafés ni imágenes.
+
+    Con -ActualizarImagenes, a los cafés que ya existen se les sube la imagen nueva de
+    seed/imagenes/ y se hace PUT /api/cafes/{id} conservando sus datos actuales (nombre,
+    variedad, presentación, origen, stock y precio) y enviando el nuevo imagenUrl e
+    imagenPublicId. El backend borra la imagen anterior de Cloudinary. Los cafés que no
+    existen se crean como en el modo normal.
+
     Compatible con Windows PowerShell 5.1 y PowerShell 7. El archivo está en UTF-8 con BOM
     y los cuerpos se envían como bytes UTF-8 para que las tildes lleguen bien a la API.
 
@@ -19,11 +26,16 @@
 
 .EXAMPLE
     .\seed\seed-productos.ps1 -ApiBaseUrl http://localhost:5031/api -Email admin@cafeapi.com
+
+.EXAMPLE
+    .\seed\seed-productos.ps1 -ActualizarImagenes
+    (reemplaza las imágenes de los cafés existentes por las de seed/imagenes/)
 #>
 param(
     [string]$ApiBaseUrl = 'http://localhost:5031/api',
     [string]$Email,
-    [SecureString]$Password
+    [SecureString]$Password,
+    [switch]$ActualizarImagenes
 )
 
 $ErrorActionPreference = 'Stop'
@@ -117,10 +129,16 @@ $cafes = Invoke-Api -Metodo 'GET' -Ruta '/cafes'
 if (-not $cafes.Ok) { Write-Host "No se pudieron leer los cafés (HTTP $($cafes.Codigo))." -ForegroundColor Red; exit 1 }
 
 $existentes = @{}
-foreach ($c in $cafes.Datos) { $existentes[(Get-Clave $c.nombre $c.variedadId $c.presentacionGramos)] = $true }
+foreach ($c in $cafes.Datos) { $existentes[(Get-Clave $c.nombre $c.variedadId $c.presentacionGramos)] = $c }
 
 # ===== Carga =====
-$creados = 0; $omitidos = 0; $fallidos = 0
+$creados = 0; $actualizados = 0; $omitidos = 0; $fallidos = 0
+if ($ActualizarImagenes) { Write-Host 'Modo: actualizar imágenes de los cafés existentes.' -ForegroundColor Cyan }
+
+function Send-Imagen([string]$ruta) {
+    $base64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($ruta))
+    return Invoke-Api -Metodo 'POST' -Ruta '/images' -Token $token -Cuerpo @{ imagenBase64 = "data:image/png;base64,$base64" }
+}
 
 foreach ($p in $productos) {
     $etiqueta = '{0} · {1} · {2} g' -f $p.Nombre, $p.Variedad, $p.Gramos
@@ -131,24 +149,49 @@ foreach ($p in $productos) {
         $fallidos++; continue
     }
 
-    # ✅ Idempotencia: si ya existe, se omite antes de subir la imagen.
-    if ($existentes.ContainsKey((Get-Clave $p.Nombre $variedadId $p.Gramos))) {
+    $rutaImagen = Join-Path $carpetaImagenes $p.Imagen
+    $existente = $existentes[(Get-Clave $p.Nombre $variedadId $p.Gramos)]
+
+    # ✅ Idempotencia: si ya existe, se omite antes de subir la imagen (salvo -ActualizarImagenes).
+    if ($existente -and -not $ActualizarImagenes) {
         Write-Host "  OMITIDO $etiqueta (ya existe)" -ForegroundColor Yellow
         $omitidos++; continue
     }
 
-    $rutaImagen = Join-Path $carpetaImagenes $p.Imagen
     if (-not (Test-Path $rutaImagen)) {
         Write-Host "  FALLO   $etiqueta -> no se encontró la imagen $($p.Imagen)." -ForegroundColor Red
         $fallidos++; continue
     }
 
-    $base64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($rutaImagen))
-    $imagen = Invoke-Api -Metodo 'POST' -Ruta '/images' -Token $token -Cuerpo @{ imagenBase64 = "data:image/png;base64,$base64" }
+    $imagen = Send-Imagen $rutaImagen
 
     if (-not $imagen.Ok) {
         Write-Host "  FALLO   $etiqueta -> no se pudo subir la imagen (HTTP $($imagen.Codigo)): $($imagen.Error)" -ForegroundColor Red
         $fallidos++; continue
+    }
+
+    # ✅ -ActualizarImagenes: PUT con los datos actuales del café y la imagen nueva.
+    if ($existente) {
+        $put = Invoke-Api -Metodo 'PUT' -Ruta "/cafes/$($existente.id)" -Token $token -Cuerpo ([ordered]@{
+            nombre             = $existente.nombre
+            variedadId         = [int]$existente.variedadId
+            presentacionGramos = [int]$existente.presentacionGramos
+            origen             = $existente.origen
+            stock              = [int]$existente.stock
+            precio             = [decimal]$existente.precio
+            imagenUrl          = $imagen.Datos.imageUrl
+            imagenPublicId     = $imagen.Datos.publicId
+        })
+
+        if ($put.Ok) {
+            Write-Host "  IMAGEN  $etiqueta (id $($existente.id)) -> $($imagen.Datos.publicId)" -ForegroundColor Green
+            $actualizados++
+        }
+        else {
+            Write-Host "  FALLO   $etiqueta -> no se pudo actualizar (HTTP $($put.Codigo)): $($put.Error). Imagen sin usar: $($imagen.Datos.publicId)" -ForegroundColor Red
+            $fallidos++
+        }
+        continue
     }
 
     $cafe = Invoke-Api -Metodo 'POST' -Ruta '/cafes' -Token $token -Cuerpo ([ordered]@{
@@ -178,5 +221,5 @@ foreach ($p in $productos) {
 }
 
 Write-Host ''
-Write-Host "Resumen: $creados creados, $omitidos omitidos, $fallidos fallidos."
+Write-Host "Resumen: $creados creados, $actualizados con imagen actualizada, $omitidos omitidos, $fallidos fallidos."
 if ($fallidos -gt 0) { exit 1 }

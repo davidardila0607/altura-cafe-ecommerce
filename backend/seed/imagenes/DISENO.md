@@ -1,11 +1,21 @@
-# Cota — filosofía visual de las imágenes de producto
+# Grabado y kraft: filosofía visual de las imágenes de producto (set 2)
 
-**Cota** (la marca de altitud en un mapa topográfico) es el principio que guía las ilustraciones de Altura: cada objeto se presenta como un dato medido con calma, sobre un fondo silencioso, con la precisión de una lámina de cartografía y la calidez de un empaque hecho a mano.
+**Grabado y kraft** es el principio de este set: el empaque se trata como un objeto real fotografiado en estudio, y la etiqueta como una pequeña lámina de grabado que cuenta de dónde viene el café.
 
-**Espacio y forma.** Un solo objeto por lámina, centrado, de pie sobre una línea de suelo invisible compartida por todo el catálogo. El vacío crema alrededor no es fondo sobrante sino aire de montaña: le da peso al objeto. La forma de la bolsa es sobria —sello superior engarzado, válvula, fuelle inferior— y el volumen se insinúa con degradados mínimos, nunca con brillos ruidosos. Cada curva está meticulosamente ajustada para que la silueta parezca cosida, no dibujada.
+**Objeto y luz.** Una bolsa stand-up de papel kraft en vista de tres cuartos: cara frontal y fuelle lateral en sombra, sello superior engarzado, cierre, válvula de desgasificación y pliegues suaves. La luz de estudio entra desde la izquierda; la sombra se proyecta hacia la derecha sobre una mesa cálida y una sombra de contacto ancla la bolsa al suelo. Unos granos tostados en primer plano dan escala y materia.
 
-**Color y material.** Paleta cerrada de tierra y hoja: crema y papel para el aire y la etiqueta; espresso para la tinta; café, verde hoja y terracota como cuerpo de la bolsa, uno por variedad. El color identifica antes que la palabra. Una trama de curvas de nivel, casi invisible, recorre el cuerpo de la bolsa: es la referencia silenciosa a la altitud, perceptible solo a quien mira de cerca, resultado de una calibración paciente de opacidad y grosor.
+**Material.** El kraft se construye con ruido fractal y fibras alargadas (`feTurbulence`), acabado mate; la etiqueta es papel crema con grano propio. Nada brilla: todo es papel.
 
-**Escala y ritmo.** El tamaño es información: la presentación de 500 g es visiblemente mayor que la de 340 g, y ambas apoyan en el mismo suelo, de modo que la diferencia se lee de un vistazo al recorrer la grilla. Todas las láminas comparten composición exacta; el ritmo del catálogo nace de esa repetición disciplinada, como una serie de especímenes en un herbario.
+**Etiqueta.** Logo Altura, un grabado de la región de origen en líneas finas y tramas (cañón, laderas cafeteras, volcán, sierra nevada, terrazas), nombre del café en Fraunces con eje óptico, variedad y origen en Inter, y el peso neto. El grabado y los filetes usan el color de la variedad: Castillo café `#6B4226`, Geisha verde hoja `#3F5A40`, Moka terracota `#B5562F`.
 
-**Jerarquía y texto.** El texto es escaso y funcional: marca, nombre, variedad, origen y peso. Fraunces para la marca, el nombre y el peso —con la gravedad de una serifa editorial—; Inter, pequeña y espaciada, para las etiquetas técnicas. Nada se toca, nada se corta, cada línea respira dentro de su margen. El conjunto debe parecer el trabajo minucioso de un estudio de empaque del más alto nivel, revisado una y otra vez hasta que no quede nada que sobre.
+**Escala y serie.** Todas las láminas comparten encuadre, luz y suelo. La bolsa de 500 g es un 17 % más grande que la de 340 g y apoya en la misma línea, de modo que la diferencia se lee al recorrer la grilla. Solo cambian el grabado, el color y el texto: la serie se reconoce como una sola familia.
+
+**Técnica.** Cada producto tiene su SVG fuente (las fuentes se nombran por familia: Fraunces e Inter) y su PNG de 1600×1600 exportado con Chromium cargando las fuentes variables de @fontsource.
+
+| Café | Grabado |
+|---|---|
+| Mesa de los Santos (Santander) | Cañón del Chicamocha |
+| Pitalito Reserva (Huila) | Laderas cafeteras con surcos y cafetos |
+| Volcán Galeras (Nariño) | Volcán con fumarola |
+| Sierra Nevada (Magdalena) | Picos nevados |
+| Tierradentro (Cauca) | Lomas en terrazas |
