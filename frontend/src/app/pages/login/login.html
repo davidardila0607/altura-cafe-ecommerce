@@ -19,8 +19,9 @@
           [attr.aria-invalid]="mostrarError('correo')"
           aria-describedby="login-correo-error"
         />
-        <div id="login-correo-error" class="invalid-feedback d-block" aria-live="polite">
+        <div id="login-correo-error" class="auth-error" aria-live="polite">
           @if (mostrarError('correo')) {
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
             @if (formulario.controls.correo.hasError('required')) {
               Escribe tu correo electrónico.
             } @else {
@@ -54,14 +55,15 @@
             <i class="bi" [class.bi-eye]="!mostrarContrasena()" [class.bi-eye-slash]="mostrarContrasena()" aria-hidden="true"></i>
           </button>
         </div>
-        <div id="login-contrasena-error" class="invalid-feedback d-block" aria-live="polite">
+        <div id="login-contrasena-error" class="auth-error" aria-live="polite">
           @if (mostrarError('contrasena')) {
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
             Escribe tu contraseña.
           }
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary w-100 mt-2">Iniciar sesión</button>
+      <button type="submit" class="btn btn-primary auth-enviar">Iniciar sesión</button>
 
       @if (aviso(); as mensaje) {
         <div class="auth-aviso" role="status">
