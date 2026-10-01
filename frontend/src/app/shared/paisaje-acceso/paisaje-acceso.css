@@ -1,0 +1,143 @@
+:host {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(180deg, var(--alba) 0%, #ece6dc 45%, var(--niebla) 80%);
+}
+
+.paisaje {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.sol {
+  position: absolute;
+  left: 58%;
+  top: 18%;
+  width: clamp(10rem, 24vw, 22rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(247 201 162 / 0.95) 0%, rgb(247 201 162 / 0) 68%);
+}
+
+.capa {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.capa-1 {
+  height: 62%;
+}
+
+.capa-2 {
+  height: 44%;
+}
+
+.capa-3 {
+  height: 32%;
+}
+
+.capa-4 {
+  height: 20%;
+}
+
+/* Bancos de niebla: bandas difusas, el doble de anchas que la pantalla, que van y vienen. */
+.niebla {
+  position: absolute;
+  left: -50%;
+  width: 200%;
+  height: 18%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(245 246 241 / 0.85), rgb(245 246 241 / 0));
+}
+
+.niebla-1 {
+  bottom: 34%;
+}
+
+.niebla-2 {
+  bottom: 18%;
+  height: 14%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .niebla-1 {
+    animation: deriva 26s ease-in-out infinite alternate;
+  }
+
+  .niebla-2 {
+    animation: deriva 34s ease-in-out infinite alternate-reverse;
+  }
+
+  .sol {
+    animation: amanece 1.6s var(--ease-salida) backwards;
+  }
+}
+
+@keyframes deriva {
+  from {
+    transform: translateX(-12%);
+  }
+  to {
+    transform: translateX(12%);
+  }
+}
+
+@keyframes amanece {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+.enlace-logo {
+  position: absolute;
+  top: var(--esp-5);
+  left: var(--margen-lateral);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+
+.frase {
+  position: absolute;
+  left: var(--margen-lateral);
+  top: clamp(6rem, 18vh, 10rem);
+  max-width: 9ch;
+  color: var(--bosque);
+  font-size: clamp(2.8rem, 1.6rem + 4.5vw, 6rem);
+  font-weight: 800;
+  font-stretch: 75%;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+}
+
+@media (max-width: 991.98px) {
+  .frase {
+    top: 5rem;
+    max-width: 12ch;
+    font-size: clamp(2.4rem, 1.4rem + 5vw, 3.6rem);
+  }
+
+  .capa-1 {
+    height: 52%;
+  }
+
+  .capa-2 {
+    height: 38%;
+  }
+
+  .capa-3 {
+    height: 28%;
+  }
+
+  .capa-4 {
+    height: 18%;
+  }
+}

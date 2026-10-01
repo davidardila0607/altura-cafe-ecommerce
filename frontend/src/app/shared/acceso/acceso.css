@@ -1,0 +1,233 @@
+/* Estilos compartidos de Login y Registro (cada página los carga con styleUrl). */
+
+/* El paisaje ocupa toda la pantalla y el formulario flota a la derecha. */
+.acceso {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+  align-items: center;
+  min-height: 100dvh;
+  padding: var(--esp-6) var(--margen-lateral);
+}
+
+.fondo {
+  position: absolute;
+  inset: 0;
+}
+
+.tarjeta-acceso {
+  position: relative;
+  grid-column: 2;
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+  border-radius: 28px;
+  background: var(--papel);
+  box-shadow: var(--sombra-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tarjeta-acceso {
+    animation: sube-tarjeta 700ms var(--ease-salida) 150ms backwards;
+  }
+}
+
+@keyframes sube-tarjeta {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+/* Móvil: el paisaje arriba como banda y el formulario sube sobre él. */
+@media (max-width: 991.98px) {
+  .acceso {
+    display: block;
+    padding: 0;
+  }
+
+  .fondo {
+    position: relative;
+    height: 21rem;
+  }
+
+  .tarjeta-acceso {
+    margin-top: -2.5rem;
+    border-radius: 28px 28px 0 0;
+    box-shadow: none;
+  }
+}
+
+.titulo-acceso {
+  font-size: var(--fs-700);
+  font-weight: 800;
+  font-stretch: 78%;
+  letter-spacing: -0.035em;
+}
+
+.subtitulo-acceso {
+  margin: var(--esp-2) 0 var(--esp-6);
+  color: var(--texto-suave);
+}
+
+/* ===== Campo con microinteracciones ===== */
+.campo-acceso {
+  margin-bottom: var(--esp-5);
+}
+
+.control {
+  position: relative;
+}
+
+.control .campo {
+  padding-right: 3rem;
+}
+
+/* Línea cereza que se dibuja desde la izquierda al enfocar el campo. */
+.linea {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--cereza);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 360ms var(--ease-salida);
+  pointer-events: none;
+}
+
+.control:focus-within .linea {
+  transform: scaleX(1);
+}
+
+/* Visto de campo válido: aparece con un pequeño crecimiento. */
+.marca-valido {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  color: var(--musgo);
+  font-size: 1.15rem;
+  opacity: 0;
+  translate: 0 -50%;
+  scale: 0.6;
+  transition:
+    opacity 200ms ease,
+    scale 300ms var(--ease-salida);
+  pointer-events: none;
+}
+
+.valido .marca-valido {
+  opacity: 1;
+  scale: 1;
+}
+
+.ver-contrasena {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--texto-suave);
+}
+
+.ver-contrasena:hover {
+  color: var(--bosque);
+}
+
+.mensaje-error {
+  transition:
+    opacity 200ms ease,
+    translate 240ms var(--ease-salida);
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+
+.ayuda {
+  margin-top: var(--esp-2);
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+/* ===== Medidor de seguridad de la contraseña (Registro) ===== */
+.medidor {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: var(--esp-2);
+}
+
+.medidor span {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--liquen);
+  overflow: hidden;
+}
+
+/* Cada segmento se llena de izquierda a derecha (transform: scaleX). */
+.medidor span::after {
+  content: '';
+  display: block;
+  height: 100%;
+  background: var(--nivel-color, var(--musgo));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 320ms var(--ease-salida);
+}
+
+.medidor span.lleno::after {
+  transform: scaleX(1);
+}
+
+.enviar {
+  width: 100%;
+  margin-top: var(--esp-2);
+}
+
+.aviso {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-top: var(--esp-5);
+  padding: 0.9rem 1rem;
+  border: 1px solid rgb(62 92 69 / 0.35);
+  border-radius: var(--radio-campo);
+  background: rgb(62 92 69 / 0.08);
+  color: var(--musgo);
+  font-weight: 600;
+  transition:
+    opacity 260ms var(--ease-salida),
+    translate 260ms var(--ease-salida);
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.alterno {
+  margin-top: var(--esp-6);
+  padding-top: var(--esp-5);
+  border-top: 1px solid var(--linea);
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+.alterno a {
+  color: var(--cereza);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mensaje-error,
+  .aviso {
+    @starting-style {
+      translate: none;
+    }
+  }
+
+  .marca-valido {
+    scale: 1;
+  }
+}

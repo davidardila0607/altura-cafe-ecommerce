@@ -2,13 +2,14 @@ import { Component, ElementRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PATRON_CORREO } from '../../core/utils/validadores';
-import { PanelMarca } from '../../shared/panel-marca/panel-marca';
+import { PaisajeAcceso } from '../../shared/paisaje-acceso/paisaje-acceso';
 
 /** Inicio de sesión (solo visual): valida el formulario pero NO llama a la API. */
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, PanelMarca],
+  imports: [ReactiveFormsModule, RouterLink, PaisajeAcceso],
   templateUrl: './login.html',
+  styleUrl: '../../shared/acceso/acceso.css',
 })
 export class Login {
   private readonly fb = inject(FormBuilder);
@@ -31,6 +32,12 @@ export class Login {
   protected mostrarError(campo: 'correo' | 'contrasena'): boolean {
     const control = this.formulario.controls[campo];
     return control.invalid && (control.touched || this.enviado());
+  }
+
+  /** Visto verde: el campo ya tiene un valor válido escrito por el usuario. */
+  protected esValido(campo: 'correo' | 'contrasena'): boolean {
+    const control = this.formulario.controls[campo];
+    return control.valid && control.dirty;
   }
 
   protected enviar(): void {
