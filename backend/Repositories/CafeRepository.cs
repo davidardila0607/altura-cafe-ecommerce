@@ -89,5 +89,12 @@ namespace CafeApi.Repositories
                 ImagenPublicId = c.ImagenPublicId
             });
         }
+
+        public async Task<bool> ImagenEnUsoAsync(
+            string publicId,
+            CancellationToken cancellationToken)
+        {
+            return await _context.Cafes.AnyAsync(c => c.ImagenPublicId == publicId, cancellationToken);
+        }
     }
 }

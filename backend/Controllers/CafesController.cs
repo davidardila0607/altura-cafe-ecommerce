@@ -3,6 +3,7 @@ using CafeApi.Data.Configurations;
 using CafeApi.DTOs;
 using CafeApi.Interfaces;
 using CafeApi.Models;
+using CafeApi.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -91,10 +92,10 @@ namespace CafeApi.Controllers
             return Ok(cafe);
         }
 
-        // ✅ AUTENTICADO
-        // Cualquier usuario con JWT válido puede crear cafés.
+        // ✅ GESTIÓN DE INVENTARIO
+        // Requiere JWT válido + la política GestionInventario (hoy: rol Administrador).
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<ActionResult<CafeResponseDto>> Post(
             [FromBody] CreateCafeDto dto,
             CancellationToken cancellationToken)
@@ -157,10 +158,9 @@ namespace CafeApi.Controllers
             );
         }
 
-        // ✅ SOLO ADMINISTRADOR
-        // Requiere JWT válido + Role = Administrador.
+        // ✅ GESTIÓN DE INVENTARIO
         [HttpPut("{id:int}")]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<ActionResult<CafeResponseDto>> Put(
             int id,
             [FromBody] UpdateCafeDto dto,
@@ -241,10 +241,9 @@ namespace CafeApi.Controllers
             return Ok(response);
         }
 
-        // ✅ SOLO ADMINISTRADOR
-        // Requiere JWT válido + Role = Administrador.
+        // ✅ GESTIÓN DE INVENTARIO
         [HttpDelete("{id:int}")]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<IActionResult> Delete(
             int id,
             CancellationToken cancellationToken)

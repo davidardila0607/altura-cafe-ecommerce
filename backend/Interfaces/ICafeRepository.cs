@@ -39,5 +39,11 @@ namespace CafeApi.Interfaces
             Cafe cafe,
             CancellationToken cancellationToken
         );
+
+        // ✅ true si algún café usa esa imagen de Cloudinary.
+        Task<bool> ImagenEnUsoAsync(
+            string publicId,
+            CancellationToken cancellationToken
+        );
     }
 }

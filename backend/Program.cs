@@ -9,6 +9,7 @@ using CafeApi.Data;
 using CafeApi.Middleware;
 using CafeApi.Configurations;
 using CafeApi.Services;
+using CafeApi.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -112,6 +113,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     )
             };
     });
+
+// ✅ Autorización por políticas (ver Seguridad/Politicas.cs).
+Politicas.Registrar(builder.Services.AddAuthorizationBuilder());
 
 builder.Services.AddControllers();
 

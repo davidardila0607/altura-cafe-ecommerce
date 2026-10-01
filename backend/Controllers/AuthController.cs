@@ -1,6 +1,8 @@
 using CafeApi.DTOs;
 using CafeApi.Models;
+using CafeApi.Seguridad;
 using Google.Apis.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -20,56 +22,59 @@ namespace CafeApi.Controllers
             _configuration = configuration;
         }
 
+        // ✅ Cuentas fijas de prueba (todavía no hay tabla de usuarios).
+        // Para agregar un usuario autorizado basta con añadir una línea con su rol.
+        private static readonly (string Email, string Password, string Nombre, string Rol)[] CuentasDePrueba =
+        [
+            ("admin@cafeapi.com", "123456", "Administración Altura", Roles.Administrador),
+            ("cliente@cafeapi.com", "123456", "Cliente de prueba", Roles.Cliente),
+        ];
+
         // ✅ LOGIN PARA PRUEBAS JWT Y ROLES
         // Permite iniciar sesión como Administrador o Cliente.
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequestDto request)
         {
-            // ✅ Almacenará el rol del usuario autenticado.
-            string role;
-
-            // ✅ Usuario Administrador.
-            if (
-            request.Email == "admin@cafeapi.com" &&
-            request.Password == "123456"
-            )
-            {
-                role = "Administrador";
-            }
-
-            // ✅ Usuario Cliente.
-            else if (
-            request.Email == "cliente@cafeapi.com" &&
-            request.Password == "123456"
-            )
-            {
-                role = "Cliente";
-            }
+            // ✅ Busca la cuenta (el correo sin distinguir mayúsculas).
+            var cuenta = CuentasDePrueba.FirstOrDefault(c =>
+                string.Equals(c.Email, request.Email.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                c.Password == request.Password);
 
             // ✅ Credenciales incorrectas.
-            else
+            if (cuenta.Email is null)
             {
                 return Unauthorized("Credenciales inválidas.");
             }
 
-            // ✅ Genera JWT incluyendo el rol.
-            var token = GenerateJwt(
-            request.Email,
-            request.Email,
-            role
-            );
+            // ✅ Genera JWT con email, nombre y rol.
+            var token = GenerateJwt(cuenta.Email, cuenta.Nombre, cuenta.Rol);
 
             // ✅ Construimos la respuesta utilizando DTO.
             var response = new LoginResponseDto
             {
                 Token = token,
 
-                Email = request.Email,
+                Email = cuenta.Email,
 
-                Role = role
+                Role = cuenta.Rol
             };
 
             return Ok(response);
+        }
+
+        // ✅ USUARIO ACTUAL
+        // Devuelve lo que dice el JWT recibido: correo, nombre y roles.
+        // El frontend lo usa para saber quién inició sesión.
+        [HttpGet("me")]
+        [Authorize]
+        public ActionResult<UsuarioActualDto> Me()
+        {
+            return Ok(new UsuarioActualDto
+            {
+                Email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+                Nombre = User.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
+                Roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList()
+            });
         }
 
 
@@ -108,7 +113,7 @@ namespace CafeApi.Controllers
             var jwt = GenerateJwt(
             payload.Email,
             payload.Name,
-            "Cliente"
+            Roles.Cliente
             );
 
             return Ok(new
@@ -116,7 +121,7 @@ namespace CafeApi.Controllers
                 token = jwt,
                 email = payload.Email,
                 name = payload.Name,
-                role = "Cliente"
+                role = Roles.Cliente
             });
         }
 
