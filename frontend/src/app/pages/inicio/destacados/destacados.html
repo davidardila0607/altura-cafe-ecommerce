@@ -1,11 +1,9 @@
 <section class="seccion" aria-labelledby="destacados-titulo">
   <div class="contenedor">
-    <header class="encabezado">
-      <div>
-        <h2 id="destacados-titulo" class="titulo-seccion">Selección de la casa</h2>
-        <p class="bajada">Los lotes que más nos emocionan esta temporada, listos para salir del tostador.</p>
-      </div>
-      <a class="enlace-texto" routerLink="/productos">Ver todos los cafés</a>
+    <header class="encabezado" appRevelar>
+      <h2 id="destacados-titulo" class="titulo-seccion revelar-texto">Selección de la casa</h2>
+      <p class="bajada revelar-texto">Los lotes que más nos emocionan esta temporada, listos para salir del tostador.</p>
+      <a class="enlace-texto revelar-texto" routerLink="/productos">Ver todos los cafés</a>
     </header>
 
     @if (cargando()) {
@@ -22,9 +20,11 @@
     } @else if (error()) {
       <app-estado-error (reintentar)="reintentar.emit()" />
     } @else {
-      <div class="rejilla" data-testid="destacados">
-        @for (cafe of destacados(); track cafe.id; let primero = $first) {
+      <div class="rejilla" data-testid="destacados" appRevelar>
+        @for (cafe of destacados(); track cafe.id; let primero = $first; let i = $index) {
           <app-tarjeta-cafe
+            class="revelar-texto"
+            [style.transition-delay.ms]="i * 90"
             [cafe]="cafe"
             [variante]="primero ? 'destacada' : 'horizontal'"
             [prioridad]="primero"

@@ -1,25 +1,24 @@
+/* Chips, campo e interruptor vienen del sistema de diseño (styles.css). */
 .filtros {
   display: grid;
   gap: var(--esp-6);
 }
 
 .grupo {
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
-  min-width: 0;
 }
 
 .titulo-grupo {
   display: block;
-  float: none;
-  width: auto;
-  margin: 0 0 var(--esp-3);
+  margin-bottom: var(--esp-3);
   padding: 0;
-  font-family: var(--alt-fuente-titulos);
   font-size: var(--fs-400);
-  font-weight: 520;
-  line-height: 1.2;
+  font-weight: 750;
+  font-stretch: 85%;
+  letter-spacing: -0.02em;
 }
 
 .chips {
@@ -28,52 +27,11 @@
   gap: var(--esp-2);
 }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.5rem;
-  padding: 0.4rem 0.95rem;
-  border: 1px solid var(--alt-linea-fuerte);
-  border-radius: var(--radio-pildora);
-  background: transparent;
-  color: var(--alt-espresso);
-  font-size: var(--fs-200);
-  font-weight: 520;
-  transition:
-    background-color var(--dur-rapida) ease,
-    border-color var(--dur-rapida) ease,
-    color var(--dur-rapida) ease,
-    transform var(--dur-presion) var(--ease-salida);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .chip:hover {
-    border-color: var(--alt-espresso);
-  }
-}
-
-@media (pointer: coarse) {
-  .chip {
-    min-height: 2.75rem;
-  }
-}
-
-.chip:active {
-  transform: scale(0.96);
-}
-
-.chip[aria-pressed='true'] {
-  background: var(--alt-espresso);
-  border-color: var(--alt-espresso);
-  color: var(--alt-crema);
-}
-
 .muestra {
   width: 0.65rem;
   height: 0.65rem;
-  border-radius: 2px;
-  box-shadow: 0 0 0 1.5px rgb(251 248 243 / 0.7);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1.5px rgb(245 246 241 / 0.7);
 }
 
 .buscador {
@@ -82,63 +40,17 @@
 
 .buscador .bi-search {
   position: absolute;
-  left: 0.9rem;
+  left: 1rem;
   top: 50%;
-  transform: translateY(-50%);
-  color: var(--alt-texto-suave);
+  translate: 0 -50%;
+  color: var(--texto-suave);
   pointer-events: none;
 }
 
-.buscador .form-control {
-  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
-}
-
-.interruptor {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-3);
-  min-height: 2.5rem;
-  padding-left: 0;
-}
-
-.interruptor .form-check-input {
-  width: 2.6em;
-  height: 1.4em;
-  margin: 0;
-  border-color: var(--alt-linea-fuerte);
-  cursor: pointer;
-}
-
-.interruptor .form-check-input:checked {
-  background-color: var(--alt-verde);
-  border-color: var(--alt-verde);
-}
-
-.interruptor .form-check-input:focus {
-  box-shadow: 0 0 0 0.22rem var(--bs-focus-ring-color);
-}
-
-.interruptor .form-check-label {
-  font-weight: 520;
-  cursor: pointer;
+.buscador .campo {
+  padding-left: 2.6rem;
 }
 
 .limpiar {
   justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--esp-2);
-}
-
-.contador {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding-inline: 0.35rem;
-  border-radius: var(--radio-pildora);
-  background: var(--alt-terracota);
-  color: #fff;
-  font-size: var(--fs-100);
-  font-weight: 700;
 }

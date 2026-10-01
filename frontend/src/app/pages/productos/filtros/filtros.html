@@ -7,7 +7,7 @@
         <input
           [id]="prefijo() + '-buscar'"
           type="search"
-          class="form-control"
+          class="campo"
           placeholder="Nombre, origen o variedad"
           autocomplete="off"
           [value]="filtros().q"
@@ -81,20 +81,19 @@
   </fieldset>
 
   <div class="grupo">
-    <div class="form-check form-switch interruptor">
+    <label class="interruptor" [for]="prefijo() + '-disponibles'">
       <input
-        class="form-check-input"
         type="checkbox"
         role="switch"
         [id]="prefijo() + '-disponibles'"
         [checked]="filtros().disponibles"
         (change)="alternarDisponibles($event)"
       />
-      <label class="form-check-label" [for]="prefijo() + '-disponibles'">Solo disponibles</label>
-    </div>
+      Solo disponibles
+    </label>
   </div>
 
-  <button type="button" class="btn btn-outline-dark limpiar" [disabled]="activos() === 0 && !filtros().q" (click)="limpiar.emit()">
+  <button type="button" class="boton boton-contorno limpiar" [disabled]="activos() === 0 && !filtros().q" (click)="limpiar.emit()">
     Limpiar filtros
     @if (activos() > 0) {
       <span class="contador">{{ activos() }}</span>

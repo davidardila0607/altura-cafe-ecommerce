@@ -1,8 +1,8 @@
 <section class="seccion" aria-labelledby="origenes-titulo">
   <div class="contenedor rejilla">
-    <header class="encabezado">
-      <h2 id="origenes-titulo" class="titulo-seccion">Orígenes</h2>
-      <p class="bajada">Cada café viene de una región con nombre propio. Toca un punto del mapa para ver qué cafés nacen allí.</p>
+    <header class="encabezado" appRevelar>
+      <h2 id="origenes-titulo" class="titulo-seccion revelar-texto">Orígenes</h2>
+      <p class="bajada revelar-texto">Cada café viene de una región con nombre propio. Toca un punto del mapa para ver qué cafés nacen allí.</p>
     </header>
 
     @if (cargando()) {
@@ -18,7 +18,7 @@
         <app-estado-error (reintentar)="reintentar.emit()" />
       </div>
     } @else {
-      <div class="mapa">
+      <div class="mapa curvas">
         <svg [attr.viewBox]="viewBox" role="img" aria-labelledby="mapa-titulo" focusable="false">
           <title id="mapa-titulo">Mapa de Colombia con los departamentos de origen de nuestros cafés</title>
           @for (d of departamentos; track d.clave) {
@@ -70,7 +70,7 @@
             }
           </ul>
 
-          <a class="btn btn-outline-dark" routerLink="/productos" [queryParams]="{ origen: region.clave }">
+          <a class="boton boton-contorno" routerLink="/productos" [queryParams]="{ origen: region.clave }">
             Ver cafés de {{ region.nombre }}
           </a>
         }

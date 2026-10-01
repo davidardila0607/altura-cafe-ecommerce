@@ -7,6 +7,7 @@ import { Cafe } from '../../../core/models/cafe';
 import { optimizarImagenCloudinary } from '../../../core/utils/imagenes';
 import { contarCafes, normalizarTexto } from '../../../core/utils/texto';
 import { EstadoError } from '../../../shared/estado-error/estado-error';
+import { Revelar } from '../../../shared/revelar/revelar';
 
 interface Region {
   /** Valor del filtro ?origen= en /productos. */
@@ -20,7 +21,7 @@ const [, , ANCHO_MAPA, ALTO_MAPA] = VIEWBOX_COLOMBIA.split(' ').map(Number);
 
 @Component({
   selector: 'app-origenes',
-  imports: [RouterLink, CurrencyPipe, EstadoError],
+  imports: [RouterLink, CurrencyPipe, EstadoError, Revelar],
   templateUrl: './origenes.html',
   styleUrl: './origenes.css',
 })

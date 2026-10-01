@@ -1,4 +1,4 @@
-<header class="barra">
+<header class="barra" [class.solida]="solido() || menuAbierto()">
   <nav class="contenedor fila" aria-label="Navegación principal">
     <a class="marca" routerLink="/" aria-label="Altura, ir al inicio">
       <app-logo />
@@ -27,7 +27,6 @@
           #campo
           id="buscar-cafes"
           type="search"
-          class="form-control"
           placeholder="Busca por nombre, origen o variedad"
           autocomplete="off"
           enterkeyhint="search"

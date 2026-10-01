@@ -1,10 +1,13 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { afterRenderEffect, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Cafe } from '../../core/models/cafe';
 import { Variedad } from '../../core/models/variedad';
 import { Cafes } from '../../core/services/cafes';
 import { Variedades as VariedadesApi } from '../../core/services/variedades';
+import { refrescarScroll } from '../../core/utils/gsap';
 import { VistaRapida } from '../../shared/vista-rapida/vista-rapida';
+import { Altimetro } from './altimetro/altimetro';
+import { CintaNotas } from './cinta-notas/cinta-notas';
 import { Cierre } from './cierre/cierre';
 import { Destacados } from './destacados/destacados';
 import { Hero } from './hero/hero';
@@ -12,23 +15,31 @@ import { Origenes } from './origenes/origenes';
 import { Proceso } from './proceso/proceso';
 import { Variedades } from './variedades/variedades';
 
+/**
+ * Inicio: el ascenso del valle a la cumbre. Cada sección lleva data-etapa (la lee el
+ * altímetro) y su altitud está en ETAPAS_ASCENSO (core/data/contenido-marca.ts).
+ */
 @Component({
   selector: 'app-inicio',
-  imports: [Hero, Destacados, Proceso, Origenes, Variedades, Cierre, VistaRapida],
+  imports: [Hero, Altimetro, Destacados, Proceso, CintaNotas, Origenes, Variedades, Cierre, VistaRapida],
   template: `
-    <app-hero />
+    <app-hero data-etapa="valle" />
 
     <app-destacados
+      data-etapa="ladera"
       [cafes]="listaCafes()"
       [cargando]="cafes.isLoading()"
       [error]="!!cafes.error()"
       (reintentar)="cafes.reload()"
-      (ver)="idVistaRapida.set($event)"
+      (ver)="cafeSeleccionado.set($event)"
     />
 
-    <app-proceso />
+    <app-proceso data-etapa="finca" />
+
+    <app-cinta-notas [cafes]="listaCafes()" />
 
     <app-origenes
+      data-etapa="cordillera"
       [cafes]="listaCafes()"
       [cargando]="cafes.isLoading()"
       [error]="!!cafes.error()"
@@ -36,6 +47,7 @@ import { Variedades } from './variedades/variedades';
     />
 
     <app-variedades
+      data-etapa="cafetal"
       [variedades]="listaVariedades()"
       [cafes]="listaCafes()"
       [cargando]="variedades.isLoading()"
@@ -43,16 +55,27 @@ import { Variedades } from './variedades/variedades';
       (reintentar)="variedades.reload()"
     />
 
-    <app-cierre />
+    <app-cierre data-etapa="cumbre" />
 
-    <app-vista-rapida [cafeId]="idVistaRapida()" (cerrar)="idVistaRapida.set(null)" />
+    <app-altimetro />
+
+    <app-vista-rapida [cafe]="cafeSeleccionado()" (cerrar)="cafeSeleccionado.set(null)" />
+  `,
+  styles: `
+    /* En escritorio el contenido deja libre el margen derecho, donde va el altímetro. */
+    @media (min-width: 1024px) {
+      :host {
+        display: block;
+        --margen-lateral: clamp(8.5rem, 10vw, 10rem);
+      }
+    }
   `,
 })
 export class Inicio {
   private readonly cafesApi = inject(Cafes);
   private readonly variedadesApi = inject(VariedadesApi);
 
-  /** GET /api/cafes: lo usan Destacados y Orígenes (y el conteo de Variedades). */
+  /** GET /api/cafes: lo usan Destacados, Orígenes, la cinta y el conteo de Variedades. */
   protected readonly cafes = rxResource({ stream: () => this.cafesApi.listar() });
 
   /** GET /api/variedades */
@@ -63,5 +86,14 @@ export class Inicio {
     this.variedades.hasValue() ? this.variedades.value() : [],
   );
 
-  protected readonly idVistaRapida = signal<number | null>(null);
+  protected readonly cafeSeleccionado = signal<Cafe | null>(null);
+
+  constructor() {
+    // Cuando llegan los datos la página cambia de alto: los ScrollTrigger deben recalcularse.
+    afterRenderEffect(() => {
+      this.cafes.status();
+      this.variedades.status();
+      refrescarScroll();
+    });
+  }
 }

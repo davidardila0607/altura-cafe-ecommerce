@@ -2,6 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Cafe } from '../../../core/models/cafe';
 import { EstadoError } from '../../../shared/estado-error/estado-error';
+import { Revelar } from '../../../shared/revelar/revelar';
 import { TarjetaCafe } from '../../../shared/tarjeta-cafe/tarjeta-cafe';
 
 /** Cantidad de cafés de la selección de la casa. */
@@ -20,7 +21,7 @@ export function elegirDestacados(cafes: readonly Cafe[], cantidad = CANTIDAD): C
 
 @Component({
   selector: 'app-destacados',
-  imports: [RouterLink, TarjetaCafe, EstadoError],
+  imports: [RouterLink, TarjetaCafe, EstadoError, Revelar],
   templateUrl: './destacados.html',
   styleUrl: './destacados.css',
 })
@@ -30,7 +31,7 @@ export class Destacados {
   readonly error = input(false);
 
   readonly reintentar = output<void>();
-  readonly ver = output<number>();
+  readonly ver = output<Cafe>();
 
   protected readonly destacados = computed(() => elegirDestacados(this.cafes()));
 }

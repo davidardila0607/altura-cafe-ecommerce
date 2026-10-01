@@ -1,85 +1,87 @@
-.seccion {
-  padding-block: var(--seccion);
-  background: var(--alt-crema);
+:host {
+  display: block;
 }
 
-.titulo-seccion {
-  max-width: 22ch;
-  margin: 0 0 var(--esp-7);
-  font-size: var(--fs-700);
+.seccion {
+  padding-block: var(--seccion);
+  background: var(--papel);
 }
 
 .filas {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--alt-linea-fuerte);
+  margin-top: var(--esp-7);
+  border-top: 1px solid var(--linea-fuerte);
 }
 
-/* Bandas tipográficas: muestra de trama, nombre grande, texto editorial y acción. */
 .fila {
   display: grid;
-  grid-template-columns: 4rem minmax(0, 3fr) minmax(0, 5fr) minmax(0, 2.4fr);
+  grid-template-columns: 5.5rem minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
   align-items: center;
-  gap: var(--esp-4) clamp(1.25rem, 3vw, 3rem);
-  padding-block: clamp(1.75rem, 3vw, 2.75rem);
-  border-bottom: 1px solid var(--alt-linea-fuerte);
+  gap: var(--esp-4) clamp(1rem, 3vw, 3rem);
+  padding-block: var(--esp-6);
+  border-bottom: 1px solid var(--linea-fuerte);
 }
 
 .muestra {
-  width: 4rem;
-  height: 4rem;
+  position: relative;
+  width: 5.5rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--color-variedad);
+}
+
+/* Curvas de nivel claras sobre el color (la textura se usa como máscara). */
+.muestra::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(255 255 255 / 0.45);
+  mask: url('/texturas/curvas-nivel.svg') center / 300%;
 }
 
 .nombre {
-  margin: 0;
-  font-size: clamp(2.2rem, 1.6rem + 2.4vw, 3.4rem);
-  font-weight: 440;
-  font-style: italic;
-  line-height: 1;
+  color: var(--color-variedad);
+  font-size: var(--fs-800);
+  font-weight: 800;
+  font-stretch: 75%;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
 }
 
 .texto {
-  max-width: 48ch;
-  margin: 0;
-  color: var(--alt-texto-suave);
+  max-width: 44ch;
+  color: var(--texto-suave);
 }
 
 .accion {
   display: grid;
   justify-items: end;
-  gap: var(--esp-2);
   text-align: right;
 }
 
 .conteo {
+  color: var(--texto-suave);
+  font-family: var(--fuente-mono);
   font-size: var(--fs-200);
-  color: var(--alt-texto-suave);
 }
 
 .fila-esqueleto {
   height: 7rem;
-  margin-bottom: var(--esp-3);
+  margin-top: var(--esp-4);
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 899.98px) {
   .fila {
-    grid-template-columns: 3.25rem minmax(0, 1fr);
-    align-items: start;
+    grid-template-columns: 4rem minmax(0, 1fr);
   }
 
   .muestra {
-    width: 3.25rem;
-    height: 3.25rem;
-  }
-
-  .nombre {
-    align-self: center;
+    width: 4rem;
   }
 
   .texto,
   .accion {
-    grid-column: 2;
+    grid-column: 1 / -1;
   }
 
   .accion {

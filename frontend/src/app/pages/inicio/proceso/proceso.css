@@ -1,126 +1,103 @@
-.seccion {
-  padding-block: var(--seccion);
-  background: var(--alt-crema);
+:host {
+  display: block;
+}
+
+.proceso {
   outline: none;
+  padding-block: var(--seccion);
+  background: var(--niebla-honda);
 }
 
-.encabezado {
-  max-width: 40rem;
-  margin-bottom: var(--esp-8);
+/* ===== Sin anclar: fila con scroll horizontal e imán (móvil y movimiento reducido) ===== */
+.pista {
+  display: flex;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  padding: 0 var(--margen-lateral) var(--esp-4);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--margen-lateral);
+  scrollbar-width: thin;
 }
 
-.titulo-seccion {
-  margin: 0 0 var(--esp-4);
-  font-size: var(--fs-700);
+.pista > li {
+  flex: 0 0 min(78vw, 26rem);
+  scroll-snap-align: start;
 }
 
-.bajada {
-  margin: 0;
-  font-size: var(--fs-400);
-  color: var(--alt-texto-suave);
+.intro {
+  align-self: center;
 }
 
-/* Lámina de revista: cuatro piezas con tamaños, proporciones y desfases distintos. */
-.pasos {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--esp-8) clamp(1rem, 2.4vw, 2rem);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.paso {
-  margin: 0;
-}
-
-.paso:nth-child(1) {
-  grid-column: 1 / span 5;
-}
-
-.paso:nth-child(2) {
-  grid-column: 7 / span 6;
-  margin-top: var(--esp-9);
-}
-
-.paso:nth-child(3) {
-  grid-column: 2 / span 7;
-}
-
-.paso:nth-child(4) {
-  grid-column: 9 / span 4;
-  margin-top: calc(var(--esp-9) * 1.5);
+.intro .bajada {
+  margin-top: var(--esp-4);
 }
 
 .foto {
-  margin: 0 0 var(--esp-5);
   overflow: hidden;
+  aspect-ratio: 4 / 5;
   border-radius: var(--radio-tarjeta);
-  background: var(--alt-crema-hondo);
+  background: var(--liquen);
 }
 
 .foto img {
-  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.paso:nth-child(1) .foto {
-  aspect-ratio: 4 / 5;
-}
-
-.paso:nth-child(2) .foto {
-  aspect-ratio: 5 / 4;
-}
-
-.paso:nth-child(3) .foto {
-  aspect-ratio: 3 / 2;
-}
-
-.paso:nth-child(4) .foto {
-  aspect-ratio: 3 / 4;
-}
-
-.texto {
-  max-width: 26rem;
-}
-
-.paso:nth-child(2) .texto,
-.paso:nth-child(4) .texto {
-  margin-left: auto;
-}
-
 .nombre-paso {
-  margin: 0 0 var(--esp-2);
+  margin-top: var(--esp-4);
   font-size: var(--fs-600);
-  font-style: italic;
-  font-weight: 420;
+  font-weight: 800;
+  font-stretch: 75%;
+  letter-spacing: -0.04em;
 }
 
-.texto p {
-  margin: 0;
-  color: var(--alt-texto-suave);
+.texto-paso {
+  max-width: 32ch;
+  margin-top: var(--esp-2);
+  color: var(--texto-suave);
 }
 
-/* ===== Tableta y móvil: una columna con sangrías alternas ===== */
-@media (max-width: 991.98px) {
-  .pasos {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--esp-7);
-  }
+/* ===== Anclado (lo activa proceso.ts): la sección mide 400vh y su contenido se queda fijo ===== */
+.proceso.anclado {
+  height: 400vh;
+  padding: 0;
+}
 
-  .paso:nth-child(n) {
-    grid-column: 1;
-    margin-top: 0;
-    width: 88%;
-  }
+.anclado .pegajoso {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
 
-  .paso:nth-child(even) {
-    justify-self: end;
-  }
+.anclado .pista {
+  gap: 4vw;
+  width: max-content;
+  padding: 4.5rem 8vw 0;
+  overflow: visible;
+  scroll-snap-type: none;
+  will-change: transform;
+}
 
-  .paso:nth-child(n) .texto {
-    margin-left: 0;
-  }
+.anclado .pista > li {
+  flex: 0 0 auto;
+  width: 30vw;
+}
+
+.anclado .intro {
+  width: 34vw;
+}
+
+/* Fotos en alturas distintas: la fila sube y baja como una ladera. */
+.anclado .paso:nth-child(odd) {
+  margin-top: 10vh;
+}
+
+.anclado .foto {
+  aspect-ratio: auto;
+  height: 56vh;
 }

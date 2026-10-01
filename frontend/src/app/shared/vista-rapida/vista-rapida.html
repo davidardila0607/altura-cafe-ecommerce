@@ -3,54 +3,47 @@
   appAtraparFoco
   class="vista"
   [class.cerrando]="cerrando()"
+  [style.--color-variedad]="marca().color"
   aria-labelledby="vista-titulo"
   (cancel)="alCancelar($event)"
   (click)="alHacerClic($event)"
   (close)="alCerrar()"
 >
   <div class="panel">
-    <span class="asa" aria-hidden="true"></span>
-    <button type="button" class="cerrar" aria-label="Cerrar vista rápida" (click)="solicitarCierre()">
-      <i class="bi bi-x-lg" aria-hidden="true"></i>
-    </button>
-
-    @if (cafe.isLoading()) {
-      <h2 id="vista-titulo" class="visually-hidden">Cargando café</h2>
-      <div class="cargando" aria-busy="true">
-        <span class="esqueleto imagen-esqueleto"></span>
-        <div class="contenido">
-          <span class="esqueleto" style="width: 35%; height: 0.9rem"></span>
-          <span class="esqueleto" style="width: 75%; height: 2rem; margin-top: 0.9rem"></span>
-          <span class="esqueleto" style="width: 45%; height: 0.9rem; margin-top: 0.9rem"></span>
-          <span class="esqueleto" style="width: 100%; height: 6rem; margin-top: 1.6rem"></span>
-        </div>
+    @if (datos(); as c) {
+      <!-- Escena: el color de la variedad llena el fondo y la bolsa queda al centro. -->
+      <div class="escena">
+        <figure class="bolsa">
+          @if (imagen(); as url) {
+            <img
+              #imagenPanel
+              [src]="imagenDeVuelo() ?? url"
+              [attr.srcset]="imagenDeVuelo() ? null : srcset()"
+              sizes="(min-width: 768px) 420px, 70vw"
+              [alt]="'Bolsa de café ' + c.nombre + ', variedad ' + c.variedadNombre + ', ' + c.presentacionGramos + ' g'"
+              width="600"
+              height="750"
+            />
+          }
+        </figure>
       </div>
-    } @else if (cafe.error()) {
-      <h2 id="vista-titulo" class="visually-hidden">Vista rápida</h2>
-      <div class="contenido">
-        <app-estado-error titulo="No pudimos cargar este café" (reintentar)="cafe.reload()" />
-      </div>
-    } @else if (datos(); as c) {
-      <figure class="imagen">
-        @if (imagen(); as url) {
-          <img
-            [src]="url"
-            [attr.srcset]="srcset()"
-            sizes="(min-width: 768px) 560px, 100vw"
-            [alt]="'Bolsa de café ' + c.nombre + ', variedad ' + c.variedadNombre + ', ' + c.presentacionGramos + ' g'"
-            width="1000"
-            height="1000"
-          />
-        }
-      </figure>
 
       <div class="contenido">
-        <p class="variedad" [style.color]="marca().colorTexto">
-          <span class="muestra" [style.background-color]="marca().color" aria-hidden="true"></span>
+        <button type="button" class="boton-icono cerrar" aria-label="Cerrar vista rápida" (click)="solicitarCierre()">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+
+        <p class="variedad">
+          <span class="muestra" aria-hidden="true"></span>
           {{ c.variedadNombre }}
+          <span class="gramos">{{ c.presentacionGramos }} g</span>
         </p>
         <h2 id="vista-titulo" class="nombre">{{ c.nombre }}</h2>
         <p class="precio">{{ c.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</p>
+
+        @if (marca().notas.length) {
+          <p class="notas"><span class="visually-hidden">Notas de cata: </span>{{ marca().notas.join(', ') }}</p>
+        }
 
         <dl class="ficha">
           <div>
@@ -71,23 +64,31 @@
               @if (agotado()) {
                 Agotado
               } @else {
-                {{ c.stock === 1 ? 'Queda 1 unidad' : (c.stock <= 5 ? 'Quedan ' + c.stock + ' unidades' : c.stock + ' unidades') }}
+                {{ c.stock === 1 ? 'Queda 1 unidad' : c.stock <= 5 ? 'Quedan ' + c.stock + ' unidades' : c.stock + ' unidades' }}
               }
-              <span class="estado">· {{ c.estadoStock }}</span>
+              <span class="estado">{{ c.estadoStock }}</span>
             </dd>
           </div>
         </dl>
 
+        @if (detalle.error()) {
+          <p class="aviso-error" role="alert">
+            <i class="bi bi-cloud-slash" aria-hidden="true"></i>
+            No pudimos actualizar los datos de este café.
+            <button type="button" class="enlace-texto" (click)="detalle.reload()">Reintentar</button>
+          </p>
+        }
+
         <div class="compra">
           <app-selector-cantidad [(valor)]="cantidad" [maximo]="maximo()" [deshabilitado]="agotado()" />
-
-          <button type="button" class="btn btn-primary agregar" disabled aria-describedby="nota-carrito">
+          <button type="button" class="boton boton-primario agregar" disabled aria-describedby="nota-carrito">
             Agregar al carrito
-            <span class="proximamente">Próximamente</span>
           </button>
         </div>
         <p id="nota-carrito" class="nota">El carrito estará disponible próximamente.</p>
       </div>
+    } @else {
+      <h2 id="vista-titulo" class="visually-hidden">Vista rápida</h2>
     }
   </div>
 </dialog>

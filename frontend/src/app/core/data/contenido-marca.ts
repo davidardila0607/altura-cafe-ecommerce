@@ -9,34 +9,35 @@ import { DEPARTAMENTOS, Departamento } from './mapa-colombia';
  */
 
 export interface MarcaVariedad {
+  /** Color de la variedad: texto sobre niebla/papel y fondo con texto blanco (AA en los dos casos). */
   readonly color: string;
-  /** Color de texto con contraste AA sobre papel y crema. */
-  readonly colorTexto: string;
   readonly texto: string;
+  /** Notas de cata (también alimentan la cinta de notas del Inicio). */
+  readonly notas: readonly string[];
 }
 
 const VARIEDADES: Readonly<Record<string, MarcaVariedad>> = {
   castillo: {
-    color: '#6B4226',
-    colorTexto: '#6B4226',
+    color: '#8A5A2B',
+    notas: ['Panela', 'Chocolate', 'Acidez amable'],
     texto:
       'Variedad colombiana creada para resistir la roya sin perder dulzura. En taza se siente a panela, chocolate y una acidez amable.',
   },
   geisha: {
-    color: '#3F5A40',
-    colorTexto: '#3F5A40',
+    color: '#2D6A5E',
+    notas: ['Jazmín', 'Bergamota', 'Fruta de hueso'],
     texto:
       'Llegó de Etiopía y se volvió leyenda por su perfil floral. Delicada y aromática, con notas de jazmín, bergamota y fruta de hueso.',
   },
   moka: {
-    color: '#B5562F',
-    colorTexto: '#97441F',
+    color: '#6E3150',
+    notas: ['Cacao', 'Especias', 'Cuerpo denso'],
     texto:
       'Grano pequeño y redondo, de carácter intenso. Cuerpo denso, notas de cacao y especias y un final que se queda.',
   },
 };
 
-const VARIEDAD_NEUTRA: MarcaVariedad = { color: '#2B1D14', colorTexto: '#2B1D14', texto: '' };
+const VARIEDAD_NEUTRA: MarcaVariedad = { color: '#13281F', texto: '', notas: [] };
 
 export function marcaVariedad(nombre: string | null | undefined): MarcaVariedad {
   return (nombre && VARIEDADES[normalizarTexto(nombre)]) || VARIEDAD_NEUTRA;
@@ -125,3 +126,17 @@ export const PASOS_PROCESO: readonly PasoProceso[] = [
     foto: FOTOS_SITIO.taza,
   },
 ];
+
+/**
+ * Etapas del ascenso del Inicio: cada sección es un punto más alto de la montaña y el
+ * altímetro muestra estos metros. Son narrativos: el café colombiano se cultiva más o menos
+ * entre 1.200 y 2.100 m sobre el nivel del mar, y el recorrido va de un extremo al otro.
+ */
+export const ETAPAS_ASCENSO = {
+  valle: { nombre: 'Valle', altitud: 1200 },
+  ladera: { nombre: 'Ladera', altitud: 1450 },
+  finca: { nombre: 'Finca', altitud: 1700 },
+  cordillera: { nombre: 'Cordillera', altitud: 1900 },
+  cafetal: { nombre: 'Cafetal', altitud: 2000 },
+  cumbre: { nombre: 'Cumbre', altitud: 2100 },
+} as const;

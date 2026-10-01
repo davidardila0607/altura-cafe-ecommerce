@@ -1,10 +1,11 @@
-<article class="tarjeta" [class.agotada]="disponibilidad().tipo === 'agotado'">
-  <div class="tarjeta-imagen">
+<article class="tarjeta" appInclinar [class.agotada]="disponibilidad().tipo === 'agotado'">
+  <div class="imagen">
     @if (imagen(); as url) {
       <img
         [src]="url"
         [attr.srcset]="srcset()"
         [attr.sizes]="sizes()"
+        [attr.data-bolsa]="cafe().id"
         [alt]="'Bolsa de café ' + cafe().nombre + ', variedad ' + cafe().variedadNombre + ', ' + cafe().presentacionGramos + ' g'"
         width="600"
         height="750"
@@ -17,11 +18,10 @@
     }
   </div>
 
-  <div class="tarjeta-cuerpo">
-    <p class="variedad" [style.color]="marca().colorTexto">
+  <div class="cuerpo">
+    <p class="variedad">
       <span class="muestra" [style.background-color]="marca().color" aria-hidden="true"></span>
-      {{ cafe().variedadNombre }}
-      <span class="separador" aria-hidden="true">·</span>
+      <span [style.color]="marca().color">{{ cafe().variedadNombre }}</span>
       <span class="gramos">{{ cafe().presentacionGramos }} g</span>
     </p>
 
@@ -38,13 +38,15 @@
       <p class="disponibilidad" [attr.data-tipo]="disponibilidad().tipo">{{ disponibilidad().texto }}</p>
     </div>
 
+    <!-- El botón se extiende sobre toda la card (::after): cualquier clic en ella abre el producto. -->
     <button
       type="button"
-      class="btn btn-outline-dark ver"
+      class="ver"
       [attr.aria-label]="'Ver producto ' + cafe().nombre + ' ' + cafe().presentacionGramos + ' g'"
-      (click)="ver.emit(cafe().id)"
+      (click)="ver.emit(cafe())"
     >
       Ver producto
+      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
     </button>
   </div>
 </article>

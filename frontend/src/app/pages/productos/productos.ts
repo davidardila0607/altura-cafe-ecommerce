@@ -92,7 +92,7 @@ export class Productos {
     return visibles === total ? contarCafes(total) : `${visibles} de ${contarCafes(total)}`;
   });
 
-  protected readonly idVistaRapida = signal<number | null>(null);
+  protected readonly cafeSeleccionado = signal<Cafe | null>(null);
   protected readonly panelAbierto = signal(false);
   private readonly panel = viewChild<ElementRef<HTMLDialogElement>>('panelFiltros');
 
