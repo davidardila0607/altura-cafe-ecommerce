@@ -135,7 +135,17 @@ export class VistaRapida {
     setTimeout(() => dialogo.close(), DURACION_CIERRE_MS);
   }
 
-  /** Escape dispara "cancel": se intercepta para animar la salida. */
+  /**
+   * Escape se atiende aquí (en keydown) para animar la salida. Chrome no deja cancelar el
+   * evento "cancel" del diálogo si la persona no interactuó después de abrirlo, y entonces
+   * se cerraría de golpe; evitando la acción de la tecla, el cierre siempre pasa por aquí.
+   */
+  protected alPulsarEscape(evento: Event): void {
+    evento.preventDefault();
+    this.solicitarCierre();
+  }
+
+  /** Otras peticiones de cierre (por ejemplo, el botón "atrás" de Android). */
   protected alCancelar(evento: Event): void {
     evento.preventDefault();
     this.solicitarCierre();

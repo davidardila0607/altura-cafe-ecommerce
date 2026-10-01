@@ -1,5 +1,6 @@
 import { afterNextRender, Component, DestroyRef, ElementRef, inject, viewChild } from '@angular/core';
 import { PASOS_PROCESO } from '../../../core/data/contenido-marca';
+import { navegadorCompleto } from '../../../core/utils/medios';
 import { cargarGsap, refrescarScroll } from '../../../core/utils/gsap';
 import { srcsetSitio, urlSitio } from '../../../core/utils/imagenes';
 
@@ -33,6 +34,9 @@ export class Proceso {
     const destroyRef = inject(DestroyRef);
 
     afterNextRender(async () => {
+      if (!navegadorCompleto()) {
+        return;
+      }
       const { gsap } = await cargarGsap();
       const seccion = this.seccion().nativeElement;
       const pista = this.pista().nativeElement;

@@ -1,5 +1,6 @@
 import { afterNextRender, Component, DestroyRef, ElementRef, inject, viewChild } from '@angular/core';
 import { ETAPAS_ASCENSO } from '../../../core/data/contenido-marca';
+import { navegadorCompleto } from '../../../core/utils/medios';
 import { cargarGsap } from '../../../core/utils/gsap';
 
 type ClaveEtapa = keyof typeof ETAPAS_ASCENSO;
@@ -44,6 +45,9 @@ export class Altimetro {
     const destroyRef = inject(DestroyRef);
 
     afterNextRender(async () => {
+      if (!navegadorCompleto()) {
+        return;
+      }
       const { ScrollTrigger } = await cargarGsap();
       const secciones = [...document.querySelectorAll<HTMLElement>('[data-etapa]')];
 

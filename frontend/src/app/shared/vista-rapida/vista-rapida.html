@@ -5,6 +5,7 @@
   [class.cerrando]="cerrando()"
   [style.--color-variedad]="marca().color"
   aria-labelledby="vista-titulo"
+  (keydown.escape)="alPulsarEscape($event)"
   (cancel)="alCancelar($event)"
   (click)="alHacerClic($event)"
   (close)="alCerrar()"

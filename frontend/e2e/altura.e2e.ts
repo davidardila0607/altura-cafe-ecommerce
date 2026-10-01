@@ -1,4 +1,6 @@
+import AxeBuilder from '@axe-core/playwright';
 import { Page } from '@playwright/test';
+import { renameSync, rmSync } from 'node:fs';
 import { API, cargarImagenesDeCards, expect, limpiar, test, vigilarPeticionesApi } from './fixtures';
 
 const BASE = 'http://localhost:4200';
@@ -7,9 +9,25 @@ const tarjetas = (page: Page) => page.locator('app-tarjeta-cafe');
 const nombresDeTarjetas = (page: Page) => tarjetas(page).locator('.nombre').allTextContents();
 const lateral = (page: Page) => page.getByRole('complementary', { name: 'Filtros del catálogo' });
 const resumen = (page: Page) => page.getByTestId('resumen');
+const altimetro = (page: Page) => page.locator('app-altimetro');
 
 async function esperarCatalogo(page: Page, cantidad: number): Promise<void> {
   await expect(page.getByTestId('catalogo').locator('app-tarjeta-cafe')).toHaveCount(cantidad);
+}
+
+/** Espera a que termine el vuelo de la bolsa (durante una View Transition no se reciben clics). */
+async function esperarFinDelVuelo(page: Page): Promise<void> {
+  await page.waitForFunction(() => !document.documentElement.classList.contains('transicion-vuelo'));
+}
+
+/** Recorre la página hasta el final (dispara revelados, ScrollTrigger e imágenes diferidas). */
+async function recorrer(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.documentElement.scrollHeight; y += 400) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 40));
+    }
+  });
 }
 
 test.describe('Inicio', () => {
@@ -17,9 +35,9 @@ test.describe('Inicio', () => {
     await page.goto('/');
 
     await expect(page).toHaveTitle('Altura | Café de especialidad');
-    await expect(page.getByRole('heading', { level: 1, name: 'Café de altura, tostado con intención' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Altura, café de especialidad colombiano' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Explorar cafés' }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Nuestra historia' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ver el proceso' })).toBeVisible();
 
     const destacados = page.getByTestId('destacados').locator('app-tarjeta-cafe');
     await expect(destacados).toHaveCount(3);
@@ -40,17 +58,36 @@ test.describe('Inicio', () => {
     await expect(primera.getByRole('button', { name: /Ver producto/ })).toBeVisible();
   });
 
-  test('"Nuestra historia" desplaza al proceso y la página tiene todas sus secciones', async ({ page }) => {
+  test('"Ver el proceso" lleva al proceso y la página tiene todas sus etapas', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Nuestra historia' }).click();
-    await expect(page.getByRole('heading', { level: 2, name: 'De la montaña a tu taza' })).toBeInViewport();
+    await page.getByRole('button', { name: 'Ver el proceso' }).click();
+    await expect(page.locator('#proceso')).toBeFocused();
+    await expect(page.locator('#proceso')).toBeInViewport();
 
-    for (const titulo of ['Selección de la casa', 'Orígenes', 'Las variedades de la casa', 'Encuentra el café de tu próxima mañana']) {
+    for (const titulo of ['Selección de la casa', 'De la montaña a tu taza', 'Orígenes', 'Las variedades de la casa', 'Llegaste a la cumbre.']) {
       await expect(page.getByRole('heading', { level: 2, name: titulo })).toBeAttached();
     }
+    // Los cuatro pasos del proceso.
+    await expect(page.locator('app-proceso .nombre-paso')).toHaveText(['Origen', 'Cosecha', 'Tueste', 'Taza']);
     // Variedades desde la API, cada una con enlace al catálogo filtrado.
     await expect(page.getByRole('link', { name: /^Ver cafés (Castillo|Geisha|Moka)$/ })).toHaveCount(3);
+    // La cinta de notas se arma con los orígenes y notas de los cafés de la API.
+    await expect(page.locator('app-cinta-notas .palabra').first()).toBeAttached();
+    await expect(page.locator('app-cinta-notas')).toContainText('Nariño');
     await expect(page.getByRole('contentinfo')).toContainText(String(new Date().getFullYear()));
+  });
+
+  test('el altímetro sube del valle a la cumbre con el scroll', async ({ page }) => {
+    await page.goto('/');
+    await expect(altimetro(page).locator('.numero')).toHaveText('1.200');
+    await expect(altimetro(page).locator('.etapa')).toHaveText('Valle');
+
+    await page.getByRole('heading', { level: 2, name: 'Orígenes' }).scrollIntoViewIfNeeded();
+    await expect(altimetro(page).locator('.etapa')).toHaveText('Cordillera');
+
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(altimetro(page).locator('.numero')).toHaveText('2.100');
+    await expect(altimetro(page).locator('.etapa')).toHaveText('Cumbre');
   });
 
   test('el mapa de orígenes muestra los cafés de la región y lleva al catálogo filtrado', async ({ page }) => {
@@ -69,6 +106,30 @@ test.describe('Inicio', () => {
     await expect(tarjetas(page).locator('.nombre')).toHaveText('Volcán Galeras');
     await expect(lateral(page).getByRole('button', { name: 'Nariño' })).toHaveAttribute('aria-pressed', 'true');
   });
+
+  test('el proceso se ancla y la pista avanza en horizontal con el scroll @movimiento', async ({ page }) => {
+    await page.goto('/');
+    const seccion = page.locator('#proceso');
+    await expect(seccion).toHaveClass(/anclado/);
+
+    const posicion = () => page.locator('app-proceso .pista').evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m41);
+    await seccion.scrollIntoViewIfNeeded();
+    const inicio = await posicion();
+    await page.mouse.wheel(0, 1600);
+    await expect.poll(posicion).toBeLessThan(inicio - 200);
+  });
+
+  test('con movimiento reducido el proceso es una fila con scroll y no hay parallax @reducido', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#proceso')).not.toHaveClass(/anclado/);
+    const pista = page.locator('app-proceso .pista');
+    await expect(pista).toHaveCSS('overflow-x', 'auto');
+
+    // La palabra del hero no se mueve al bajar.
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(400);
+    await expect(page.locator('app-hero .palabra')).toHaveCSS('transform', 'none');
+  });
 });
 
 test.describe('Navegación', () => {
@@ -85,7 +146,7 @@ test.describe('Navegación', () => {
 
     await nav.getByRole('link', { name: 'Inicio', exact: true }).click();
     await expect(page).toHaveURL(`${BASE}/`);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Café de altura, tostado con intención');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('Altura, café de especialidad colombiano');
 
     await page.getByRole('link', { name: 'Explorar cafés' }).first().click();
     await expect(page).toHaveURL(`${BASE}/productos`);
@@ -106,6 +167,25 @@ test.describe('Navegación', () => {
 
     await page.getByRole('link', { name: 'Altura, ir al inicio' }).click();
     await expect(page).toHaveURL(`${BASE}/`);
+  });
+
+  test('el navbar se vuelve sólido al bajar', async ({ page }) => {
+    await page.goto('/');
+    const barra = page.locator('app-navbar .barra');
+    await expect(barra).not.toHaveClass(/solida/);
+    await page.mouse.wheel(0, 600);
+    await expect(barra).toHaveClass(/solida/);
+  });
+
+  test('en móvil el menú se abre con el botón y se cierra al navegar', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    const alternar = page.getByRole('button', { name: 'Abrir menú' });
+    await alternar.click();
+    await expect(page.getByRole('button', { name: 'Cerrar menú' })).toHaveAttribute('aria-expanded', 'true');
+    await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Productos', exact: true }).click();
+    await expect(page).toHaveURL(`${BASE}/productos`);
+    await expect(page.getByRole('button', { name: 'Abrir menú' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('una ruta desconocida redirige al Inicio', async ({ page }) => {
@@ -172,6 +252,7 @@ test.describe('Productos', () => {
     await buscador.fill('geisha');
     await esperarCatalogo(page, 2);
 
+    // Estado vacío con su acción.
     await buscador.fill('zzz');
     await expect(page.getByRole('heading', { name: 'No hay cafés que coincidan con tu búsqueda' })).toBeVisible();
     await page.getByRole('button', { name: 'Limpiar filtros' }).last().click();
@@ -208,7 +289,7 @@ test.describe('Productos', () => {
     await expect(tarjeta('Mesa de los Santos', 340).locator('.precio')).toHaveText(/\$\s42\.000/);
   });
 
-  test('vista rápida: abre con datos de la API y se cierra con Escape, X y clic fuera', async ({ page }) => {
+  test('vista rápida: datos de la API, color de la variedad y cierre con Escape, X y clic fuera', async ({ page }) => {
     const detalle = page.waitForResponse((r) => r.url().startsWith(`${API}/cafes/`) && r.status() === 200);
     await page.goto('/productos');
     await esperarCatalogo(page, 6);
@@ -217,12 +298,16 @@ test.describe('Productos', () => {
     await detalle;
     const vista = page.getByRole('dialog', { name: 'Volcán Galeras' });
     await expect(vista).toBeVisible();
+    await esperarFinDelVuelo(page);
     await expect(vista.locator('.precio')).toHaveText(/\$\s54\.000/);
     await expect(vista.locator('.ficha')).toContainText('Moka');
     await expect(vista.locator('.ficha')).toContainText('Nariño');
     await expect(vista.locator('.ficha')).toContainText('340 g');
-    await expect(vista.getByRole('button', { name: /Agregar al carrito/ })).toBeDisabled();
-    await expect(vista.getByRole('button', { name: /Agregar al carrito/ })).toContainText('Próximamente');
+    await expect(vista.locator('.notas')).toContainText('Cacao');
+    // El fondo de la escena toma el color de la variedad (Moka).
+    await expect(vista.locator('.escena')).toHaveCSS('background-color', 'rgb(110, 49, 80)');
+    await expect(vista.getByRole('button', { name: 'Agregar al carrito' })).toBeDisabled();
+    await expect(vista).toContainText('El carrito estará disponible próximamente.');
 
     // Selector de cantidad.
     await vista.getByRole('button', { name: 'Aumentar cantidad' }).click();
@@ -238,13 +323,64 @@ test.describe('Productos', () => {
     await page.getByRole('button', { name: 'Ver producto Tierradentro 500 g' }).click();
     const otra = page.getByRole('dialog', { name: 'Tierradentro' });
     await expect(otra).toBeVisible();
+    await esperarFinDelVuelo(page);
+    await expect(otra.locator('.escena')).toHaveCSS('background-color', 'rgb(45, 106, 94)'); // Geisha
     await otra.getByRole('button', { name: 'Cerrar vista rápida' }).click();
     await expect(otra).toBeHidden();
 
     await page.getByRole('button', { name: 'Ver producto Pitalito Reserva 340 g' }).click();
     await expect(page.getByRole('dialog', { name: 'Pitalito Reserva' })).toBeVisible();
-    await page.mouse.click(40, 400);
+    await esperarFinDelVuelo(page);
+    await page.mouse.click(30, 450);
     await expect(page.getByRole('dialog', { name: 'Pitalito Reserva' })).toBeHidden();
+  });
+
+  test('la bolsa vuela de la card a la vista rápida y vuelve al cerrar @movimiento', async ({ page }) => {
+    await page.goto('/productos');
+    await esperarCatalogo(page, 6);
+    await cargarImagenesDeCards(page);
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    // Se registra qué elementos llevan el nombre de transición "bolsa" durante el vuelo.
+    await page.evaluate(() => {
+      (window as unknown as { vuelos: number }).vuelos = 0;
+      const original = document.startViewTransition.bind(document);
+      document.startViewTransition = ((cambio: () => void) => {
+        if (document.querySelector('img[data-bolsa]') && document.documentElement.classList.contains('transicion-vuelo')) {
+          (window as unknown as { vuelos: number }).vuelos++;
+        }
+        return original(cambio);
+      }) as typeof document.startViewTransition;
+    });
+
+    // Toda la card es clicable: se pulsa sobre la bolsa, que debe seguir en pantalla para volver a ella.
+    const caja = (await page.locator('img[data-bolsa]').first().boundingBox())!;
+    await page.mouse.click(caja.x + caja.width / 2, caja.y + caja.height / 2);
+    const vista = page.getByRole('dialog', { name: 'Tierradentro' });
+    await expect(vista).toBeVisible();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { vuelos: number }).vuelos)).toBe(1);
+    await expect(vista.locator('.bolsa img')).toHaveCSS('view-transition-name', 'bolsa');
+    await esperarFinDelVuelo(page);
+
+    await page.keyboard.press('Escape');
+    await expect(vista).toBeHidden();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { vuelos: number }).vuelos)).toBe(2);
+    // Al terminar, ninguna card conserva el nombre de la transición.
+    await expect.poll(() => page.locator('img[data-bolsa]').evaluateAll((imgs) => imgs.filter((i) => (i as HTMLElement).style.viewTransitionName).length)).toBe(0);
+  });
+
+  test('en móvil los filtros van en una hoja con buscador', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/productos');
+    await esperarCatalogo(page, 6);
+    await page.getByRole('button', { name: /^Filtrar/ }).click();
+    const hoja = page.getByRole('dialog', { name: 'Filtros' });
+    await expect(hoja).toBeVisible();
+    await hoja.getByRole('button', { name: 'Geisha' }).click();
+    await expect(page).toHaveURL(/variedad=geisha/);
+    await hoja.getByRole('button', { name: 'Ver 2 de 6 cafés' }).click();
+    await expect(hoja).toBeHidden();
+    await expect(page.getByRole('button', { name: /^Filtrar/ })).toContainText('1');
   });
 });
 
@@ -292,7 +428,9 @@ test.describe('Formularios (solo visuales)', () => {
     await page.getByRole('button', { name: 'Ocultar contraseña' }).click();
     await expect(contrasena).toHaveAttribute('type', 'password');
 
+    // Visto de campo válido.
     await page.getByLabel('Correo electrónico').fill('cliente@ejemplo.com');
+    await expect(page.locator('.campo-acceso').first()).toHaveClass(/valido/);
     await enviar.click();
     await expect(page.getByRole('status').filter({ hasText: 'próximamente' })).toHaveText(
       'El inicio de sesión estará disponible próximamente.',
@@ -301,7 +439,7 @@ test.describe('Formularios (solo visuales)', () => {
     expect(peticiones, 'El formulario no debe llamar a la API').toEqual([]);
   });
 
-  test('Registro: validaciones visibles y sin peticiones a la API al enviar', async ({ page }) => {
+  test('Registro: validaciones, medidor de seguridad y sin peticiones a la API', async ({ page }) => {
     await page.goto('/registro');
     await page.waitForLoadState('networkidle');
     const peticiones = vigilarPeticionesApi(page);
@@ -319,6 +457,8 @@ test.describe('Formularios (solo visuales)', () => {
     await contrasena.fill('123');
     await expect(page.getByText('La contraseña debe tener al menos 6 caracteres.')).toBeVisible();
     await contrasena.fill('cafe2026');
+    await expect(page.locator('.medidor .lleno')).toHaveCount(2);
+    await expect(page.locator('#registro-contrasena-ayuda')).toContainText('aceptable');
     await confirmacion.fill('cafe2025');
     await confirmacion.blur();
     await expect(page.getByText('Las contraseñas no coinciden.')).toBeVisible();
@@ -334,12 +474,42 @@ test.describe('Formularios (solo visuales)', () => {
   });
 });
 
+test.describe('Accesibilidad', () => {
+  for (const ancho of [1440, 375]) {
+    test(`axe-core sin violaciones en todas las vistas a ${ancho} px`, async ({ page }) => {
+      await page.setViewportSize({ width: ancho, height: ancho === 375 ? 812 : 900 });
+      const revisar = async (nombre: string) => {
+        const resultado = await new AxeBuilder({ page })
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'])
+          .analyze();
+        expect(resultado.violations.map((v) => `${nombre}: ${v.id}`)).toEqual([]);
+      };
+
+      for (const [ruta, nombre] of [['/', 'inicio'], ['/productos', 'productos'], ['/productos?q=zzz', 'vacío'], ['/login', 'login'], ['/registro', 'registro']]) {
+        await page.goto(ruta);
+        await page.waitForLoadState('networkidle');
+        await recorrer(page);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(600);
+        await revisar(nombre);
+      }
+
+      await page.goto('/productos');
+      await esperarCatalogo(page, 6);
+      await page.getByRole('button', { name: 'Ver producto Volcán Galeras 340 g' }).click();
+      await expect(page.getByRole('dialog', { name: 'Volcán Galeras' })).toBeVisible();
+      await page.waitForTimeout(700);
+      await revisar('vista rápida');
+    });
+  }
+});
+
 test.describe('Capturas', () => {
   // Movimiento reducido: las capturas muestran el estado final (sin revelados pendientes).
   test.use({ reducedMotion: 'reduce' });
 
   for (const ancho of [1440, 375]) {
-    test(`vistas y vista rápida a ${ancho} px`, async ({ page }) => {
+    test(`vistas y vista rápida a ${ancho} px @una-vez`, async ({ page }) => {
       await page.setViewportSize({ width: ancho, height: ancho === 375 ? 812 : 900 });
 
       for (const [ruta, nombre] of [['/', 'inicio'], ['/productos', 'productos'], ['/login', 'login'], ['/registro', 'registro']]) {
@@ -350,6 +520,7 @@ test.describe('Capturas', () => {
           await expect.poll(() => imagen.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
         }
         await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(400);
         await page.screenshot({ path: `e2e/capturas/${nombre}-${ancho}.png`, fullPage: true });
       }
 
@@ -363,10 +534,41 @@ test.describe('Capturas', () => {
 
       if (ancho === 375) {
         await page.keyboard.press('Escape');
-        await page.getByRole('button', { name: 'Filtrar' }).click();
+        await page.getByRole('button', { name: /^Filtrar/ }).click();
         await expect(page.getByRole('dialog', { name: 'Filtros' })).toBeVisible();
         await page.screenshot({ path: 'e2e/capturas/productos-filtros-375.png' });
       }
     });
   }
+
+  test('grabación del hero y de la apertura de la vista rápida @movimiento', async ({ browser }) => {
+    const carpeta = 'e2e/capturas/video';
+    rmSync(carpeta, { recursive: true, force: true });
+    const contexto = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      recordVideo: { dir: carpeta, size: { width: 1440, height: 900 } },
+      reducedMotion: 'no-preference',
+    });
+    const pagina = await contexto.newPage();
+
+    await pagina.goto('/');
+    await pagina.waitForTimeout(2800); // entrada del hero
+    for (let i = 0; i < 30; i++) {
+      await pagina.mouse.wheel(0, 40); // parallax de las crestas
+      await pagina.waitForTimeout(30);
+    }
+    await pagina.waitForTimeout(800);
+
+    await pagina.goto('/productos');
+    await expect(pagina.getByTestId('catalogo').locator('app-tarjeta-cafe')).toHaveCount(6);
+    await pagina.waitForTimeout(1200);
+    await pagina.getByRole('button', { name: 'Ver producto Tierradentro 500 g' }).click();
+    await pagina.waitForTimeout(1500);
+    await pagina.keyboard.press('Escape');
+    await pagina.waitForTimeout(1200);
+
+    const video = pagina.video();
+    await contexto.close();
+    renameSync(await video!.path(), 'e2e/capturas/hero-y-vista-rapida.webm');
+  });
 });

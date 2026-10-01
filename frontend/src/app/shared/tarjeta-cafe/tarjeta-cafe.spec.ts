@@ -23,4 +23,14 @@ describe('TarjetaCafe', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('muestra el stock bajo y emite el café completo al pulsar "Ver producto"', () => {
+    const elemento: HTMLElement = fixture.nativeElement;
+    expect(elemento.querySelector('.disponibilidad')?.textContent).toContain('Quedan 3');
+
+    let emitido: unknown = null;
+    component.ver.subscribe((cafe) => (emitido = cafe));
+    elemento.querySelector<HTMLButtonElement>('button.ver')!.click();
+    expect(emitido).toEqual(expect.objectContaining({ id: 1, nombre: 'Café de prueba' }));
+  });
 });

@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FOTOS_SITIO } from '../../../core/data/contenido-marca';
 import { cargarGsap } from '../../../core/utils/gsap';
 import { srcsetSitio, urlSitio } from '../../../core/utils/imagenes';
-import { movimientoReducido } from '../../../core/utils/medios';
+import { movimientoReducido, navegadorCompleto } from '../../../core/utils/medios';
 import { Magnetico } from '../../../shared/movimiento/magnetico';
 
 /**
@@ -32,6 +32,9 @@ export class Hero {
     const destroyRef = inject(DestroyRef);
 
     afterNextRender(async () => {
+      if (!navegadorCompleto()) {
+        return;
+      }
       const { gsap } = await cargarGsap();
       // matchMedia de GSAP: el parallax solo existe sin movimiento reducido, y si la
       // preferencia cambia, GSAP deshace todo lo que se creó dentro.

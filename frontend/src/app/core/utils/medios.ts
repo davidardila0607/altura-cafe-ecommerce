@@ -15,6 +15,14 @@ export function cambiosDeMedia(consulta: string): Observable<boolean> {
   return fromEvent<MediaQueryListEvent>(window.matchMedia(consulta), 'change').pipe(map((e) => e.matches));
 }
 
+/**
+ * true en un navegador real. En las pruebas unitarias (jsdom) no hay matchMedia y GSAP
+ * fallaría al iniciar: ahí las animaciones de scroll simplemente no se crean.
+ */
+export function navegadorCompleto(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+}
+
 /** true si el usuario pidió movimiento reducido. */
 export function movimientoReducido(): boolean {
   return coincideMedia('(prefers-reduced-motion: reduce)');

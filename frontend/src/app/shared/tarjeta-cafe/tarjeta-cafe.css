@@ -69,8 +69,9 @@
   opacity: 0.8;
 }
 
+/* Sin position: relative a propósito: así el ::after del botón "Ver producto" se extiende
+   sobre toda la .tarjeta (imagen incluida) y no solo sobre el cuerpo. */
 .cuerpo {
-  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
