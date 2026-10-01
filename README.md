@@ -117,6 +117,16 @@ dotnet run --launch-profile http
 
 El archivo `CafeApi.http` tiene peticiones de ejemplo: primero el login y luego el resto, reutilizando el token.
 
+### 4. Cargar los productos de ejemplo
+
+Con la API corriendo, en otra terminal (desde `backend/`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1
+```
+
+El script pide el correo y la contraseña de la cuenta **Administrador**, sube las 6 imágenes de `seed/imagenes/` a Cloudinary y crea los 6 cafés de ejemplo. Es idempotente: si un café ya existe, lo omite sin subir su imagen, así que puedes ejecutarlo varias veces. Para otra URL de la API: `-ApiBaseUrl http://localhost:5031/api`.
+
 ---
 
 ## ✅ Endpoints
