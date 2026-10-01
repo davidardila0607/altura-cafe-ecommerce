@@ -1,6 +1,27 @@
+# ===== Backend (.NET) - backend/ =====
 bin/
 obj/
 .vs/
-.env
 *.user
+# Configuración local con secretos (ver appsettings.example.json)
 appsettings.Development.json
+
+# ===== General =====
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# ===== Frontend (Node / Angular) - frontend/ =====
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+
+# ===== Playwright (e2e) =====
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+frontend/e2e/capturas/
