@@ -3,7 +3,7 @@
 E-commerce de café de especialidad colombiano **Altura**:
 
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
-- **frontend/**: aplicación Angular 22 (`altura-web`): Inicio editorial, catálogo de cafés con filtros y vista rápida, e inicio de sesión y registro (visuales).
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, inicio de sesión y registro (visuales) y un **panel de administración** de inventario en `/admin`.
 
 Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (rama principal: `main`).
 
@@ -11,7 +11,7 @@ Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (rama prin
 
 ## 🚀 Inicio rápido (si acabas de clonar el repo)
 
-**Stack:** ASP.NET Core 10 · EF Core 10 + PostgreSQL 17 (Npgsql) · JWT · Cloudinary · Angular 22 · Bootstrap 5 (solo CSS) · Vitest · Playwright.
+**Stack:** ASP.NET Core 10 · EF Core 10 + PostgreSQL 17 (Npgsql) · JWT · Cloudinary · Angular 22 · CSS propio + GSAP (ScrollTrigger) · Vitest · Playwright + axe-core.
 
 **Requisitos:** .NET SDK 10, PostgreSQL 17 en `localhost:5432`, Node.js 24 / npm 11 y una cuenta de Cloudinary (gratuita).
 
@@ -59,7 +59,7 @@ altura-cafe-ecommerce
 │   ├── .config/              dotnet-ef como herramienta local
 │   ├── seed/                 Productos de ejemplo (script + imágenes) y fotos del sitio
 │   └── appsettings.example.json
-├── frontend/                 Aplicación Angular (src/, e2e/)
+├── frontend/                 Aplicación Angular (src/, public/, e2e/, herramientas/)
 ├── CLAUDE.md                 Guía técnica detallada (arquitectura, decisiones, pendientes)
 ├── README.md
 └── CHANGELOG.md
@@ -157,7 +157,7 @@ Sube cada imagen nueva y actualiza el café con `PUT /api/cafes/{id}`; la API bo
 
 ### 5b. Subir las fotografías del sitio
 
-El Inicio, el Login y el Registro usan fotos de Unsplash alojadas en tu Cloudinary (carpeta `sitio`). Desde `backend/`:
+El Inicio (cielo del hero, proceso y cierre) usa fotos de Unsplash alojadas en tu Cloudinary (carpeta `sitio`). Desde `backend/`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\seed\subir-imagenes-sitio.ps1
@@ -187,7 +187,17 @@ npx playwright install chromium    # solo la primera vez
 npm run e2e                        # pruebas end-to-end (Playwright)
 ```
 
-Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
+Las e2e corren dos veces: con animaciones y con "reducir movimiento". Incluyen axe-core (accesibilidad). Las capturas y un video corto quedan en `frontend/e2e/capturas/` (ignorada por Git).
+
+Las pruebas del **panel de administración** necesitan las cuentas de prueba en variables de entorno (no se escriben en el repositorio; pídelas al equipo). Sin ellas, esas pruebas se omiten:
+
+```powershell
+$env:ALTURA_ADMIN_EMAIL = '<correo admin>';    $env:ALTURA_ADMIN_PASSWORD = '<contraseña>'
+$env:ALTURA_CLIENTE_EMAIL = '<correo cliente>'; $env:ALTURA_CLIENTE_PASSWORD = '<contraseña>'
+npm run e2e
+```
+
+Crean y borran un café y una variedad de prueba (con "e2e" en el nombre) y una imagen en Cloudinary; al terminar todo queda como estaba.
 
 ---
 
@@ -195,18 +205,28 @@ Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
 
 | Ruta | Vista |
 |---|---|
-| `/` | Inicio: hero, selección de la casa (3 cafés de la API), proceso "De la montaña a tu taza", mapa de orígenes, variedades y cierre |
+| `/` | Inicio "Ascenso": hero con la montaña en capas, selección de la casa (3 cafés de la API), proceso "De la montaña a tu taza" (galería horizontal), cinta de notas de cata, mapa de orígenes, variedades y cierre. Un altímetro marca la altura de cada sección |
 | `/productos` | Catálogo: filtros por variedad, presentación, origen y disponibilidad, orden, búsqueda y vista rápida |
 | `/login` | Iniciar sesión (solo visual) |
 | `/registro` | Crear cuenta (solo visual) |
+| `/admin/ingresar` | Acceso al panel de administración |
+| `/admin/inventario` · `/admin/variedades` | Panel: cafés (con imagen) y variedades |
 
 - Productos, variedades y presentaciones vienen de la API; nada de eso está escrito en el código.
 - El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen o variedad sin importar tildes ni mayúsculas.
 - Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=geisha&presentacion=500`): se pueden compartir y sobreviven a recargar.
-- "Ver producto" abre una vista rápida (panel lateral en escritorio, hoja inferior en móvil) con todos los datos del café. "Agregar al carrito" aparece deshabilitado ("Próximamente").
+- "Ver producto" (o cualquier clic en la card) abre la vista rápida: la bolsa "vuela" desde la card y el panel toma el color de la variedad. "Agregar al carrito" aparece deshabilitado ("Próximamente").
 - Precios en pesos colombianos (`$ 42.000`); disponibilidad "N disponibles", "Quedan N" (5 o menos) o "Agotado".
-- Login y Registro validan los campos, pero **todavía no llaman a la API**: al enviar muestran "… estará disponible próximamente."
-- Stack: Angular 22 (standalone, signals, `@if`/`@for`), Bootstrap 5 (solo CSS, muy personalizado), Bootstrap Icons y las fuentes variables Fraunces e Inter vía npm. Transiciones con View Transitions; todo respeta "reducir movimiento".
+- Login y Registro validan los campos, pero **no llaman a la API**: al enviar muestran "… estará disponible próximamente."
+- Todo respeta "reducir movimiento" (la página es igual de completa, sin animaciones de desplazamiento) y funciona con teclado.
+- Stack: Angular 22 (standalone, signals), sistema de diseño propio (sin Bootstrap; quedan los Bootstrap Icons), fuentes Bricolage Grotesque y Geist Mono vía npm, GSAP + ScrollTrigger cargado solo en el Inicio y View Transitions.
+
+### Panel de administración
+
+1. En la tienda, abajo en el footer: **"Acceso administrador"** (o abre http://localhost:4200/admin).
+2. Ingresa con la cuenta de rol **Administrador** (la contraseña de las cuentas de prueba la tiene el equipo; no se escribe en el repositorio). Una cuenta Cliente no puede entrar.
+3. En **Inventario** puedes buscar, crear, editar (con imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés).
+4. Los cambios se ven en el Inicio y en Productos al recargar. La sesión se cierra sola cuando vence el token o con "Cerrar sesión".
 
 ---
 
@@ -216,9 +236,10 @@ Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
 |---|---|---|
 | POST | `/api/auth/login` | Público |
 | POST | `/api/auth/google` | Público |
+| GET | `/api/auth/me` | Usuario autenticado (devuelve correo, nombre y roles) |
 | GET | `/api/cafes` | Público |
 | GET | `/api/cafes/{id}` | Público |
-| POST | `/api/cafes` | Usuario autenticado |
+| POST | `/api/cafes` | Administrador |
 | PUT | `/api/cafes/{id}` | Administrador |
 | DELETE | `/api/cafes/{id}` | Administrador |
 | GET | `/api/variedades` | Público |
@@ -228,6 +249,7 @@ Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
 | DELETE | `/api/variedades/{id}` | Administrador (409 si tiene cafés) |
 | GET | `/api/presentaciones` | Público |
 | POST | `/api/images` | Administrador |
+| DELETE | `/api/images?publicId=cafes/…` | Administrador (borra una imagen subida que no se usó) |
 
 `backend/CafeApi.http` tiene peticiones de ejemplo: primero el login y luego el resto, reutilizando el token.
 
@@ -268,8 +290,9 @@ Enum en código (no es una tabla): `340 g` y `500 g`. `GET /api/presentaciones` 
 
 La API usa JSON Web Tokens (JWT) para proteger los endpoints que modifican datos.
 
-- **Administrador:** crear, actualizar y eliminar cafés y variedades; subir imágenes.
-- **Cliente:** consultar cafés, variedades y presentaciones; crear cafés.
+- Las escrituras usan la política **`GestionInventario`** (`backend/Seguridad/Politicas.cs`), que hoy exige el rol **Administrador**: crear, actualizar y eliminar cafés y variedades; subir y borrar imágenes.
+- **Cliente:** consultar cafés, variedades y presentaciones (recibe 403 en cualquier escritura).
+- Para dar acceso a otro rol (por ejemplo "Editor") se cambia solo la política y el mapa de permisos del frontend (`frontend/src/app/core/auth/permisos.ts`); los controladores no se tocan. Detalle en CLAUDE.md, sección "Autorización".
 - `401 Unauthorized`: petición sin token o con token inválido. `403 Forbidden`: token válido sin el rol necesario.
 
 ---
@@ -301,7 +324,7 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 
 ## 🚧 Próximos Pasos
 
-- Autenticación real en el frontend (login, registro y sesión)
+- Usuarios en base de datos (hoy hay dos cuentas fijas de prueba) y login real en la tienda
 - Carrito de compras y pedidos (la vista rápida ya tiene el selector de cantidad)
 - Rotación de `Jwt:Key`
 - Deploy

@@ -586,3 +586,44 @@ permanece reservada para autenticación interna de Supabase.
 ### 🗑️ Eliminado
 
 - Página `home` (reemplazada por `inicio`), ilustración SVG de bolsas del banner y servicio `Busqueda` (la búsqueda vive en la URL).
+
+---
+
+## [1.14.0] - 2026-10-01
+
+Rediseño inmersivo "Ascenso" y panel de administración de inventario (rama `feature/rediseno-inmersivo`).
+
+### 🎨 Rediseño "Ascenso"
+
+- **Concepto**: hacer scroll es subir la montaña, del valle (1.200 msnm) a la cumbre (2.100 msnm), con un altímetro fijo. Elegido entre tres conceptos con maqueta; incorpora el vuelo de la bolsa y el color por variedad.
+- **Sistema de diseño propio** (sin Bootstrap): paleta niebla, bosque y cereza; Bricolage Grotesque (display condensado) y Geist Mono; tokens de espaciado, forma, profundidad y movimiento; logo con la cereza en la cumbre.
+- **Inicio**: hero con la palabra "Altura" entre crestas de montaña (entrada en cascada y parallax con GSAP ScrollTrigger), selección de la casa, galería horizontal anclada "De la montaña a tu taza", cinta de notas de cata con datos de la API, mapa de orígenes, variedades y cierre "Llegaste a la cumbre".
+- **Productos**: encabezado con curvas de nivel, cards con inclinación 3D y brillo (solo con mouse), toda la card abre el producto; estados de carga, error y vacío nuevos.
+- **Vista rápida**: la bolsa vuela desde la card (View Transitions) y el panel toma el color de la variedad; notas de cata.
+- **Login y Registro**: amanecer con niebla en movimiento, línea de foco, visto de campo válido y medidor de seguridad de la contraseña. Siguen siendo solo visuales.
+- Navbar transparente que se vuelve sólido, footer con cresta y enlace discreto "Acceso administrador".
+- Versión completa con "reducir movimiento" y efectos adaptados a pantallas táctiles.
+
+### 🔐 API: autorización por políticas
+
+- `Seguridad/Roles` y `Seguridad/Politicas` con la política `GestionInventario` (hoy: rol Administrador) en todas las escrituras de cafés, variedades e imágenes. **`POST /api/cafes` ya no acepta cualquier JWT** (la cuenta Cliente recibe 403).
+- `GET /api/auth/me`: correo, nombre y roles del token. Las cuentas de prueba tienen nombre visible.
+- `DELETE /api/images?publicId=cafes/...`: borra imágenes subidas que no se usaron (solo carpeta `cafes/`, 409 si un café la usa).
+- `CafeApi.http` con casos 401, 403, `/me` y borrado de imágenes.
+
+### 🛠️ Panel de administración (`/admin`)
+
+- Acceso real en `/admin/ingresar` (las cuentas sin permiso no entran), guard `canMatch` por permiso, interceptor con el token solo para la API (401 cierra la sesión, 403 avisa), sesión en `sessionStorage` con cierre automático al expirar y mapa de permisos centralizado.
+- **Inventario**: búsqueda, crear y editar en panel lateral con imagen (validación de tipo y tamaño, vista previa y limpieza si el guardado falla), eliminar con confirmación y avisos en español.
+- **Variedades**: crear, editar y eliminar (409 si tiene cafés).
+
+### ✅ Calidad
+
+- `ng build` sin advertencias; CSS inicial de ~330 kB a ~99 kB; GSAP en un chunk diferido.
+- axe-core: 0 violaciones en todas las vistas (tienda y panel), a 1440 y 375 px, con y sin movimiento reducido.
+- LCP del Inicio ~0,4 s y CLS ~0 en local.
+- 27 pruebas unitarias y 56 e2e (dos proyectos: con movimiento y con movimiento reducido), capturas y grabación del hero y de la vista rápida.
+
+### 🗑️ Eliminado
+
+- Bootstrap (CSS), Fraunces, Inter, `PanelMarca` y el grano de papel.
