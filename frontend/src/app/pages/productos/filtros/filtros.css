@@ -1,4 +1,4 @@
-/* Chips, campo e interruptor vienen del sistema de diseño (styles.css). */
+/* Campo e interruptor vienen del sistema de diseño (styles.css). */
 .filtros {
   display: grid;
   gap: var(--esp-6);
@@ -13,7 +13,7 @@
 
 .titulo-grupo {
   display: block;
-  margin-bottom: var(--esp-3);
+  margin-bottom: var(--esp-2);
   padding: 0;
   font-size: var(--fs-400);
   font-weight: 750;
@@ -21,17 +21,148 @@
   letter-spacing: -0.02em;
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
+/* ===== Listas (Variedad, Proceso, Origen): una fila por opción ===== */
+.lista {
+  display: grid;
+  gap: 2px;
+}
+
+/* Columnas: marca (1.25rem) · nombre · número alineado a la derecha. */
+.opcion {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  align-items: center;
   gap: var(--esp-2);
+  min-height: 2.5rem;
+  padding: 0 var(--esp-3) 0 var(--esp-2);
+  border: 0;
+  border-radius: var(--radio-campo);
+  background: transparent;
+  color: var(--bosque);
+  font-size: var(--fs-200);
+  font-weight: 550;
+  text-align: left;
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-presion) var(--ease-salida);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .opcion:hover {
+    background: var(--tinte-hover);
+  }
+}
+
+.opcion:active {
+  transform: scale(0.98);
+}
+
+/* Activa: fondo tenue, texto en negrita y una barra corta a la izquierda en su color. */
+.opcion[aria-pressed='true'] {
+  background: var(--tinte-activo);
+  font-weight: 750;
+}
+
+.opcion[aria-pressed='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0.6rem auto 0.6rem 0;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-opcion, var(--bosque));
+}
+
+.marca {
+  display: grid;
+  place-items: center;
+  color: var(--color-opcion, var(--texto-suave));
 }
 
 .muestra {
-  width: 0.65rem;
-  height: 0.65rem;
+  width: 0.7rem;
+  height: 0.7rem;
   border-radius: 3px;
-  box-shadow: 0 0 0 1.5px rgb(245 246 241 / 0.7);
+  background: var(--color-opcion);
+}
+
+.nombre-opcion {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cantidad {
+  color: var(--texto-suave);
+  font-family: var(--fuente-mono);
+  font-size: var(--fs-100);
+  font-variant-numeric: tabular-nums;
+}
+
+.opcion[aria-pressed='true'] .cantidad {
+  color: var(--bosque);
+}
+
+/* ===== Presentación: tres botones del mismo ancho ===== */
+.segmentos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--esp-1);
+}
+
+.segmento {
+  min-height: 2.5rem;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio-pildora);
+  background: transparent;
+  font-size: var(--fs-200);
+  font-weight: 600;
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-presion) var(--ease-salida);
+}
+
+.segmento:active {
+  transform: scale(0.97);
+}
+
+.segmento[aria-pressed='true'] {
+  border-color: var(--bosque);
+  background: var(--bosque);
+  color: var(--texto-claro);
+}
+
+/* En pantallas táctiles, filas y botones de 44 px. */
+@media (pointer: coarse) {
+  .opcion,
+  .segmento {
+    min-height: 2.75rem;
+  }
+}
+
+.ver-mas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  margin-left: var(--esp-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bosque);
+  font-size: var(--fs-200);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: var(--cereza);
+  text-underline-offset: 0.3em;
+}
+
+.ver-mas .bi {
+  transition: rotate 240ms var(--ease-salida);
+}
+
+.ver-mas .bi.girado {
+  rotate: 180deg;
 }
 
 .buscador {
@@ -55,69 +186,14 @@
   justify-self: start;
 }
 
-/* Número de cafés de cada opción (mono, discreto). */
-.cantidad {
-  color: var(--texto-suave);
-  font-family: var(--fuente-mono);
-  font-size: var(--fs-100);
-  font-weight: 500;
-}
-
-.chip[aria-pressed='true'] .cantidad {
-  color: var(--texto-claro-suave);
-}
-
-/* Proceso: ícono en su color; activo, el chip se llena con ese color. */
-.chip-proceso .bi {
-  color: var(--color-proceso);
-}
-
-.chip-proceso[aria-pressed='true'] {
-  border-color: var(--color-proceso);
-  background: var(--color-proceso);
-}
-
-.chip-proceso[aria-pressed='true'] .bi,
-.chip-proceso[aria-pressed='true'] .cantidad {
-  color: #fff;
-}
-
-.ver-mas {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 2.75rem;
-  margin-top: var(--esp-1);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--bosque);
-  font-size: var(--fs-200);
-  font-weight: 650;
-  text-decoration: underline;
-  text-decoration-color: var(--cereza);
-  text-underline-offset: 0.3em;
-}
-
-.ver-mas .bi {
-  transition: rotate 240ms var(--ease-salida);
-}
-
-.ver-mas .bi.girado {
-  rotate: 180deg;
-}
-
-/* Los chips que aparecen al pedir "Ver las N variedades" entran en cascada corta. */
+/* Las filas que aparecen con "Ver las N variedades" entran en cascada corta (25 ms entre filas). */
 @media (prefers-reduced-motion: no-preference) {
-  .chip {
+  .opcion {
     transition:
-      opacity 220ms var(--ease-salida),
-      translate 260ms var(--ease-salida),
-      transform var(--dur-presion) var(--ease-salida),
+      opacity 220ms var(--ease-salida) calc(var(--i, 0) * 25ms),
+      translate 260ms var(--ease-salida) calc(var(--i, 0) * 25ms),
       background-color var(--dur-rapida) ease,
-      border-color var(--dur-rapida) ease,
-      color var(--dur-rapida) ease;
-    transition-delay: calc(var(--i, 0) * 25ms), calc(var(--i, 0) * 25ms), 0ms, 0ms, 0ms, 0ms;
+      transform var(--dur-presion) var(--ease-salida);
 
     @starting-style {
       opacity: 0;

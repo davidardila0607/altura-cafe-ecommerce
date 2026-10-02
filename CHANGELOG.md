@@ -681,3 +681,25 @@ Ampliación del módulo de productos: procesos, 9 variedades, catálogo de 25 ca
   - Ficha de procesos y alta y edición con proceso en el panel.
 - axe-core: 0 violaciones, también con filtros aplicados.
 - Al terminar, la base tiene exactamente los 25 cafés y Cloudinary tiene 25 imágenes, sin restos de pruebas.
+
+---
+
+## [1.15.1] - 2026-10-02
+
+Ajustes de diseño en Productos.
+
+### 🎨 Cambiado
+
+- **Grilla uniforme**: ya no hay card gigante; todas las cards miden lo mismo (3 columnas en escritorio, 2 en tableta, 1 en móvil) y sus textos quedan alineados (cada fila de la card ocupa una línea).
+- **Bloque "Tres procesos, tres tazas"** arriba de la grilla, a todo el ancho y compacto (~200 px): "Ver N cafés" aplica el filtro del proceso, que se marca en el bloque; en móvil, los procesos se desplazan en horizontal.
+- **Filtros ordenados**: Variedad, Proceso y Origen como listas verticales con su color o ícono y el número de cafés a la derecha; Presentación con tres botones iguales. Mismo estilo en la hoja móvil.
+
+### 🐛 Corregido
+
+- Al filtrar, la página ya no salta arriba (`scroll: 'manual'` al escribir la URL).
+- Desbordamiento horizontal a 375 px causado por el texto oculto de los botones del bloque de procesos.
+- Anillo de foco recortado en la barra lateral con scroll.
+
+### ✅ Calidad
+
+- `ng build` sin advertencias; 32 pruebas unitarias y 64 e2e en verde (nuevas: alineación de las cards, bloque de procesos sin salto de scroll, sin desplazamiento horizontal en móvil).

@@ -215,7 +215,7 @@ Crean y borran un café y una variedad de prueba (con "e2e" en el nombre) y una 
 | Ruta | Vista |
 |---|---|
 | `/` | Inicio "Ascenso": hero con la montaña en capas, selección de la casa (3 cafés de la API), proceso "De la montaña a tu taza" (galería horizontal), cinta de notas de cata, mapa de orígenes, variedades y cierre. Un altímetro marca la altura de cada sección |
-| `/productos` | Catálogo: filtros por variedad, proceso, presentación, origen y disponibilidad, orden, búsqueda, ficha de los tres procesos y vista rápida |
+| `/productos` | Catálogo: filtros en listas (variedad, proceso, origen) y presentación, disponibilidad, orden, búsqueda, bloque de los tres procesos arriba de la grilla y vista rápida |
 | `/login` | Iniciar sesión (solo visual) |
 | `/registro` | Crear cuenta (solo visual) |
 | `/admin/ingresar` | Acceso al panel de administración |

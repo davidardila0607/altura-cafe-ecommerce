@@ -78,24 +78,30 @@
   padding: var(--esp-5);
 }
 
-.etiquetas {
+/* Filas de una sola línea (variedad + gramos; origen + proceso). */
+.fila {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem 0.6rem;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  min-height: 1.75rem;
 }
 
 .gramos {
-  margin-left: auto;
+  flex: none;
   color: var(--bosque);
   font-family: var(--fuente-mono);
   font-weight: 500;
   font-size: var(--fs-100);
 }
 
+/* Un nombre muy largo se corta con "…" (el completo está en el title y en la vista rápida). */
 .nombre {
-  margin-top: var(--esp-2);
+  overflow: hidden;
+  margin-block: var(--esp-2) var(--esp-1);
   font-size: var(--fs-500);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 750;
   font-stretch: 80%;
   letter-spacing: -0.03em;
@@ -103,10 +109,17 @@
 
 .origen {
   display: flex;
+  align-items: center;
   gap: 0.35rem;
-  margin-top: var(--esp-1);
+  min-width: 0;
   color: var(--texto-suave);
   font-size: var(--fs-200);
+}
+
+.recorte {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pie {
@@ -119,6 +132,7 @@
 }
 
 .precio {
+  white-space: nowrap;
   font-size: var(--fs-500);
   font-weight: 750;
   font-variant-numeric: tabular-nums;
@@ -126,6 +140,7 @@
 }
 
 .disponibilidad {
+  white-space: nowrap;
   font-size: var(--fs-200);
   font-weight: 600;
   color: var(--musgo);
@@ -199,7 +214,7 @@
   scale: 0.99;
 }
 
-/* ===== Destacada: más grande (bloque 2x2 del catálogo o primera de la selección) ===== */
+/* ===== Destacada: más grande (primera de la selección del Inicio) ===== */
 :host(.destacada) .imagen {
   aspect-ratio: 5 / 4;
 }

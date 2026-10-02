@@ -42,9 +42,17 @@
   margin-top: var(--esp-6);
 }
 
+/* Fija al bajar; si es más alta que la pantalla, tiene su propio scroll. */
 .lateral {
   position: sticky;
   top: 6.5rem;
+  max-height: calc(100dvh - 8rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Margen interno para que el anillo de foco (5 px) no se recorte; el negativo conserva la alineación. */
+  margin: -6px;
+  padding: 6px;
+  scrollbar-width: thin;
 }
 
 /* ===== Barra de herramientas ===== */
@@ -103,23 +111,15 @@
   display: none;
 }
 
-/* ===== Grilla con jerarquía ===== */
-/* "dense": si la ficha de procesos salta a la fila siguiente, la card que sigue llena el hueco. */
+/* ===== Bloque de procesos y grilla uniforme ===== */
+.guia-procesos {
+  margin-bottom: var(--esp-6);
+}
+
 .rejilla {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-flow: row dense;
   gap: clamp(1.25rem, 2.2vw, 2rem);
-}
-
-/* Ancho de la ficha de procesos: lo calcula productos.ts (columnasGuia). */
-.guia-procesos {
-  grid-column: span var(--columnas-3);
-}
-
-.rejilla.con-destacado > :first-child {
-  grid-column: span 2;
-  grid-row: span 2;
 }
 
 .esqueleto-tarjeta {
@@ -245,10 +245,6 @@
   .rejilla {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .guia-procesos {
-    grid-column: span var(--columnas-2);
-  }
 }
 
 @media (max-width: 991.98px) {
@@ -268,10 +264,6 @@
 @media (max-width: 575.98px) {
   .rejilla {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .guia-procesos {
-    grid-column: auto;
   }
 
   .controles {

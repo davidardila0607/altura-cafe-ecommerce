@@ -112,7 +112,10 @@ test.describe('Inicio', () => {
     await expect(page.locator('app-origenes .lista')).toContainText('Volcán Galeras');
     await expect(page.locator('app-origenes .lista')).toContainText('Buesaco');
 
-    await page.getByRole('link', { name: 'Ver cafés de Nariño' }).click();
+    // Con el teclado: con el mouse, el camino hasta el botón puede pasar sobre el marcador de
+    // Cauca, que se activa al pasar por encima (ver "Problemas conocidos" en CLAUDE.md).
+    await page.getByRole('link', { name: 'Ver cafés de Nariño' }).focus();
+    await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/productos\?origen=narino$/);
     await esperarCatalogo(page, 5);
     for (const origen of await tarjetas(page).locator('.origen').allTextContents()) {
@@ -252,26 +255,54 @@ test.describe('Productos', () => {
     await expect.poll(async () => (await nombresDeTarjetas(page))[0]).toBe('Altiplano Sur');
   });
 
-  test('la ficha de procesos explica los tres procesos, completa la grilla y filtra al elegir uno', async ({ page }) => {
+  test('el bloque de procesos va arriba de la grilla, filtra y marca el proceso activo sin mover la página', async ({ page }) => {
     await page.goto('/productos');
     await esperarCatalogo(page, 25);
     const guia = page.getByRole('region', { name: 'Tres procesos, tres tazas' });
     await expect(guia.getByRole('listitem')).toHaveCount(3);
-    await expect(guia).toContainText('Más dulzor y cuerpo');
+    await expect(guia).toContainText('Se seca con parte del mucílago');
 
-    // 3 columnas: la destacada (2x2) + 24 cards + la ficha llenan 10 filas completas.
-    await expect(tarjetas(page).first()).toHaveClass(/destacada/);
-    const ultimaFila = await tarjetas(page).evaluateAll((cards) => {
-      const arriba = cards.at(-1)!.getBoundingClientRect().top;
-      return cards.filter((c) => Math.abs(c.getBoundingClientRect().top - arriba) < 2).length;
-    });
-    expect(ultimaFila).toBe(3);
+    // Va arriba de la grilla (no intercalado) y es compacto.
+    await expect(page.getByTestId('catalogo').locator('app-guia-procesos')).toHaveCount(0);
+    const cajaGuia = (await guia.boundingBox())!;
+    const cajaGrilla = (await page.getByTestId('catalogo').boundingBox())!;
+    expect(cajaGuia.y + cajaGuia.height).toBeLessThan(cajaGrilla.y);
+    expect(cajaGuia.height).toBeLessThan(240);
 
-    await guia.getByRole('button', { name: 'Ver 8 cafés Honey' }).click();
+    // Pulsar "Ver 8 cafés" aplica el mismo filtro de la barra lateral, sin llevar la página arriba.
+    await page.evaluate(() => window.scrollTo(0, 400));
+    const honey = guia.getByRole('button', { name: 'Ver 8 cafés Honey' });
+    await honey.click();
     await expect(page).toHaveURL(/proceso=honey/);
     await esperarCatalogo(page, 8);
-    await expect(guia).toHaveCount(0);
+    await expect(honey).toHaveAttribute('aria-pressed', 'true');
     await expect(lateral(page).getByRole('button', { name: 'Honey' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+
+    // Pulsarlo otra vez quita el filtro.
+    await honey.click();
+    await esperarCatalogo(page, 25);
+    await expect(honey).toHaveAttribute('aria-pressed', 'false');
+    await expect(page).toHaveURL(`${BASE}/productos`);
+  });
+
+  test('todas las cards miden lo mismo y sus textos quedan alineados', async ({ page }) => {
+    await page.goto('/productos');
+    await esperarCatalogo(page, 25);
+    // Ninguna card es más grande que las demás.
+    await expect(tarjetas(page).and(page.locator('.destacada'))).toHaveCount(0);
+    // Alto de la card y posición del nombre, el origen y el precio: idénticos en las 25.
+    const medidas = await tarjetas(page).evaluateAll((cards) =>
+      cards.map((card) => {
+        const arriba = card.getBoundingClientRect().top;
+        const y = (selector: string) => Math.round(card.querySelector(selector)!.getBoundingClientRect().top - arriba);
+        return [Math.round(card.getBoundingClientRect().height), y('img'), y('.nombre'), y('.origen'), y('.precio')].join('/');
+      }),
+    );
+    expect(new Set(medidas).size).toBe(1);
+    // 3 columnas a 1440 px.
+    const columnas = await tarjetas(page).evaluateAll((cards) => new Set(cards.map((c) => Math.round(c.getBoundingClientRect().left))).size);
+    expect(columnas).toBe(3);
   });
 
   test('las 9 variedades: "Ver las 9 variedades" muestra el resto y la elegida sigue visible', async ({ page }) => {
@@ -313,8 +344,8 @@ test.describe('Productos', () => {
     // Por proceso y por variedad.
     await buscador.fill('honey');
     await esperarCatalogo(page, 8);
-    for (const etiquetas of await tarjetas(page).locator('.etiquetas').allTextContents()) {
-      expect(etiquetas).toContain('Honey');
+    for (const proceso of await tarjetas(page).locator('app-etiqueta-cafe.proceso').allTextContents()) {
+      expect(proceso).toContain('Honey');
     }
     await buscador.fill('rosado');
     await esperarCatalogo(page, 2);
@@ -429,7 +460,9 @@ test.describe('Productos', () => {
     });
 
     // Toda la card es clicable: se pulsa sobre la bolsa, que debe seguir en pantalla para volver a ella.
-    const caja = (await page.locator('img[data-bolsa]').first().boundingBox())!;
+    const bolsa = page.locator('img[data-bolsa]').first();
+    await bolsa.evaluate((img) => img.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    const caja = (await bolsa.boundingBox())!;
     await page.mouse.click(caja.x + caja.width / 2, caja.y + caja.height / 2);
     const vista = page.getByRole('dialog', { name: 'Inzá Reserva' });
     await expect(vista).toBeVisible();
@@ -448,6 +481,9 @@ test.describe('Productos', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/productos');
     await esperarCatalogo(page, 25);
+    // Sin desplazamiento horizontal de la página (el bloque de procesos tiene su propia fila con scroll).
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(page.getByRole('region', { name: 'Tres procesos, tres tazas' }).getByRole('listitem')).toHaveCount(3);
     await page.getByRole('button', { name: /^Filtrar/ }).click();
     const hoja = page.getByRole('dialog', { name: 'Filtros' });
     await expect(hoja).toBeVisible();

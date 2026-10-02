@@ -17,22 +17,29 @@
     </div>
   }
 
+  <!--
+    Variedad, Proceso y Origen son listas verticales: una fila por opción con su marca
+    (muestra de color o ícono), el nombre y el número de cafés alineado a la derecha.
+  -->
   <fieldset class="grupo">
     <legend class="titulo-grupo">Variedad</legend>
-    <div class="chips" [id]="prefijo() + '-variedades'">
-      <button type="button" class="chip" [attr.aria-pressed]="filtros().variedad === null" (click)="cambiar.emit({ variedad: null })">
-        Todas
+    <div class="lista" [id]="prefijo() + '-variedades'">
+      <button type="button" class="opcion" [attr.aria-pressed]="filtros().variedad === null" (click)="cambiar.emit({ variedad: null })">
+        <span class="marca" aria-hidden="true"></span>
+        <span class="nombre-opcion">Todas</span>
+        <span class="cantidad">{{ total() }}<span class="visually-hidden"> cafés</span></span>
       </button>
       @for (v of variedadesVisibles(); track v.id; let i = $index) {
         <button
           type="button"
-          class="chip"
+          class="opcion"
           [style.--i]="i"
+          [style.--color-opcion]="colorVariedad(v.nombre)"
           [attr.aria-pressed]="filtros().variedad === normalizar(v.nombre)"
           (click)="cambiar.emit({ variedad: normalizar(v.nombre) })"
         >
-          <span class="muestra" [style.background-color]="colorVariedad(v.nombre)" aria-hidden="true"></span>
-          {{ v.nombre }}
+          <span class="marca" aria-hidden="true"><span class="muestra"></span></span>
+          <span class="nombre-opcion">{{ v.nombre }}</span>
           <span class="cantidad">{{ conteo(conteoVariedades(), v.nombre) }}<span class="visually-hidden"> cafés</span></span>
         </button>
       }
@@ -53,41 +60,39 @@
 
   <fieldset class="grupo">
     <legend class="titulo-grupo">Proceso</legend>
-    <div class="chips">
-      <button type="button" class="chip" [attr.aria-pressed]="filtros().proceso === null" (click)="cambiar.emit({ proceso: null })">
-        Todos
+    <div class="lista">
+      <button type="button" class="opcion" [attr.aria-pressed]="filtros().proceso === null" (click)="cambiar.emit({ proceso: null })">
+        <span class="marca" aria-hidden="true"></span>
+        <span class="nombre-opcion">Todos</span>
+        <span class="cantidad">{{ total() }}<span class="visually-hidden"> cafés</span></span>
       </button>
       @for (p of procesos(); track p.id) {
         <button
           type="button"
-          class="chip chip-proceso"
-          [style.--color-proceso]="marcaProceso(p.nombre).color"
+          class="opcion"
+          [style.--color-opcion]="marcaProceso(p.nombre).color"
           [attr.aria-pressed]="filtros().proceso === normalizar(p.nombre)"
           (click)="cambiar.emit({ proceso: normalizar(p.nombre) })"
         >
-          <i [class]="'bi ' + marcaProceso(p.nombre).icono" aria-hidden="true"></i>
-          {{ p.nombre }}
+          <span class="marca" aria-hidden="true"><i [class]="'bi ' + marcaProceso(p.nombre).icono"></i></span>
+          <span class="nombre-opcion">{{ p.nombre }}</span>
           <span class="cantidad">{{ conteo(conteoProcesos(), p.nombre) }}<span class="visually-hidden"> cafés</span></span>
         </button>
       }
     </div>
   </fieldset>
 
+  <!-- Presentación: tres botones del mismo ancho. -->
   <fieldset class="grupo">
     <legend class="titulo-grupo">Presentación</legend>
-    <div class="chips">
-      <button
-        type="button"
-        class="chip"
-        [attr.aria-pressed]="filtros().presentacion === null"
-        (click)="cambiar.emit({ presentacion: null })"
-      >
+    <div class="segmentos">
+      <button type="button" class="segmento" [attr.aria-pressed]="filtros().presentacion === null" (click)="cambiar.emit({ presentacion: null })">
         Todas
       </button>
       @for (p of presentaciones(); track p.value) {
         <button
           type="button"
-          class="chip"
+          class="segmento"
           [attr.aria-pressed]="filtros().presentacion === p.value"
           (click)="cambiar.emit({ presentacion: p.value })"
         >
@@ -99,18 +104,22 @@
 
   <fieldset class="grupo">
     <legend class="titulo-grupo">Origen</legend>
-    <div class="chips">
-      <button type="button" class="chip" [attr.aria-pressed]="filtros().origen === null" (click)="cambiar.emit({ origen: null })">
-        Todos
+    <div class="lista">
+      <button type="button" class="opcion" [attr.aria-pressed]="filtros().origen === null" (click)="cambiar.emit({ origen: null })">
+        <span class="marca" aria-hidden="true"></span>
+        <span class="nombre-opcion">Todos</span>
+        <span class="cantidad">{{ total() }}<span class="visually-hidden"> cafés</span></span>
       </button>
       @for (o of origenes(); track o.clave) {
         <button
           type="button"
-          class="chip"
+          class="opcion"
           [attr.aria-pressed]="filtros().origen === o.clave"
           (click)="cambiar.emit({ origen: o.clave })"
         >
-          {{ o.nombre }}
+          <span class="marca" aria-hidden="true"><i class="bi bi-geo-alt"></i></span>
+          <span class="nombre-opcion">{{ o.nombre }}</span>
+          <span class="cantidad">{{ conteoOrigenes()[o.clave] ?? 0 }}<span class="visually-hidden"> cafés</span></span>
         </button>
       }
     </div>

@@ -85,6 +85,9 @@
   --radio-tarjeta: 16px;
   --radio-campo: 12px;
   --radio-pildora: 999px;
+  /* Tintes de bosque para fondos de filas y botones (pasar el mouse / opción activa). */
+  --tinte-hover: rgb(19 40 31 / 0.05);
+  --tinte-activo: rgb(19 40 31 / 0.08);
   --sombra-1: 0 1px 2px rgb(19 40 31 / 0.06), 0 8px 24px -14px rgb(19 40 31 / 0.3);
   --sombra-2: 0 2px 6px rgb(19 40 31 / 0.08), 0 30px 60px -28px rgb(19 40 31 / 0.45);
 
@@ -361,7 +364,7 @@ a {
 }
 
 .boton-icono:hover {
-  background: rgb(19 40 31 / 0.08);
+  background: var(--tinte-activo);
 }
 
 .boton-icono:active {

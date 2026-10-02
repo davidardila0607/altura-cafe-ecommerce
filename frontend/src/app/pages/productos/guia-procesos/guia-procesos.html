@@ -1,19 +1,22 @@
 <section class="guia" aria-labelledby="guia-procesos-titulo">
-  <h3 id="guia-procesos-titulo" class="titulo">Tres procesos, tres tazas</h3>
-  <p class="bajada">El mismo grano cambia según cómo se trata la cereza después de la cosecha.</p>
+  <div class="cabecera">
+    <h3 id="guia-procesos-titulo" class="titulo">Tres procesos, tres tazas</h3>
+    <p class="bajada">El mismo grano cambia según cómo se trata la cereza después de la cosecha.</p>
+  </div>
 
   <ul class="lista">
     @for (p of procesos(); track p.id) {
-      <li class="proceso" [style.--color-proceso]="marca(p.nombre).color">
+      <li class="proceso" [class.activo]="esActivo(p.nombre)" [style.--color-proceso]="marca(p.nombre).color">
         <p class="nombre">
           <i [class]="'bi ' + marca(p.nombre).icono" aria-hidden="true"></i>
           {{ p.nombre }}
         </p>
         <p class="texto">{{ marca(p.nombre).texto || p.descripcion }}</p>
-        @if (marca(p.nombre).enTaza) {
-          <p class="en-taza">{{ marca(p.nombre).enTaza }}</p>
-        }
-        <button type="button" class="enlace-texto" (click)="elegir.emit(normalizar(p.nombre))">
+        <!-- Mismo filtro que el de la barra lateral: pulsar el proceso activo lo quita. -->
+        <button type="button" class="ver" [attr.aria-pressed]="esActivo(p.nombre)" (click)="alternar(p.nombre)">
+          @if (esActivo(p.nombre)) {
+            <i class="bi bi-check2" aria-hidden="true"></i>
+          }
           Ver {{ cantidad(p.nombre) }}<span class="visually-hidden"> {{ p.nombre }}</span>
         </button>
       </li>

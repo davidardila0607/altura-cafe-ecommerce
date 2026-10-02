@@ -21,9 +21,12 @@ export class Filtros {
   readonly procesos = input<Proceso[]>([]);
   readonly presentaciones = input<Presentacion[]>([]);
   readonly origenes = input<{ clave: string; nombre: string }[]>([]);
-  /** Cafés por variedad y por proceso (clave normalizada), para el número de cada chip. */
+  /** Cafés por variedad, proceso y origen (clave normalizada), para el número de cada fila. */
   readonly conteoVariedades = input<Record<string, number>>({});
   readonly conteoProcesos = input<Record<string, number>>({});
+  readonly conteoOrigenes = input<Record<string, number>>({});
+  /** Total de cafés del catálogo (número de las filas "Todas" / "Todos"). */
+  readonly total = input(0);
   readonly activos = input(0);
   /** En móvil el panel incluye su propio buscador (el del navbar queda dentro del menú). */
   readonly conBuscador = input(false);
