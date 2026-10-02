@@ -16,3 +16,7 @@ export function camposCoinciden(campo: string, confirmacion: string): ValidatorF
     return valor === repetido ? null : { noCoinciden: true };
   };
 }
+
+/** Número entero (stock y precio en pesos colombianos no llevan decimales). */
+export const entero: ValidatorFn = (control: AbstractControl): ValidationErrors | null =>
+  control.value === null || control.value === '' || Number.isInteger(Number(control.value)) ? null : { entero: true };

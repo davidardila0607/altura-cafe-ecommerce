@@ -1,0 +1,228 @@
+<header class="encabezado">
+  <div>
+    <h1 class="titulo">Inventario</h1>
+    @if (cafes.hasValue()) {
+      <p class="resumen" data-testid="resumen-inventario">{{ visibles().length }} de {{ todos().length }} cafés</p>
+    }
+  </div>
+  <button type="button" class="boton boton-primario" (click)="abrirNuevo()">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+    Nuevo café
+  </button>
+</header>
+
+<div class="herramientas">
+  <label for="buscar-inventario" class="etiqueta">Buscar en el inventario</label>
+  <i class="bi bi-search" aria-hidden="true"></i>
+  <input
+    id="buscar-inventario"
+    type="search"
+    class="campo"
+    placeholder="Nombre, origen o variedad"
+    autocomplete="off"
+    [value]="busqueda()"
+    (input)="busqueda.set($any($event.target).value)"
+  />
+</div>
+
+@if (cafes.isLoading()) {
+  <div class="tabla-envoltorio" aria-busy="true">
+    <p class="visually-hidden" role="status">Cargando inventario…</p>
+    @for (n of [1, 2, 3, 4]; track n) {
+      <span class="esqueleto fila-esqueleto" aria-hidden="true"></span>
+    }
+  </div>
+} @else if (cafes.error()) {
+  <app-estado-error (reintentar)="cafes.reload()" />
+} @else {
+  <div class="tabla-envoltorio">
+    <table class="tabla">
+      <caption class="visually-hidden">Cafés del inventario</caption>
+      <thead>
+        <tr>
+          <th scope="col"><span class="visually-hidden">Imagen</span></th>
+          <th scope="col">Café</th>
+          <th scope="col">Origen</th>
+          <th scope="col" class="numero">Stock</th>
+          <th scope="col" class="numero">Precio</th>
+          <th scope="col"><span class="visually-hidden">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (cafe of visibles(); track cafe.id) {
+          <tr data-testid="fila-cafe">
+            <td class="celda-imagen">
+              @if (miniatura(cafe); as src) {
+                <img class="miniatura" [src]="src" alt="" width="48" height="60" loading="lazy" />
+              } @else {
+                <span class="sin-imagen" aria-hidden="true"><i class="bi bi-image"></i></span>
+              }
+            </td>
+            <td>
+              <span class="nombre-fila">{{ cafe.nombre }}</span><br />
+              <span class="detalle-fila">{{ cafe.variedadNombre }} · {{ cafe.presentacionGramos }} g</span>
+            </td>
+            <td data-titulo="Origen">{{ cafe.origen }}</td>
+            <td class="numero" data-titulo="Stock" [class.agotado]="cafe.stock === 0">{{ cafe.stock }}</td>
+            <td class="numero" data-titulo="Precio">{{ cafe.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</td>
+            <td>
+              <div class="acciones-fila">
+                <button type="button" class="accion" [attr.aria-label]="'Editar ' + cafe.nombre + ' ' + cafe.presentacionGramos + ' g'" (click)="abrirEdicion(cafe)">
+                  <i class="bi bi-pencil" aria-hidden="true"></i> Editar
+                </button>
+                <button type="button" class="accion peligro" [attr.aria-label]="'Eliminar ' + cafe.nombre + ' ' + cafe.presentacionGramos + ' g'" (click)="pedirEliminacion(cafe)">
+                  <i class="bi bi-trash3" aria-hidden="true"></i> Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vacio">
+              {{ todos().length ? 'Ningún café coincide con la búsqueda.' : 'Todavía no hay cafés. Crea el primero con «Nuevo café».' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- Panel lateral: crear o editar un café -->
+<dialog #panel appAtraparFoco class="panel" aria-labelledby="panel-titulo">
+  <form class="formulario-panel" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+    <div class="panel-cabecera">
+      <h2 id="panel-titulo" class="panel-titulo">{{ editando() ? 'Editar café' : 'Nuevo café' }}</h2>
+      <button type="button" class="boton-icono" aria-label="Cerrar panel" (click)="cerrarPanel()">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="panel-cuerpo">
+      @if (errorPanel(); as mensaje) {
+        <p class="error-general" role="alert">
+          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+          {{ mensaje }}
+        </p>
+      }
+
+      <div class="grupo-campo">
+        <label for="cafe-nombre" class="etiqueta">Nombre</label>
+        <input id="cafe-nombre" class="campo" formControlName="nombre" maxlength="100" [attr.aria-invalid]="mostrarError('nombre')" aria-describedby="cafe-nombre-error" />
+        <p id="cafe-nombre-error" class="mensaje-error">
+          @if (mostrarError('nombre')) {
+            Escribe el nombre del café (máximo 100 caracteres).
+          }
+        </p>
+      </div>
+
+      <div class="doble">
+        <div class="grupo-campo">
+          <label for="cafe-variedad" class="etiqueta">Variedad</label>
+          <select id="cafe-variedad" class="campo" formControlName="variedadId" [attr.aria-invalid]="mostrarError('variedadId')" aria-describedby="cafe-variedad-error">
+            <option [ngValue]="0" disabled>Elige una variedad</option>
+            @for (v of variedades.value() ?? []; track v.id) {
+              <option [ngValue]="v.id">{{ v.nombre }}</option>
+            }
+          </select>
+          <p id="cafe-variedad-error" class="mensaje-error">
+            @if (mostrarError('variedadId')) {
+              Elige una variedad.
+            }
+          </p>
+        </div>
+
+        <div class="grupo-campo">
+          <label for="cafe-presentacion" class="etiqueta">Presentación</label>
+          <select id="cafe-presentacion" class="campo" formControlName="presentacionGramos" [attr.aria-invalid]="mostrarError('presentacionGramos')" aria-describedby="cafe-presentacion-error">
+            <option [ngValue]="0" disabled>Elige una presentación</option>
+            @for (p of presentaciones.value() ?? []; track p.value) {
+              <option [ngValue]="p.value">{{ p.label }}</option>
+            }
+          </select>
+          <p id="cafe-presentacion-error" class="mensaje-error">
+            @if (mostrarError('presentacionGramos')) {
+              Elige una presentación.
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="grupo-campo">
+        <label for="cafe-origen" class="etiqueta">Origen</label>
+        <input id="cafe-origen" class="campo" formControlName="origen" maxlength="100" placeholder="Por ejemplo, Huila" [attr.aria-invalid]="mostrarError('origen')" aria-describedby="cafe-origen-error" />
+        <p id="cafe-origen-error" class="mensaje-error">
+          @if (mostrarError('origen')) {
+            Escribe el origen (máximo 100 caracteres).
+          }
+        </p>
+      </div>
+
+      <div class="doble">
+        <div class="grupo-campo">
+          <label for="cafe-stock" class="etiqueta">Stock (unidades)</label>
+          <input id="cafe-stock" type="number" inputmode="numeric" min="0" step="1" class="campo" formControlName="stock" [attr.aria-invalid]="mostrarError('stock')" aria-describedby="cafe-stock-error" />
+          <p id="cafe-stock-error" class="mensaje-error">
+            @if (mostrarError('stock')) {
+              El stock debe ser un número entero de 0 o más.
+            }
+          </p>
+        </div>
+
+        <div class="grupo-campo">
+          <label for="cafe-precio" class="etiqueta">Precio (COP)</label>
+          <input id="cafe-precio" type="number" inputmode="numeric" min="1" step="1" class="campo" formControlName="precio" [attr.aria-invalid]="mostrarError('precio')" aria-describedby="cafe-precio-error" />
+          <p id="cafe-precio-error" class="mensaje-error">
+            @if (mostrarError('precio')) {
+              El precio debe ser un número entero mayor que cero (sin decimales).
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="grupo-campo">
+        <label for="cafe-imagen" class="etiqueta">Imagen (JPG, PNG o WebP)</label>
+        <div class="imagen-campo">
+          @if (vistaPrevia(); as src) {
+            <img class="vista-previa" [src]="src" alt="Vista previa de la imagen del café" width="96" height="120" />
+          } @else {
+            <span class="vista-previa vacia" aria-hidden="true"><i class="bi bi-image"></i></span>
+          }
+          <div>
+            <!-- El input nativo queda oculto (su texto depende del idioma del navegador) y la
+                 etiqueta hace de botón en español; el teclado sigue llegando al input. -->
+            <input id="cafe-imagen" type="file" class="visually-hidden archivo" accept="image/jpeg,image/png,image/webp" aria-describedby="cafe-imagen-ayuda cafe-imagen-error" (change)="elegirImagen($event)" />
+            <label for="cafe-imagen" class="boton boton-contorno elegir-archivo">
+              <i class="bi bi-upload" aria-hidden="true"></i>
+              {{ archivo() ? 'Cambiar imagen' : 'Elegir imagen' }}
+            </label>
+            @if (archivo(); as elegido) {
+              <p class="ayuda">{{ elegido.name }}</p>
+            }
+            <p id="cafe-imagen-ayuda" class="ayuda">JPG, PNG o WebP, máximo 5 MB. {{ editando() ? 'Si no eliges otra, se conserva la actual.' : 'Opcional.' }}</p>
+            <p id="cafe-imagen-error" class="mensaje-error" aria-live="polite">{{ errorImagen() }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-pie">
+      <button type="button" class="boton boton-contorno" (click)="cerrarPanel()">Cancelar</button>
+      <button type="submit" class="boton boton-primario" [disabled]="guardando()">
+        {{ guardando() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Confirmación de borrado -->
+<dialog #confirmacion appAtraparFoco class="confirmacion" aria-labelledby="confirmacion-titulo" aria-describedby="confirmacion-texto">
+  <h2 id="confirmacion-titulo">¿Eliminar «{{ aEliminar()?.nombre }}» ({{ aEliminar()?.presentacionGramos }} g)?</h2>
+  <p id="confirmacion-texto">Esta acción es irreversible. También se borrará su imagen.</p>
+  <div class="botones">
+    <button type="button" class="boton boton-contorno" (click)="cancelarEliminacion()">Cancelar</button>
+    <button type="button" class="boton boton-peligro" [disabled]="eliminando()" (click)="confirmarEliminacion()">
+      {{ eliminando() ? 'Eliminando…' : 'Eliminar' }}
+    </button>
+  </div>
+</dialog>

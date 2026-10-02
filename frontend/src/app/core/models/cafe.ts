@@ -19,3 +19,15 @@ export interface Cafe {
   /** "Agotado" | "Pocas unidades" | "Disponible" | "Alta disponibilidad". */
   estadoStock: string;
 }
+
+/** Datos para crear o actualizar un café (`CreateCafeDto` / `UpdateCafeDto`). */
+export interface CafeGuardar {
+  nombre: string;
+  variedadId: number;
+  presentacionGramos: number;
+  origen: string;
+  stock: number;
+  precio: number;
+  imagenUrl: string | null;
+  imagenPublicId: string | null;
+}

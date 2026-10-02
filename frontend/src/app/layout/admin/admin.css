@@ -1,0 +1,177 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--niebla);
+}
+
+.saltar {
+  position: absolute;
+  left: var(--esp-4);
+  top: -4rem;
+  z-index: calc(var(--z-nav) + 1);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radio-pildora);
+  background: var(--papel);
+  color: var(--bosque);
+  font-weight: 650;
+}
+
+.saltar:focus {
+  top: var(--esp-3);
+}
+
+.cabecera {
+  z-index: var(--z-nav);
+  background: var(--bosque);
+  color: var(--texto-claro);
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3) var(--esp-6);
+  max-width: var(--ancho-max);
+  min-height: 4.25rem;
+  margin-inline: auto;
+  padding: var(--esp-2) var(--margen-lateral);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-height: 2.75rem;
+  text-decoration: none;
+}
+
+.etiqueta-panel {
+  padding: 0.1rem 0.6rem;
+  border: 1px solid rgb(238 241 234 / 0.4);
+  border-radius: var(--radio-pildora);
+  font-family: var(--fuente-mono);
+  font-size: var(--fs-100);
+}
+
+.secciones {
+  display: flex;
+  gap: var(--esp-1);
+}
+
+.secciones a {
+  display: inline-block;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radio-pildora);
+  color: var(--texto-claro-suave);
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-rapida) ease,
+    color var(--dur-rapida) ease;
+}
+
+.secciones a:hover {
+  color: var(--texto-claro);
+}
+
+.secciones a.activo {
+  background: rgb(238 241 234 / 0.14);
+  color: var(--texto-claro);
+}
+
+.usuario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-3);
+  margin-left: auto;
+}
+
+.nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.pequeno {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--fs-200);
+}
+
+.contenido {
+  flex: 1;
+  width: 100%;
+  max-width: var(--ancho-max);
+  margin-inline: auto;
+  padding: var(--esp-7) var(--margen-lateral) var(--esp-9);
+  outline: none;
+}
+
+/* ===== Avisos (abajo a la derecha) ===== */
+.avisos {
+  position: fixed;
+  right: var(--esp-4);
+  bottom: var(--esp-4);
+  z-index: calc(var(--z-nav) + 2);
+  display: grid;
+  gap: var(--esp-2);
+  width: min(26rem, calc(100vw - 2rem));
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-radius: var(--radio-campo);
+  background: var(--bosque);
+  color: var(--texto-claro);
+  box-shadow: var(--sombra-2);
+  font-weight: 600;
+  transition:
+    opacity 200ms ease,
+    translate 260ms var(--ease-salida);
+
+  @starting-style {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+.aviso.error {
+  background: var(--error);
+}
+
+.aviso span {
+  flex: 1;
+}
+
+.aviso .boton-icono:hover {
+  background: rgb(255 255 255 / 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aviso {
+    @starting-style {
+      translate: none;
+    }
+  }
+}
+
+/* En escritorio la cabecera queda fija; en móvil ocuparía media pantalla. */
+@media (min-width: 768px) {
+  .cabecera {
+    position: sticky;
+    top: 0;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .usuario {
+    width: 100%;
+    margin-left: 0;
+  }
+}

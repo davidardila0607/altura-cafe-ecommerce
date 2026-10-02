@@ -86,3 +86,17 @@
   color: var(--texto-claro-suave);
   font-size: var(--fs-200);
 }
+
+/* Enlace discreto al panel de administración (zona separada de la tienda). */
+.acceso-admin {
+  display: inline-block;
+  padding: 0.65rem 0;
+  color: var(--texto-claro-suave);
+  font-size: var(--fs-100);
+  text-decoration: underline;
+  text-decoration-color: rgb(238 241 234 / 0.35);
+}
+
+.acceso-admin:hover {
+  color: var(--texto-claro);
+}

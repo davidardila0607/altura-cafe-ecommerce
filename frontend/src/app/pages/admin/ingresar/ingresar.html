@@ -1,0 +1,88 @@
+<div class="acceso">
+  <app-paisaje-acceso class="fondo" frase="Inventario de la casa." />
+
+  <main class="tarjeta-acceso">
+    <form [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+      <h1 class="titulo-acceso">Panel de administración</h1>
+      <p class="subtitulo-acceso">Ingresa con una cuenta autorizada para gestionar el inventario.</p>
+
+      @if (sesionExpirada() === 'expirada') {
+        <p class="aviso" role="status">
+          <i class="bi bi-clock-history" aria-hidden="true"></i>
+          <span>Tu sesión terminó. Vuelve a ingresar para continuar.</span>
+        </p>
+      }
+
+      <div class="campo-acceso">
+        <label for="admin-correo" class="etiqueta">Correo electrónico</label>
+        <div class="control">
+          <input
+            id="admin-correo"
+            type="email"
+            class="campo"
+            formControlName="correo"
+            autocomplete="username"
+            [attr.aria-invalid]="mostrarError('correo')"
+            aria-describedby="admin-correo-error"
+          />
+          <span class="linea" aria-hidden="true"></span>
+        </div>
+        <div id="admin-correo-error" class="mensaje-error" aria-live="polite">
+          @if (mostrarError('correo')) {
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+            @if (formulario.controls.correo.hasError('required')) {
+              Escribe tu correo electrónico.
+            } @else {
+              Escribe un correo válido, por ejemplo nombre@dominio.com.
+            }
+          }
+        </div>
+      </div>
+
+      <div class="campo-acceso">
+        <label for="admin-contrasena" class="etiqueta">Contraseña</label>
+        <div class="control">
+          <input
+            id="admin-contrasena"
+            class="campo"
+            formControlName="contrasena"
+            autocomplete="current-password"
+            [type]="mostrarContrasena() ? 'text' : 'password'"
+            [attr.aria-invalid]="mostrarError('contrasena')"
+            aria-describedby="admin-contrasena-error"
+          />
+          <button
+            type="button"
+            class="boton-icono ver-contrasena"
+            [attr.aria-label]="mostrarContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="mostrarContrasena()"
+            aria-controls="admin-contrasena"
+            (click)="mostrarContrasena.set(!mostrarContrasena())"
+          >
+            <i class="bi" [class.bi-eye]="!mostrarContrasena()" [class.bi-eye-slash]="mostrarContrasena()" aria-hidden="true"></i>
+          </button>
+          <span class="linea" aria-hidden="true"></span>
+        </div>
+        <div id="admin-contrasena-error" class="mensaje-error" aria-live="polite">
+          @if (mostrarError('contrasena')) {
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+            Escribe tu contraseña.
+          }
+        </div>
+      </div>
+
+      <div class="mensaje-error" role="alert">
+        @if (error(); as mensaje) {
+          <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+          {{ mensaje }}
+        }
+      </div>
+
+      <button type="submit" class="boton boton-primario enviar" [disabled]="enviando()">
+        {{ enviando() ? 'Ingresando…' : 'Ingresar' }}
+      </button>
+
+      <p class="alterno"><a routerLink="/">Volver a la tienda</a></p>
+    </form>
+  </main>
+</div>

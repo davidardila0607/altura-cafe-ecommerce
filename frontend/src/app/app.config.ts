@@ -1,4 +1,6 @@
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import localeEsCo from '@angular/common/locales/es-CO';
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import {
   ActivatedRouteSnapshot,
@@ -9,7 +11,11 @@ import {
   withViewTransitions,
 } from '@angular/router';
 import { routes } from './app.routes';
+import { interceptorAuth } from './core/auth/interceptor';
 import { movimientoReducido } from './core/utils/medios';
+
+// Formato de precios en pesos colombianos ("$ 42.000") en toda la app, también en el panel.
+registerLocaleData(localeEsCo, 'es-CO');
 
 /**
  * Transición suave entre rutas (View Transitions API).
@@ -37,7 +43,8 @@ function alCrearTransicion({ transition, from, to }: ViewTransitionInfo): void {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(withFetch()),
+    // El interceptor agrega el token del panel de administración a las peticiones de la API.
+    provideHttpClient(withFetch(), withInterceptors([interceptorAuth])),
     provideRouter(
       routes,
       withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' }),

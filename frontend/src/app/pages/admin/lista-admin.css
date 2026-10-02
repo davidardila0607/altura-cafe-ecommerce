@@ -1,0 +1,214 @@
+/* Lista del panel (Inventario y Variedades): encabezado, búsqueda y tabla.
+   Densidad media, tablas legibles y sin animaciones decorativas. */
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-6);
+}
+
+.titulo {
+  font-size: var(--fs-700);
+  font-weight: 800;
+  font-stretch: 78%;
+  letter-spacing: -0.035em;
+}
+
+.resumen {
+  margin-top: var(--esp-1);
+  color: var(--texto-suave);
+  font-family: var(--fuente-mono);
+  font-size: var(--fs-200);
+}
+
+.herramientas {
+  position: relative;
+  max-width: 26rem;
+  margin-bottom: var(--esp-5);
+}
+
+.herramientas .bi-search {
+  position: absolute;
+  left: 1rem;
+  bottom: 0.9rem;
+  color: var(--texto-suave);
+  pointer-events: none;
+}
+
+.herramientas .campo {
+  padding-left: 2.6rem;
+}
+
+/* ===== Tabla ===== */
+.tabla-envoltorio {
+  overflow: hidden;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-tarjeta);
+  background: var(--papel);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-200);
+}
+
+.tabla th,
+.tabla td {
+  padding: 0.7rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabla thead th {
+  background: var(--niebla-honda);
+  color: var(--texto-suave);
+  font-size: var(--fs-100);
+  font-weight: 650;
+}
+
+.tabla tbody tr + tr td {
+  border-top: 1px solid var(--linea);
+}
+
+.tabla tbody tr:hover td {
+  background: rgb(19 40 31 / 0.03);
+}
+
+.numero {
+  font-variant-numeric: tabular-nums;
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.miniatura {
+  width: 3rem;
+  height: 3.75rem;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--niebla-honda);
+}
+
+.sin-imagen {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3.75rem;
+  border-radius: 8px;
+  background: var(--niebla-honda);
+  color: var(--texto-suave);
+}
+
+.nombre-fila {
+  font-weight: 700;
+  font-size: var(--fs-300);
+}
+
+.detalle-fila {
+  color: var(--texto-suave);
+}
+
+.agotado {
+  color: var(--cereza);
+  font-weight: 700;
+}
+
+.acciones-fila {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-1);
+}
+
+.accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0 0.8rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-pildora);
+  background: transparent;
+  font-weight: 650;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.accion:hover {
+  background: rgb(19 40 31 / 0.08);
+}
+
+.accion.peligro {
+  color: var(--error);
+}
+
+.accion.peligro:hover {
+  background: rgb(163 39 31 / 0.08);
+}
+
+.vacio {
+  padding: var(--esp-7) var(--esp-5);
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+.fila-esqueleto {
+  height: 4.5rem;
+  margin: var(--esp-2) var(--esp-4);
+}
+
+/* Móvil: cada fila se vuelve una tarjeta con etiquetas (data-titulo). */
+@media (max-width: 759.98px) {
+  .tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .tabla tr {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--esp-1) var(--esp-4);
+    padding: var(--esp-4);
+  }
+
+  .tabla tbody tr + tr {
+    border-top: 1px solid var(--linea);
+  }
+
+  .tabla tbody tr + tr td {
+    border-top: 0;
+  }
+
+  .tabla td {
+    padding: 0;
+  }
+
+  .tabla td.celda-imagen {
+    grid-row: span 4;
+  }
+
+  .tabla td:not(.celda-imagen) {
+    grid-column: 2;
+  }
+
+  .tabla td[data-titulo]::before {
+    content: attr(data-titulo) ': ';
+    color: var(--texto-suave);
+  }
+
+  .numero {
+    text-align: left !important;
+  }
+
+  .tabla td:has(.acciones-fila) {
+    grid-column: 1 / -1;
+  }
+
+  .acciones-fila {
+    justify-content: flex-start;
+  }
+}
