@@ -33,7 +33,7 @@ dotnet ef database update
 # 4. Levantar la API (déjala corriendo) → http://localhost:5031/swagger
 dotnet run --launch-profile http
 
-# 5. En otra terminal, desde backend/: cargar los 6 cafés de ejemplo
+# 5. En otra terminal, desde backend/: cargar los 25 cafés del catálogo
 powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1
 powershell -ExecutionPolicy Bypass -File .\seed\subir-imagenes-sitio.ps1
 
@@ -120,7 +120,7 @@ dotnet tool restore
 dotnet ef database update
 ```
 
-Esto crea la base `cafeapi_dev` (si no existe), las tablas y las variedades iniciales (Castillo, Geisha y Moka).
+Esto crea la base `cafeapi_dev` (si no existe), las tablas, las **9 variedades** (Castillo, Caturra, Colombia, Típica, Tabi, Bourbon Rojo, Bourbon Amarillo, Bourbon Rosado y Geisha) y los **3 procesos** (Lavado, Honey y Fermentado).
 
 ### 4. Ejecutar la API
 
@@ -143,9 +143,18 @@ Con la API corriendo, abre **otra terminal** y, desde `backend/`:
 powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1
 ```
 
-El script pide el correo y la contraseña de la cuenta **Administrador**. Después sube las 6 imágenes de `seed/imagenes/` a Cloudinary y crea los 6 cafés de ejemplo. Es idempotente: si un café ya existe, lo omite sin subir su imagen, así que puedes ejecutarlo varias veces. Para usar otra URL de la API: `-ApiBaseUrl http://localhost:5031/api`.
+El script pide el correo y la contraseña de la cuenta **Administrador**. Lee el catálogo de `seed/catalogo.json` (25 cafés de Santander, Huila, Nariño, Magdalena y Cauca, cada uno con variedad, proceso, presentación, stock y precio), sube su imagen de `seed/imagenes/` a Cloudinary y crea el café. Es idempotente: si un café ya existe (mismo nombre, variedad, proceso y presentación), lo omite sin subir su imagen, así que puedes ejecutarlo varias veces. Para usar otra URL de la API: `-ApiBaseUrl http://localhost:5031/api`.
 
-Comprueba el resultado en http://localhost:5031/api/cafes: deben aparecer 6 cafés con imágenes de `res.cloudinary.com`.
+Comprueba el resultado en http://localhost:5031/api/cafes: deben aparecer 25 cafés con imágenes de `res.cloudinary.com`.
+
+**Regenerar las imágenes de producto** (opcional; ya están en el repositorio). Desde `frontend/`, con `npm install` hecho:
+
+```powershell
+node herramientas/generar-bolsas.mjs        # las 25
+node herramientas/generar-bolsas.mjs 09 10  # solo las que empiezan por 09 y 10
+```
+
+Dibuja cada bolsa a partir de `catalogo.json` y escribe el SVG y el PNG (1600×1600, < 600 kB) en `backend/seed/imagenes/`. Luego súbelas con `-ActualizarImagenes` (abajo).
 
 **¿Cambiaron las imágenes de `seed/imagenes/`?** Para reemplazar las imágenes de los cafés que ya existen (conservando sus datos), usa:
 
@@ -206,15 +215,15 @@ Crean y borran un café y una variedad de prueba (con "e2e" en el nombre) y una 
 | Ruta | Vista |
 |---|---|
 | `/` | Inicio "Ascenso": hero con la montaña en capas, selección de la casa (3 cafés de la API), proceso "De la montaña a tu taza" (galería horizontal), cinta de notas de cata, mapa de orígenes, variedades y cierre. Un altímetro marca la altura de cada sección |
-| `/productos` | Catálogo: filtros por variedad, presentación, origen y disponibilidad, orden, búsqueda y vista rápida |
+| `/productos` | Catálogo: filtros por variedad, proceso, presentación, origen y disponibilidad, orden, búsqueda, ficha de los tres procesos y vista rápida |
 | `/login` | Iniciar sesión (solo visual) |
 | `/registro` | Crear cuenta (solo visual) |
 | `/admin/ingresar` | Acceso al panel de administración |
 | `/admin/inventario` · `/admin/variedades` | Panel: cafés (con imagen) y variedades |
 
-- Productos, variedades y presentaciones vienen de la API; nada de eso está escrito en el código.
-- El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen o variedad sin importar tildes ni mayúsculas.
-- Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=geisha&presentacion=500`): se pueden compartir y sobreviven a recargar.
+- Productos, variedades, procesos y presentaciones vienen de la API; nada de eso está escrito en el código (solo los textos de marca y los colores de cada variedad y proceso).
+- El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen, variedad o proceso sin importar tildes ni mayúsculas (por ejemplo, "honey" o "narino").
+- Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=caturra&proceso=lavado&presentacion=500`): se pueden compartir y sobreviven a recargar. Cada café muestra su variedad (muestra de color) y su proceso (etiqueta con ícono).
 - "Ver producto" (o cualquier clic en la card) abre la vista rápida: la bolsa "vuela" desde la card y el panel toma el color de la variedad. "Agregar al carrito" aparece deshabilitado ("Próximamente").
 - Precios en pesos colombianos (`$ 42.000`); disponibilidad "N disponibles", "Quedan N" (5 o menos) o "Agotado".
 - Login y Registro validan los campos, pero **no llaman a la API**: al enviar muestran "… estará disponible próximamente."
@@ -225,7 +234,7 @@ Crean y borran un café y una variedad de prueba (con "e2e" en el nombre) y una 
 
 1. En la tienda, abajo en el footer: **"Acceso administrador"** (o abre http://localhost:4200/admin).
 2. Ingresa con la cuenta de rol **Administrador** (la contraseña de las cuentas de prueba la tiene el equipo; no se escribe en el repositorio). Una cuenta Cliente no puede entrar.
-3. En **Inventario** puedes buscar, crear, editar (con imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés).
+3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés).
 4. Los cambios se ven en el Inicio y en Productos al recargar. La sesión se cierra sola cuando vence el token o con "Cerrar sesión".
 
 ---
@@ -248,6 +257,7 @@ Crean y borran un café y una variedad de prueba (con "e2e" en el nombre) y una 
 | PUT | `/api/variedades/{id}` | Administrador |
 | DELETE | `/api/variedades/{id}` | Administrador (409 si tiene cafés) |
 | GET | `/api/presentaciones` | Público |
+| GET | `/api/procesos` | Público (Lavado, Honey, Fermentado) |
 | POST | `/api/images` | Administrador |
 | DELETE | `/api/images?publicId=cafes/…` | Administrador (borra una imagen subida que no se usó) |
 
@@ -260,12 +270,17 @@ Crean y borran un café y una variedad de prueba (con "e2e" en el nombre) y una 
 ### variedades
 
 - `id`, `nombre` (obligatorio, único, máx. 100), `descripcion` (opcional).
-- Variedades iniciales: Castillo, Geisha, Moka.
+- Variedades iniciales (9): Castillo, Caturra, Colombia, Típica, Tabi, Bourbon Rojo, Bourbon Amarillo, Bourbon Rosado y Geisha, cada una con descripción.
+
+### procesos
+
+- `id`, `nombre` (obligatorio, único, máx. 50), `descripcion` (opcional).
+- Procesos iniciales: Lavado, Honey y Fermentado.
 
 ### cafes
 
-- `id`, `nombre` (máx. 100), `variedad_id` (FK, `ON DELETE RESTRICT`), `presentacion_gramos` (340 o 500), `origen` (máx. 100), `stock` (≥ 0), `precio` (`numeric(12,0)`, > 0, pesos colombianos sin decimales), `imagen_url`, `imagen_public_id`, `created_at`, `updated_at` (UTC).
-- No puede haber dos cafés con el mismo nombre (sin importar mayúsculas), variedad y presentación: la API responde **409**.
+- `id`, `nombre` (máx. 100), `variedad_id` (FK, `ON DELETE RESTRICT`), `proceso_id` (FK, `ON DELETE RESTRICT`, obligatorio), `presentacion_gramos` (340 o 500), `origen` (máx. 100), `stock` (≥ 0), `precio` (`numeric(12,0)`, > 0, pesos colombianos sin decimales), `imagen_url`, `imagen_public_id`, `created_at`, `updated_at` (UTC).
+- No puede haber dos cafés con el mismo nombre (sin importar mayúsculas), variedad, proceso y presentación: la API responde **409**. Un `procesoId` o `variedadId` que no existe responde **400**.
 
 ### Presentaciones
 

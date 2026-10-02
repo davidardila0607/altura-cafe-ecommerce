@@ -15,7 +15,7 @@ El proyecto es universitario y quienes lo entregan deben poder explicar cada par
 
 E-commerce de café de especialidad **Altura** (proyecto universitario en grupo):
 
-- **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés, sus variedades y presentaciones, y las imágenes de producto en Cloudinary.
+- **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés (25 en el seed), sus variedades (9), procesos (3) y presentaciones, y las imágenes de producto en Cloudinary.
 - **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, Login y Registro solo visuales, y un **panel de administración** (`/admin`) con autenticación real por roles.
 
 Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El repositorio anterior (`pablorja/CafeApi`) ya no se usa. No se hace force push ni se reescribe el historial.
@@ -78,7 +78,11 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 | `--texto-suave` | bosque al 76 % | Texto secundario (≥ 5,3:1) |
 | `--linea` / `--linea-fuerte` | bosque al 14 % / 30 % | Bordes y divisores |
 
-**Colores por variedad** (`--variedad-*` y `core/data/contenido-marca.ts`; los dos usos, texto sobre papel y fondo con texto blanco, cumplen AA): Castillo `#8A5A2B`, Geisha `#2D6A5E`, Moka `#6E3150`. Una variedad nueva de la API usa `#13281F`.
+**Colores por variedad** (`--variedad-*` y `core/data/contenido-marca.ts`; los tres usos, texto sobre papel, texto sobre niebla y fondo con texto blanco, cumplen AA ≥ 4,5:1, verificado): Castillo `#7A4A26` (tostado), Caturra `#3B6B34` (verde hoja), Colombia `#A2482A` (teja), Típica `#7E5A10` (ocre), Tabi `#4A5868` (pizarra), Bourbon Rojo `#9E2433` (cereza), Bourbon Amarillo `#7A6400` (mostaza oscuro), Bourbon Rosado `#B03A6B` (rosa), Geisha `#2D6A5E` (verde jade). Una variedad nueva de la API usa `#13281F`.
+
+**Colores por proceso** (`--proceso-*` y `marcaProceso()`; mismas comprobaciones AA): Lavado `#2E6A8A` (agua) con ícono `bi-droplet`, Honey `#875700` (miel) con `bi-hexagon`, Fermentado `#6E2E4A` (vino) con `bi-hourglass-split`. Un proceso nuevo usa el color neutro y `bi-circle`.
+
+**Etiquetas de café** (`shared/etiqueta-cafe`): la **variedad** es texto en su color con una muestra cuadrada; el **proceso** es una píldora con borde y fondo tenue de su color y su ícono. Así se distinguen a simple vista aunque compartan tono (por ejemplo, Geisha y Lavado).
 
 **Tipografía** (npm, `@fontsource-variable`): **Bricolage Grotesque** (archivo `standard.css`: ejes de peso, ancho 75–100 % y tamaño óptico) para todo; el *display* usa `font-stretch: 75%` y peso 800. **Geist Mono** solo para medidas: altitud, gramos, contadores. Escala `--fs-100` 13 px … `--fs-800` 48–96 px (fluidas con `clamp`); la palabra del hero es la excepción (hasta 30rem). Interlineado `--lh-display` 0,88, `--lh-titulo` 1,05, `--lh-texto` 1,6. Tracking mínimo −0,04 em.
 
@@ -114,6 +118,8 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 | **Vuelo de la bolsa** card → vista rápida (y de vuelta si la card sigue en pantalla) | Abrir / cerrar la vista rápida | 520 ms (resto de la página: fundido 280 ms) | `--ease-cajon` | `vista-rapida.ts` (View Transition `bolsa`) |
 | Panel de la vista rápida sin vuelo (sube 24 px; en móvil, hoja desde abajo) | Abrir | 420 ms (cierre 200 ms) | `--ease-cajon` | `vista-rapida.css` (`@starting-style`) |
 | Reordenamiento de la grilla al filtrar | Cambiar filtros | 380 ms | `--ease-movimiento` | View Transitions (`view-transition-class: tarjeta`) |
+| Chips que aparecen con "Ver las 9 variedades" (subida de 6 px + fundido, 25 ms entre chips) | Desplegar la lista | 220–260 ms | `--ease-salida` | `filtros.css` (`@starting-style`; sin movimiento reducido no se anima) |
+| Flecha de "Ver las 9 variedades" (gira 180°) | Desplegar / plegar | 240 ms | `--ease-salida` | `filtros.css` |
 | Cambio de ruta (fundido + 10 px) | Navegar | 180 ms salida / 340 ms entrada | `--ease-salida` | `styles.css` |
 | Navbar transparente → sólido | Dejar el principio de la página | 260 ms | `ease` | `navbar.css` + sensor en `sitio.ts` |
 | Menú móvil y hoja de filtros | Abrir | 420 ms | `--ease-cajon` | `navbar.css`, `productos.css` |
@@ -149,6 +155,8 @@ Se usaron como referencia visual (búsqueda en el catálogo con el MCP de 21st);
 | Page Transition (su2491251) | Transición de ruta y vuelo de la bolsa |
 | Floating Label (ddoemonn), Label Input (tom_ui) | Microinteracciones de los campos (la etiqueta se dejó arriba, más clara) |
 | Custom Cursor (soralabs) | Se evaluó y se descartó: el concepto no lo necesita y perjudica la accesibilidad |
+| Role Filter Chips (cnippet-dev), Selector Chips (preetsuthar17) | Chips de variedad y proceso con el número de cafés de cada opción |
+| Chip (preetsuthar17), Badge con ícono (sean0205), Astryx Badge | Etiquetas de proceso: píldora con ícono y color propio, distinta de la muestra de variedad |
 
 ## Stack y versiones
 
@@ -176,7 +184,7 @@ ImagesController / CafesController  →  Interfaces/ICloudinaryService  →  Ser
 
 - **Controllers/**: validan (DataAnnotations + reglas como "la variedad existe"), mapean DTO ↔ entidad y deciden el código HTTP. No hay capa de servicios de negocio (decisión del grupo: se mantiene Controller → Repository).
 - **Repositories/**: todos los métodos son `*Async` y reciben `CancellationToken`. Las lecturas usan `AsNoTracking()` y proyectan directamente a DTO con `Select` (un solo SELECT con JOIN, sin N+1). Para modificar o borrar: `FindAsync` (con seguimiento) → el controlador cambia la entidad → `UpdateAsync`/`DeleteAsync` (que llaman a `SaveChangesAsync`).
-- **Data/AppDbContext.cs**: `DbSet` de `Variedades` y `Cafes`. Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
+- **Data/AppDbContext.cs**: `DbSet` de `Variedades`, `Procesos` y `Cafes`. Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
 - **Data/Migrations/**: migraciones de EF Core. **Son la fuente de verdad del esquema** (ya no existe `database/schema.sql`).
 - **Data/DbUpdateExceptionExtensions.cs**: detecta violaciones de unicidad (23505) y de clave foránea (23503) de PostgreSQL para responder 409.
 - **Seguridad/**: `Roles` y `Politicas` (autorización por políticas; ver "Autorización").
@@ -193,7 +201,17 @@ ImagesController / CafesController  →  Interfaces/ICloudinaryService  →  Ser
 | nombre | varchar(100) | obligatorio, único (`ux_variedades_nombre`) |
 | descripcion | text | opcional |
 
-Semilla (`HasData`): 1 Castillo, 2 Geisha, 3 Moka (descripción null).
+Semilla (`HasData`, con descripción): 1 Castillo, 2 Caturra, 3 Colombia, 4 Típica, 5 Tabi, 6 Bourbon Rojo, 7 Bourbon Amarillo, 8 Bourbon Rosado, 9 Geisha. (Moka se retiró en `AgregarProcesosYVariedades`: el id 3 pasó a ser Colombia).
+
+**procesos**
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| id | integer identity | PK |
+| nombre | varchar(50) | obligatorio, único (`ux_procesos_nombre`) |
+| descripcion | text | opcional |
+
+Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una **tabla** (no un enum como `Presentacion`) porque tiene nombre y descripción y se podrían agregar procesos sin cambiar el código.
 
 **cafes**
 
@@ -202,6 +220,7 @@ Semilla (`HasData`): 1 Castillo, 2 Geisha, 3 Moka (descripción null).
 | id | integer identity | PK |
 | nombre | varchar(100) | obligatorio |
 | variedad_id | integer | FK → variedades, `ON DELETE RESTRICT` |
+| proceso_id | integer | FK → procesos, `ON DELETE RESTRICT` (índice `ix_cafes_proceso_id`) |
 | presentacion_gramos | integer | `CHECK IN (340, 500)` (enum `Presentacion`) |
 | origen | varchar(100) | obligatorio |
 | stock | integer | `CHECK >= 0` |
@@ -210,7 +229,9 @@ Semilla (`HasData`): 1 Castillo, 2 Geisha, 3 Moka (descripción null).
 | imagen_public_id | varchar(255) | opcional |
 | created_at / updated_at | timestamptz | UTC, los asigna `AppDbContext` |
 
-Índice único `ux_cafes_nombre_variedad_presentacion` sobre `(lower(nombre), variedad_id, presentacion_gramos)`, creado con `migrationBuilder.Sql` en `InitialCreate` (EF Core no modela índices por expresión, así que **no aparece en el snapshot**: si se recrea la migración, hay que volver a añadirlo a mano en `Up` y `Down`).
+Índice único `ux_cafes_nombre_variedad_proceso_presentacion` sobre `(lower(nombre), variedad_id, proceso_id, presentacion_gramos)`: el mismo café puede venderse con dos procesos distintos. Se crea con `migrationBuilder.Sql` (EF Core no modela índices por expresión, así que **no aparece en el snapshot**: si se recrea una migración, hay que volver a añadirlo a mano en `Up` y `Down`). Reemplaza al índice anterior `ux_cafes_nombre_variedad_presentacion` de `InitialCreate`.
+
+**Migración `AgregarProcesosYVariedades`** (una sola, aplicada): crea `procesos` con sus 3 filas; agrega `cafes.proceso_id` con valor por defecto 1 (para que las filas que ya existían queden como "Lavado") y luego quita ese valor por defecto; actualiza e inserta las 9 variedades; crea la FK, el índice nuevo y avanza las secuencias de identidad con `setval(pg_get_serial_sequence(...))` (los `HasData` con id fijo no las mueven y el siguiente `INSERT` chocaría). `Down` deshace todo en orden inverso.
 
 `Presentacion` es un enum en código (`G340 = 340`, `G500 = 500`), no una tabla. En JSON viaja como número (`presentacionGramos: 340`).
 
@@ -236,13 +257,14 @@ Entidades **fuera** del DbContext (pendientes): `Usuario`, `Cart`, `CartItem`.
 | PUT | /api/variedades/{id} | Inventario | 204, 400, 401, 403, 404, 409 |
 | DELETE | /api/variedades/{id} | Inventario | 204, 401, 403, 404, 409 si tiene cafés |
 | GET | /api/presentaciones | Público | 200 `[{ value, label }]` |
+| GET | /api/procesos | Público | 200 `ProcesoResponseDto[]` (id, nombre, descripcion) |
 | POST | /api/images | Inventario | 200 `{ imageUrl, publicId }`, 400, 401, 403 |
 | DELETE | /api/images?publicId=cafes/… | Inventario | 204, 400 (fuera de la carpeta `cafes/`), 401, 403, 409 si un café la usa |
 
 Reglas relevantes:
 - Sin token → **401**; con token pero sin el permiso (por ejemplo, la cuenta Cliente) → **403**.
-- `variedadId` inexistente → 400 (`ValidationProblem`). Duplicados → 409 `ProblemDetails` con mensaje en español.
-- `CafeResponseDto`: id, nombre, variedadId, variedadNombre, presentacionGramos, origen, stock, precio, imagenUrl, imagenPublicId, disponible, estadoStock (Agotado / Pocas unidades ≤10 / Disponible ≤50 / Alta disponibilidad).
+- `variedadId` o `procesoId` inexistente → 400 (`ValidationProblem`: "La variedad indicada no existe." / "El proceso indicado no existe."). `procesoId` es obligatorio al crear y al editar. Duplicados → 409 `ProblemDetails` con mensaje en español ("Ya existe un café con ese nombre, variedad, proceso y presentación.").
+- `CafeResponseDto`: id, nombre, variedadId, variedadNombre, procesoId, procesoNombre, presentacionGramos, origen, stock, precio, imagenUrl, imagenPublicId, disponible, estadoStock (Agotado / Pocas unidades ≤10 / Disponible ≤50 / Alta disponibilidad).
 - Imágenes: Base64 con o sin prefijo `data:image/...;base64,`; el formato se detecta por la firma de bytes (jpg, png, webp); máximo 5 MB; carpeta `cafes` de Cloudinary.
 - Flujo de imagen: `POST /api/images` → guardar `imageUrl` + `publicId` en el café (POST/PUT). Si un PUT cambia el `imagenPublicId`, la anterior se borra de Cloudinary; un DELETE borra la imagen del café. Si Cloudinary falla al borrar, se registra en el log y la operación **no** falla. Si el guardado del café falla después de subir, el panel llama a `DELETE /api/images` para no dejar la imagen huérfana.
 - El JWT lleva los claims `email`, `unique_name` (nombre) y `role`; `GET /api/auth/me` los devuelve.
@@ -312,25 +334,43 @@ dotnet run --launch-profile http         # http://localhost:5031  (https: 7031)
 
 ## Productos de ejemplo (seed)
 
+El catálogo vive en **`backend/seed/catalogo.json`** (25 cafés: imagen, nombre, variedad, proceso, presentación, origen, stock y precio). Lo leen el script de carga y el generador de imágenes, así que hay una sola fuente.
+
 `backend/seed/seed-productos.ps1` (Windows PowerShell 5.1 o 7; archivo UTF-8 con BOM):
 
-1. Pide correo y contraseña del Administrador (o `-Email`/`-Password` como `SecureString`; `-ApiBaseUrl`, por defecto `http://localhost:5031/api`).
-2. `POST /api/auth/login` → token. Resuelve `variedadId` por nombre con `GET /api/variedades`.
-3. Por cada producto: si ya existe (nombre sin mayúsculas + variedad + presentación, según `GET /api/cafes`) lo **omite sin subir imagen**; si no, `POST /api/images` y `POST /api/cafes` con `imagenUrl` + `imagenPublicId`. Un 409 en el POST se reporta como omitido.
+1. Pide correo y contraseña del Administrador (o `-Email`/`-Password` como `SecureString`; `-ApiBaseUrl`, por defecto `http://localhost:5031/api`). Para pasar un `SecureString`, ejecuta el script **en la misma sesión** (`& .\seed\seed-productos.ps1 -Email ... -Password $clave`): no viaja a un proceso `powershell` nuevo.
+2. `POST /api/auth/login` → token. Resuelve `variedadId` y `procesoId` por nombre con `GET /api/variedades` y `GET /api/procesos`.
+3. Por cada café: si ya existe (nombre sin mayúsculas + variedad + proceso + presentación, según `GET /api/cafes`) lo **omite sin subir imagen**; si no, `POST /api/images` y `POST /api/cafes` con `procesoId`, `imagenUrl` e `imagenPublicId`. Si el `POST` falla (por ejemplo 409), borra la imagen recién subida con `DELETE /api/images` y lo reporta como omitido.
 4. Los cuerpos se envían como bytes UTF-8 (las tildes llegan bien en PowerShell 5.1).
 
-| # | Nombre | Variedad | g | Origen | Stock | Precio |
-|---|---|---|---|---|---|---|
-| 1 | Mesa de los Santos | Castillo | 340 | Santander | 24 | 42.000 |
-| 2 | Mesa de los Santos | Castillo | 500 | Santander | 15 | 58.000 |
-| 3 | Pitalito Reserva | Geisha | 340 | Huila | 8 | 89.000 |
-| 4 | Volcán Galeras | Moka | 340 | Nariño | 12 | 54.000 |
-| 5 | Sierra Nevada | Castillo | 500 | Magdalena | 0 | 61.000 |
-| 6 | Tierradentro | Geisha | 500 | Cauca | 5 | 118.000 |
+Resultado verificado: primera ejecución "25 creados"; segunda, "0 creados, 25 omitidos" (sin subir imágenes). La API devuelve exactamente los 25 cafés del catálogo y la carpeta `cafes/` de Cloudinary tiene 25 imágenes, sin huérfanas.
 
-Imágenes (set 2): `backend/seed/imagenes/NN-nombre-gramos.{svg,png}` (PNG 1600×1600). Bolsa stand-up de papel kraft en tres cuartos (fuelle lateral en sombra, sello engarzado, cierre, válvula, pliegues), luz de estudio desde la izquierda, sombra proyectada sobre una mesa cálida y granos tostados en primer plano. La etiqueta lleva logo, nombre, variedad, origen, peso neto y un **grabado único de la región** (cañón del Chicamocha, laderas del Huila, volcán Galeras, Sierra Nevada, terrazas de Tierradentro) en el color de la variedad. La de 500 g es un 17 % más grande. Textura kraft con `feTurbulence`. Los SVG nombran Fraunces/Inter por familia; los PNG se exportaron con Chromium (fuentes variables de @fontsource) y se comprimieron con paleta (`sharp`, ~1,5 MB cada uno en vez de ~4 MB, sin diferencia visible). Filosofía en `DISENO.md`.
+| Región (origen) | Cafés |
+|---|---|
+| Santander | Mesa de los Santos (340 y 500 g), Chicamocha, Los Santos, Cañón Dorado |
+| Huila | Pitalito (340 y 500 g), Pitalito Reserva, Rosa del Huila (340 y 500 g), San Agustín |
+| Nariño | Volcán Galeras (340 y 500 g), La Unión, Buesaco, Altiplano Sur |
+| Magdalena | Sierra Nevada (Castillo 340 g y Colombia 500 g), Minca, Sierra Antigua |
+| Cauca | Tierradentro (340 y 500 g), Inzá, Popayán, Inzá Reserva |
 
-**`-ActualizarImagenes`**: `seed-productos.ps1 -ActualizarImagenes` sube la imagen nueva de cada café existente y hace `PUT /api/cafes/{id}` conservando sus datos actuales y enviando el nuevo `imagenUrl` + `imagenPublicId`; el backend borra la imagen anterior de Cloudinary. Tras ejecutarlo se verificó que la carpeta `cafes` de Cloudinary contiene exactamente los 6 `publicId` de la base de datos (sin huérfanas).
+Todos tienen stock (ninguno agotado); solo Inzá Reserva queda en "Quedan 5". Precios de 45.000 a 132.000 COP. Los orígenes coinciden con las claves del mapa (`departamentoDeOrigen`). Procesos: 11 Lavado, 8 Honey, 6 Fermentado.
+
+**`-ActualizarImagenes`**: sube la imagen nueva de cada café existente y hace `PUT /api/cafes/{id}` conservando sus datos (incluido `procesoId`) y enviando el nuevo `imagenUrl` + `imagenPublicId`; el backend borra la imagen anterior de Cloudinary.
+
+**Limpieza previa (esta versión)**: antes de cargar el catálogo nuevo se borraron por la API los 6 cafés anteriores (cada `DELETE /api/cafes/{id}` borra también su imagen) y se verificó que la carpeta `cafes/` de Cloudinary quedara vacía.
+
+### Imágenes de producto (set 3, "Herbario Kraft")
+
+`backend/seed/imagenes/NN-nombre-gramos.{svg,png}` (25 + 25; las del set 2 se borraron). Filosofía completa en `backend/seed/imagenes/DISENO.md`.
+
+- Bolsa stand-up de kraft **de frente** sobre fondo gris neutro `#ECECEA`, luz de estudio desde arriba y sombra blanda; sello engarzado, muesca, cierre y válvula.
+- Una banda de **granos tostados** cruza la bolsa y sobre ella una **ilustración botánica** (rama, hojas con nervaduras, flores blancas y cerezas). Las cerezas siguen la variedad: rojas en general, **amarillas** en Bourbon Amarillo y **rosadas** en Bourbon Rosado. Cada bolsa tiene una rama un poco distinta (semilla aleatoria por café).
+- **Emblema hexagonal** "Café Altura", nombre en Bricolage Grotesque condensada, filete del color de la variedad, VARIEDAD y ORIGEN en Geist Mono, PESO NETO y "100% café colombiano premium". Todo el texto en español.
+- **Sello circular del proceso** con su color: Lavado azul de agua, Honey ámbar, Fermentado vino.
+- La de **500 g es un 17 % más grande**.
+- PNG 1600×1600 de **378 a 530 kB** (promedio 431 kB; el límite pedido era 600 kB).
+
+**Generador**: `frontend/herramientas/generar-bolsas.mjs` (Node, desde `frontend/`): `node herramientas/generar-bolsas.mjs` (todas) o `node herramientas/generar-bolsas.mjs 09 10` (solo esas). Lee `catalogo.json`, arma cada SVG, lo abre en Chromium (Playwright) con las fuentes de `@fontsource` **incrustadas en base64** (con `setContent` las URL `file://` no cargaban), exporta el PNG y lo comprime con **`sharp`** (paleta de 192 colores; devDependency). Sus colores son "de imprenta": Típica `#8A6316` y Honey `#B97A12` son más cálidos que los de la web (`#7E5A10` y `#875700`, oscurecidos para el contraste AA del texto).
 
 ## Fotografías del sitio
 
@@ -381,16 +421,18 @@ Transición entre rutas con `withViewTransitions()`; las navegaciones que solo c
 **Estructura de `src/app/`:**
 
 - `core/auth/`: `permisos.ts` (mapa centralizado permiso → roles), `auth.ts` (servicio `Auth` con signals: login, sesión en `sessionStorage`, cierre al expirar, `tienePermiso`), `interceptor.ts` (Bearer solo a la API; 401 → cierra sesión; 403 → aviso), `guard.ts` (`requierePermiso(permiso)`, `canMatch`).
-- `core/models/`: `Cafe`/`CafeGuardar`, `Variedad`/`VariedadGuardar`, `Presentacion`, `Sesion`/`UsuarioActual`/`RespuestaLogin`. Si cambia un DTO del backend, actualiza estos modelos.
-- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel).
-- `core/data/`: `mapa-colombia.ts` (Natural Earth) y `contenido-marca.ts` (texto, color y notas de cata por variedad, fotos del sitio, pasos del proceso, `ETAPAS_ASCENSO`). **Los productos y las variedades siempre vienen de la API**.
-- `core/utils/`: `gsap.ts` (`cargarGsap`, `refrescarScroll`), `medios.ts` (`matchMedia` seguro, `movimientoReducido`, `punteroFino`, `navegadorCompleto`), `imagenes.ts`, `texto.ts`, `transicion.ts`, `validadores.ts` (`PATRON_CORREO`, `camposCoinciden`, `entero`), `errores.ts` (`mensajeDeError`: mensaje en español por código HTTP).
+- `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`UsuarioActual`/`RespuestaLogin`. Si cambia un DTO del backend, actualiza estos modelos.
+- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel).
+- `core/data/`: `mapa-colombia.ts` (Natural Earth) y `contenido-marca.ts` (texto, color y notas de cata de las 9 variedades; texto, color, ícono y "en taza" de los 3 procesos con `marcaProceso()`; fotos del sitio, pasos del proceso, `ETAPAS_ASCENSO`). **Los productos, las variedades y los procesos siempre vienen de la API**; aquí solo está el texto de marca, asociado por nombre normalizado.
+- `core/utils/`: `gsap.ts` (`cargarGsap`, `refrescarScroll`), `medios.ts` (`matchMedia` seguro, `movimientoReducido`, `punteroFino`, `navegadorCompleto`), `imagenes.ts` (las fotos de producto se piden con el recorte `c_crop,g_center,w_0.86,h_0.86` antes de `f_auto,q_auto,w_N`: la bolsa llena más la card y mide lo mismo en la card, la vista rápida y el vuelo), `texto.ts`, `transicion.ts`, `validadores.ts` (`PATRON_CORREO`, `camposCoinciden`, `entero`), `errores.ts` (`mensajeDeError`: mensaje en español por código HTTP).
 - `layout/sitio`: navbar fijo (se vuelve sólido con un sensor de IntersectionObserver), `<router-outlet>`, footer con cresta y "Acceso administrador". `layout/admin`: cabecera del panel (usuario, "Ver tienda", "Cerrar sesión"), navegación y avisos.
-- `pages/inicio/`: `Hero` (crestas + palabra + parallax), `Altimetro`, `Destacados`, `Proceso` (galería anclada), `CintaNotas` (marquee con datos de la API), `Origenes` (mapa), `Variedades`, `Cierre`. Cada sección lleva `data-etapa`.
-- `pages/productos/`: `Productos` + `Filtros` + `catalogo.ts` (lógica pura de filtros ↔ URL `?q=&variedad=&presentacion=&origen=&disponibles=1&orden=`, orden, búsqueda sin tildes). Igual que antes: estado en un signal, View Transitions al filtrar, bloque 2×2 en ≥1200 px con filas completas y hoja `<dialog>` de filtros en móvil.
+- `pages/inicio/`: `Hero` (crestas + palabra + parallax), `Altimetro`, `Destacados`, `Proceso` (galería anclada), `CintaNotas` (marquee con datos de la API), `Origenes` (mapa; 5 regiones con cafés), `Variedades` (cuadrícula de 9 fichas: 3/2/1 columnas, muestra de color, texto y enlace con el número de cafés), `Cierre`. Cada sección lleva `data-etapa`.
+- `pages/productos/`: `Productos` + `Filtros` + `GuiaProcesos` + `catalogo.ts` (lógica pura de filtros ↔ URL `?q=&variedad=&proceso=&presentacion=&origen=&disponibles=1&orden=`, orden, búsqueda sin tildes por nombre, origen, variedad **o proceso**, `contarPor`). Estado en un signal, View Transitions al filtrar y hoja `<dialog>` de filtros en móvil.
+  - **Filtros**: chips de variedad y de proceso (desde `/api/procesos`, con su ícono y color; activo = relleno del color del proceso), cada uno con el número de cafés. Con más de 6 variedades se muestran 5 y el botón "Ver las 9 variedades" (`aria-expanded`); si la variedad elegida quedó escondida, se muestra igual.
+  - **Portada del catálogo** (orden "Destacados", sin filtros ni búsqueda, ≥ 6 cafés): en ≥1200 px el primer café ocupa un bloque 2×2 y, después de la tercera card, aparece la ficha **"Tres procesos, tres tazas"** (`GuiaProcesos`: texto de cada proceso, "en taza" y un botón que filtra). Su ancho (`columnasGuia`) se calcula para que **ninguna fila quede incompleta**: con 3 columnas ocupa `3 - n % 3` columnas (o una fila entera si n es múltiplo de 3); con 2 columnas, 1 si n es impar o 2 si es par. Con 25 cafés: 10 filas completas en escritorio. `grid-auto-flow: dense` evita huecos si la ficha salta de fila. En tableta la ficha se compacta (sin textos largos) para no estirar la card vecina.
 - `pages/login`, `pages/registro`: formularios reactivos solo visuales (validaciones, visto de campo válido, medidor de seguridad en Registro); al enviar válido muestran "… estará disponible próximamente." y **no** llaman a la API.
-- `pages/admin/`: `ingresar`, `inventario`, `variedades` (`variedades-admin.ts`) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
-- `shared/`: `Navbar`, `Footer`, `Logo`, `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; Escape se atiende en `keydown`), `SelectorCantidad`, `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
+- `pages/admin/`: `ingresar`, `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
+- `shared/`: `Navbar`, `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; Escape se atiende en `keydown`), `SelectorCantidad`, `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
 - `src/environments/`: `apiBaseUrl` (`http://localhost:5031/api` en desarrollo; vacío en producción) y `cloudinaryBase`.
 
 **Comandos (desde `frontend/`):**
@@ -401,15 +443,16 @@ npx playwright install chromium   # una vez, para las e2e
 npm start                          # ng serve → http://localhost:4200 (la API debe estar en :5031)
 npx ng build                       # 0 advertencias
 npx ng test --watch=false          # Vitest
-npm run e2e                        # Playwright (API con los 6 productos; arranca ng serve si no está)
+npm run e2e                        # Playwright (API con los 25 cafés del catálogo; arranca ng serve si no está)
+node herramientas/generar-bolsas.mjs    # regenera las 25 imágenes de producto (backend/seed/imagenes)
 node herramientas/generar-paisaje.mjs   # regenera crestas y curvas de nivel (public/)
 ```
 
 Si se cambia `angular.json` (estilos, fuentes), **reinicia `ng serve`**: no recarga ese archivo en caliente.
 
 **e2e** (`frontend/e2e/*.e2e.ts`, dos proyectos de Playwright: `chromium` con movimiento y `movimiento-reducido` con `prefers-reduced-motion: reduce`; etiquetas `@movimiento`, `@reducido`, `@una-vez`):
-- `altura.e2e.ts`: Inicio (destacados de la API con Cloudinary, etapas, altímetro, mapa → catálogo, galería anclada / fila con movimiento reducido), navegación (estado activo, navbar sólido, menú móvil, login ↔ registro), Productos (filtros, orden, búsqueda sin tildes, recarga, cards, vista rápida con color de variedad, vuelo de la bolsa, hoja de filtros en móvil), API caída, formularios sin peticiones a la API, axe-core en todas las vistas a 1440 y 375 px, capturas y grabación.
-- `admin.e2e.ts`: acceso sin sesión, credenciales incorrectas, cuenta Cliente sin acceso, crear café con imagen → verlo en la tienda → editarlo → eliminarlo (y comprobar que la imagen ya no existe en Cloudinary), variedades (crear, duplicada 409, editar, no eliminar con cafés, eliminar), 403 y 401 simulados, axe del panel y cierre de sesión. **Necesita variables de entorno** con las cuentas de prueba (si faltan, se omite):
+- `altura.e2e.ts`: Inicio (3 destacados de la API con Cloudinary, 9 variedades con enlace al catálogo, altímetro, mapa con 5 orígenes → catálogo filtrado, galería anclada / fila con movimiento reducido), navegación (estado activo, navbar sólido, menú móvil, login ↔ registro), Productos (25 cafés; variedad + proceso + presentación combinados en la URL; "Ver las 9 variedades"; ficha de procesos que completa la grilla y filtra; búsquedas "narino", "honey" y "rosado"; recarga; cards con etiquetas; vista rápida con proceso y color de variedad; vuelo de la bolsa; hoja de filtros en móvil), API caída, formularios sin peticiones a la API, axe-core en todas las vistas a 1440 y 375 px, capturas y grabación.
+- `admin.e2e.ts`: acceso sin sesión, credenciales incorrectas, cuenta Cliente sin acceso, crear café con imagen **y proceso** (Honey) → verlo en la tienda con sus etiquetas → editarlo (el formulario trae el proceso guardado; se cambia a Fermentado) → eliminarlo (y comprobar que la imagen ya no existe en Cloudinary), variedades (crear, duplicada 409, editar, no eliminar con cafés, eliminar), 403 y 401 simulados, axe del panel y cierre de sesión. **Necesita variables de entorno** con las cuentas de prueba (si faltan, se omite):
 
 ```powershell
 $env:ALTURA_ADMIN_EMAIL = '<correo admin>';    $env:ALTURA_ADMIN_PASSWORD = '<contraseña>'
@@ -432,7 +475,10 @@ Todo lo que crean estas pruebas lleva "e2e" en el nombre y se borra al terminar 
 | improve-animations (auditoría) | Auditoría de las 8 categorías del movimiento: se corrigieron el brillo de los esqueletos (de `background-position` a `transform`) y la onda infinita del mapa (2 pulsos). **`review-animations` no estaba instalada**: se usó esta auditoría más la lista de emil-design-eng. |
 | impeccable (audit + polish, guías leídas sin ejecutar su lanzador ni sus hooks) | Tracking mínimo −0,04 em, radios de card 16 px, display máximo 6rem, quitar el grano `feTurbulence` y el revelado repetido, tokens para colores sueltos, caret de marca, objetivos de 44 px, landmark en el acceso. |
 | angular-developer / frontend CLAUDE.md | Angular 22: standalone, signals, `rxResource`, `@Service()`, `input()`/`output()`, interceptor y guard funcionales. |
-| canvas-design | Piezas gráficas del concepto: crestas y curvas de nivel generadas por código (`herramientas/generar-paisaje.mjs`). |
+| canvas-design | Piezas gráficas del concepto: crestas y curvas de nivel generadas por código (`herramientas/generar-paisaje.mjs`). En la ampliación del catálogo: filosofía "Herbario Kraft" (`DISENO.md`) y las 25 bolsas generadas con `herramientas/generar-bolsas.mjs`, revisadas en una hoja de contacto con las 25 juntas. |
+| database-schema-designer, dotnet-webapi, create-datadriven-aspnetcore, optimizing-ef-core-queries | Ampliación del modelo: `procesos` como tabla con FK `RESTRICT` (no enum), índice único por expresión con el proceso, migración segura para una columna `NOT NULL` en una tabla con datos, `GET /api/procesos` con el mismo patrón Controller → Repository, lectura con `AsNoTracking` y proyección (el `procesoNombre` sale del mismo JOIN, sin consultas extra). |
+| find-animation-opportunities, emil-design-eng (improve-animations en lugar de review-animations, que no está instalada) | Movimiento de los filtros nuevos: chips que entran en cascada corta (25 ms) con `@starting-style` solo al desplegar "Ver las 9 variedades", flecha que gira; sin animación en acciones frecuentes (elegir un chip solo cambia color) ni con movimiento reducido. |
+| impeccable (solo sus guías, sin lanzador ni hooks) | *Audit* + *polish* de Productos y la vista rápida: contraste del chip activo de Lavado, marcador recortado en la hoja móvil, card sola al final de la grilla (ficha de procesos), recorte de la bolsa en la card y en el vuelo, objetivos táctiles ≥ 44 px del botón "Ver las 9 variedades". |
 | webapp-testing | Capturas y consola durante el desarrollo; pruebas escritas con `@playwright/test` (npm), como pide el proyecto. |
 
 Contradicciones resueltas a favor del brief: design-taste-frontend exige modo oscuro y desaconseja cursores propios (se mantuvo un solo tema claro y no hay cursor propio); ui-ux-pro-max propuso un estilo genérico (se descartó); ui-styling presupone React/Tailwind (se usó Angular con CSS propio); impeccable considera amateur `feTurbulence` (se quitó el grano). En la etapa anterior (rediseño editorial) se usaron también estas skills; esa identidad (Fraunces, crema/terracota) quedó reemplazada.
@@ -456,13 +502,22 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 | `presentacionGramos` como número en JSON | Requisito del frontend (`value: 340`). |
 | Repo dividido en `backend/` y `frontend/` con `git mv` | Separar los dos proyectos conservando el historial de cada archivo. |
 | Seed por la API (no SQL) | Reutiliza validaciones, subida a Cloudinary y genera `imagenPublicId` reales; idempotente. |
-| Imágenes en SVG → PNG con Chromium | SVG editable como fuente; PNG con las fuentes de la etapa anterior (Fraunces/Inter) para Cloudinary. Las bolsas no se rehicieron: funcionan como "foto de producto" sobre el color de cada variedad. |
+| Imágenes en SVG → PNG con Chromium (set 3, "Herbario Kraft") | SVG editable como fuente y PNG para Cloudinary, generados por un script (`generar-bolsas.mjs`) a partir de `catalogo.json`: 25 imágenes coherentes sin dibujarlas una a una. Fuentes de la marca actual (Bricolage Grotesque, Geist Mono) incrustadas en base64. |
 | Reactive Forms (no Signal Forms) | Lo pidió el taller, aunque Angular 22 recomienda Signal Forms para formularios nuevos. |
 | `rxResource` para los GET (Inicio, Productos, vista rápida) | Estados de carga/error/valor como signals y `reload()` para "Reintentar". |
 | `<img loading="lazy">` en vez de `NgOptimizedImage` | La optimización ya la hace Cloudinary (`f_auto,q_auto,w_600`); evita avisos de tamaño de `NgOptimizedImage` en consola. |
 | Registro del locale `es-CO` en `app.config.ts` (y también en `TarjetaCafe`) | Lo necesitan la tienda y el panel; `TarjetaCafe` lo conserva para sus pruebas unitarias. |
 | Budget inicial de advertencia 700 kB (antes 500 kB) | Se mantiene; sin Bootstrap el inicial quedó en ~394 kB (~97 kB transferidos). El de 4 kB por componente no se subió: el CSS del panel se dividió en dos archivos por responsabilidad. |
-| Grilla de 3/2/1 columnas; destacada 2×2 solo con filas completas | Con 6 cafés: 4 + 5 celdas = 3 filas llenas; nunca una card sola al final. |
+| Grilla de 3/2/1 columnas; en la portada del catálogo, destacada 2×2 + ficha de procesos con ancho calculado | Con 25 cafés (25 no es múltiplo de 3) la última fila quedaba con una card sola. La ficha de procesos ocupa justo las columnas que faltan (`columnasGuia`), así siempre quedan filas completas y, de paso, explica los procesos. Con filtros la grilla es simple (puede quedar una fila incompleta, como antes). |
+| Proceso como **tabla** `procesos` (no enum) | Tiene nombre y descripción y podría crecer (por ejemplo, "Natural") sin cambiar código; la FK con `RESTRICT` protege los datos. `Presentacion` sigue como enum porque son 2 valores fijos sin texto. |
+| Índice único con el proceso (`ux_cafes_nombre_variedad_proceso_presentacion`) | El mismo lote puede venderse en dos procesos; el índice anterior lo impedía. Sigue siendo un índice por expresión (`lower(nombre)`), creado con SQL en la migración. |
+| Una sola migración `AgregarProcesosYVariedades` con valor por defecto temporal | Agregar `proceso_id NOT NULL` a una tabla con filas exige un valor; se usa 1 (Lavado) y luego se quita el `DEFAULT` para que la API siempre lo exija. Se avanzan las secuencias para que el siguiente `INSERT` no choque con los ids sembrados. |
+| Catálogo en `backend/seed/catalogo.json` | Una sola fuente para el script de carga y el generador de imágenes; cambiar un café es editar una línea. |
+| Recorte de las fotos de producto en Cloudinary (`c_crop,…,w_0.86,h_0.86`) y no con `scale` en CSS | Con CSS, durante el vuelo de la bolsa (View Transition) la imagen se veía sin recortar y más grande por un instante. Recortada en el servidor, la bolsa mide lo mismo en la card, la vista rápida y el vuelo; además se descargan menos píxeles. |
+| "Ver las 9 variedades" (5 visibles) en vez de chips con scroll horizontal | El scroll horizontal esconde opciones sin avisar y es incómodo con mouse; el botón dice cuántas hay, usa `aria-expanded` y mantiene visible la variedad elegida. |
+| Colores de variedad y proceso oscurecidos para AA (Típica, Honey) | Se usan como texto sobre papel y niebla y como fondo con texto blanco: los tres casos deben pasar 4,5:1. Las bolsas impresas conservan el tono más cálido. |
+| Etiqueta de proceso distinta de la de variedad | Variedad = muestra cuadrada + texto; proceso = píldora con ícono. Se distinguen aunque los colores se parezcan y no dependen solo del color (WCAG 1.4.1). |
+| Variedades del Inicio en cuadrícula de 9 fichas | Con 9 filas altas la sección se volvía muy larga; la cuadrícula muestra todas a la vez con su color y el número de cafés. |
 | Prueba "API caída" con `page.route` | Suite autocontenida; se verificó también apagando la API real. |
 | Inicio y Productos en rutas separadas, con layout compartido | Pedido del rediseño; navbar y footer no se recrean al navegar. |
 | Filtros en un signal y reflejados en la URL después de animar | Permite animar el reordenamiento con View Transitions sin que la navegación del router interrumpa la transición; la URL sigue siendo compartible y sobrevive a recargar. |
@@ -501,10 +556,13 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 - El frontend asume `ng serve` en el puerto 4200: es el único origen permitido por CORS en `Program.cs`. Otro puerto requiere cambiar el backend.
 - `environment.ts` (producción) tiene `apiBaseUrl` vacío: configúralo antes de desplegar.
 - Con la API apagada, el navegador registra 2 errores de red ("Failed to load resource") en consola; son inevitables y la app los maneja mostrando "Reintentar".
-- Las e2e dependen de los datos del seed (6 cafés, Sierra Nevada agotado, Tierradentro con 5 unidades); si cambian, ajusta `frontend/e2e/altura.e2e.ts`. Las del panel crean y borran datos reales (con "e2e" en el nombre) y suben una imagen real a Cloudinary.
+- Las e2e dependen de los datos del seed (`catalogo.json`: 25 cafés, todos disponibles, Inzá Reserva con 5 unidades, 11 Lavado / 8 Honey / 6 Fermentado, 5 orígenes); si cambian, ajusta `frontend/e2e/altura.e2e.ts`. Las del panel crean y borran datos reales (con "e2e" en el nombre) y suben una imagen real a Cloudinary.
 - Problemas encontrados en el rediseño: (1) la primera foto elegida para el acceso era de cacao, no de café (se reemplazó); (2) la firma de Cloudinary fallaba en PowerShell 5.1 por usar la hora local; (3) `ng serve` debe reiniciarse al cambiar `angular.json`; (4) el router de Angular registra como error de consola las transiciones omitidas en modo desarrollo; (5) la foto del hero estiraba la fila de la grilla (se sacó del flujo con `position: absolute`).
 - Rendimiento medido en local (Chromium sin GPU): LCP del Inicio ~0,4 s, CLS ~0, ~58 fps de media al hacer scroll; los fotogramas lentos (33 ms) coinciden con la carga de imágenes. Falta medirlo en un móvil real.
 - Durante una View Transition (vuelo de la bolsa, 520 ms) el navegador no recibe clics; las pruebas esperan a que termine.
 - En la captura de página completa con movimiento reducido, la galería del proceso aparece desplazada porque la prueba lleva cada imagen a la vista (artefacto de la captura).
 - Problemas encontrados en el rediseño Ascenso: (1) GSAP absorbía la propiedad `translate` de la entrada de las crestas (se separaron contenedor e imagen); (2) los atributos `height` de las imágenes ganaban al `aspect-ratio` (se agregó `img { height: auto }`); (3) las cards con `view-transition-name` se pintaban sobre el panel durante el vuelo (se desactivan con `.transicion-vuelo`); (4) Escape cerraba el `<dialog>` sin animación (ver Decisiones); (5) la capa clicable de la card solo cubría el cuerpo (se quitó `position: relative`); (6) el panel no tenía el locale `es-CO`.
+- Ya no hay ningún café agotado en el catálogo: el estado "Agotado" de las cards sigue funcionando, pero ninguna e2e lo ve con datos reales.
+- La migración `AgregarProcesosYVariedades` reemplazó Moka por Colombia en el id 3: si alguien tenía cafés Moka en su base local, quedaron como Colombia. Con el seed nuevo no aplica.
+- Problemas encontrados al ampliar el catálogo: (1) agregar `proceso_id` con valor por defecto 0 rompía la FK de las filas existentes (se usó 1 y luego `DROP DEFAULT`); (2) `HasData` con ids fijos no avanza las secuencias de identidad (se agregó `setval`); (3) en el generador de imágenes las fuentes no cargaban desde `file://` con `setContent` (se incrustaron en base64) y la rama botánica tapaba los textos (se recortó al contorno de la bolsa); (4) Típica y Honey no llegaban a 4,5:1 sobre niebla (se oscurecieron); (5) un `SecureString` no pasa a un proceso `powershell` nuevo (el seed se ejecuta en la misma sesión); (6) el número del chip de proceso activo no tenía contraste sobre el azul de Lavado (pasó a blanco); (7) el altímetro depende de qué sección ocupa la pantalla: la prueba alinea la sección arriba.
 - Problemas encontrados en este taller: (1) `dotnet new tool-manifest` en .NET 10 crea el manifiesto en la raíz, no en `.config/` (se movió a mano); (2) `curl` desde Git Bash rompe las tildes si el JSON va como argumento; (3) PowerShell 5.1 necesita el `.ps1` con BOM y el cuerpo en bytes UTF-8; (4) `rxResource` deja pendiente `whenStable()` en pruebas unitarias si no se simulan los servicios.

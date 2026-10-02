@@ -627,3 +627,57 @@ Rediseño inmersivo "Ascenso" y panel de administración de inventario (rama `fe
 ### 🗑️ Eliminado
 
 - Bootstrap (CSS), Fraunces, Inter, `PanelMarca` y el grano de papel.
+
+---
+
+## [1.15.0] - 2026-10-01
+
+Ampliación del módulo de productos: procesos, 9 variedades, catálogo de 25 cafés e imágenes nuevas (rama `feature/rediseno-inmersivo`).
+
+### 🗄️ API y base de datos
+
+- Nueva tabla **`procesos`** (nombre único de hasta 50 caracteres y descripción) con Lavado, Honey y Fermentado.
+- **9 variedades** con descripción: Castillo, Caturra, Colombia, Típica, Tabi, Bourbon Rojo, Bourbon Amarillo, Bourbon Rosado y Geisha (se retiró Moka).
+- `cafes.proceso_id`: obligatorio, FK con `ON DELETE RESTRICT`.
+- Índice único nuevo `ux_cafes_nombre_variedad_proceso_presentacion` (nombre sin mayúsculas + variedad + proceso + presentación). Mensaje de 409: "Ya existe un café con ese nombre, variedad, proceso y presentación."
+- Una sola migración: `AgregarProcesosYVariedades`.
+- `GET /api/procesos` (público). Los cafés devuelven `procesoId` y `procesoNombre`; `procesoId` es obligatorio al crear y editar, y uno inexistente responde 400.
+- `CafeApi.http`: el proceso en todos los cuerpos, `GET /api/procesos`, proceso inexistente (400) y el mismo café con otro proceso (201).
+
+### ☕ Catálogo e imágenes
+
+- Se borraron los 6 cafés anteriores (y sus imágenes en Cloudinary).
+- Catálogo de **25 cafés** de cinco regiones (Santander, Huila, Nariño, Magdalena y Cauca), en `backend/seed/catalogo.json`.
+- `seed-productos.ps1` lee el catálogo y envía el proceso. Si un guardado falla, borra la imagen recién subida. Es idempotente: la segunda ejecución omite los 25.
+- **Set 3 de imágenes, "Herbario Kraft"**:
+  - Bolsa kraft de frente sobre gris neutro, con una rama de café ilustrada sobre una banda de granos tostados.
+  - Cerezas del color de la variedad, emblema hexagonal "Café Altura" y sello circular del proceso con su color.
+  - La bolsa de 500 g es más grande. PNG de 378 a 530 kB.
+  - Las genera `frontend/herramientas/generar-bolsas.mjs` con Playwright y `sharp`.
+
+### 🎨 Frontend
+
+- **Etiquetas de café** de variedad (muestra de color) y de proceso (píldora con ícono y color propio), en las cards y en la vista rápida. La ficha de la vista rápida incluye el proceso y cómo se nota en la taza.
+- **Filtros**:
+  - Por proceso, con chips cargados desde `/api/procesos`, guardado en la URL (`?proceso=`) y combinable con los demás.
+  - Cada chip muestra cuántos cafés tiene.
+  - "Ver las 9 variedades" despliega la lista completa y la variedad elegida nunca se esconde.
+  - El buscador también encuentra por proceso.
+- **Ficha "Tres procesos, tres tazas"** dentro de la grilla del catálogo. Explica cada proceso, filtra al elegir uno y ocupa justo las columnas que faltan para que ninguna fila quede incompleta.
+- **9 colores de variedad y 3 de proceso** con contraste AA verificado. Textos de marca de cada variedad y cada proceso.
+- **Inicio**: las variedades pasan a una cuadrícula de 9 fichas con el número de cafés de cada una. El mapa muestra los 5 orígenes y los destacados salen del catálogo nuevo.
+- **Panel de administración**: select de proceso al crear y editar, con el proceso en la tabla y en la búsqueda.
+- Las fotos de producto se recortan en Cloudinary, así que la bolsa llena más la card y mide lo mismo durante el vuelo a la vista rápida.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` sin advertencias.
+- 32 pruebas unitarias, con pruebas nuevas de la lógica del catálogo y del servicio de procesos.
+- 62 pruebas e2e, entre ellas:
+  - 25 cafés y filtro por proceso.
+  - Variedad + proceso + presentación en la URL y conservados al recargar.
+  - Búsquedas "honey" y "rosado".
+  - Vista rápida con el proceso y mapa con 5 orígenes.
+  - Ficha de procesos y alta y edición con proceso en el panel.
+- axe-core: 0 violaciones, también con filtros aplicados.
+- Al terminar, la base tiene exactamente los 25 cafés y Cloudinary tiene 25 imágenes, sin restos de pruebas.

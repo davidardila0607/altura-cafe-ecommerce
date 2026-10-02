@@ -17,6 +17,9 @@ const catalogo = JSON.parse(readFileSync(new URL('catalogo.json', SEED), 'utf8')
 const filtro = process.argv.slice(2);
 
 // ---------- Colores ----------
+// Son los colores "de imprenta" de las bolsas. La web usa casi los mismos (contenido-marca.ts),
+// salvo Típica (#7E5A10) y Honey (#875700), que allí son más oscuros para cumplir el
+// contraste AA del texto. En la bolsa no hay ese requisito y se dejó el tono más cálido.
 const TINTA = '#2A1C12'; // impresión oscura sobre el kraft
 const TINTA_SUAVE = '#5A4029';
 const PROCESOS = {
