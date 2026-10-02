@@ -7,6 +7,9 @@ export interface Cafe {
   nombre: string;
   variedadId: number;
   variedadNombre: string;
+  /** Proceso de beneficio: Lavado, Honey o Fermentado. */
+  procesoId: number;
+  procesoNombre: string;
   /** 340 o 500. */
   presentacionGramos: number;
   origen: string;
@@ -24,6 +27,7 @@ export interface Cafe {
 export interface CafeGuardar {
   nombre: string;
   variedadId: number;
+  procesoId: number;
   presentacionGramos: number;
   origen: string;
   stock: number;

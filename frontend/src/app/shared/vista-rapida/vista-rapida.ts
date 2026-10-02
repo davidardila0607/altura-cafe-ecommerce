@@ -13,12 +13,13 @@ import {
   viewChild,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { marcaVariedad } from '../../core/data/contenido-marca';
+import { marcaProceso, marcaVariedad } from '../../core/data/contenido-marca';
 import { Cafe } from '../../core/models/cafe';
 import { Cafes } from '../../core/services/cafes';
 import { optimizarImagenCloudinary, srcsetCloudinary } from '../../core/utils/imagenes';
 import { movimientoReducido } from '../../core/utils/medios';
 import { AtraparFoco } from '../atrapar-foco/atrapar-foco';
+import { EtiquetaCafe } from '../etiqueta-cafe/etiqueta-cafe';
 import { SelectorCantidad } from '../selector-cantidad/selector-cantidad';
 
 /** Cantidad máxima que se puede elegir en la vista rápida. */
@@ -41,7 +42,7 @@ const DURACION_CIERRE_MS = 220;
  */
 @Component({
   selector: 'app-vista-rapida',
-  imports: [CurrencyPipe, SelectorCantidad, AtraparFoco],
+  imports: [CurrencyPipe, SelectorCantidad, AtraparFoco, EtiquetaCafe],
   templateUrl: './vista-rapida.html',
   styleUrl: './vista-rapida.css',
 })
@@ -72,6 +73,7 @@ export class VistaRapida {
     return fresco && fresco.id === this.cafe()?.id ? fresco : this.cafe();
   });
   protected readonly marca = computed(() => marcaVariedad(this.datos()?.variedadNombre));
+  protected readonly proceso = computed(() => marcaProceso(this.datos()?.procesoNombre));
   protected readonly imagen = computed(() => optimizarImagenCloudinary(this.datos()?.imagenUrl, 'f_auto,q_auto,w_900'));
   protected readonly srcset = computed(() => srcsetCloudinary(this.datos()?.imagenUrl, [600, 900, 1200]));
   protected readonly maximo = computed(() => Math.max(0, Math.min(this.datos()?.stock ?? 0, CANTIDAD_MAXIMA)));

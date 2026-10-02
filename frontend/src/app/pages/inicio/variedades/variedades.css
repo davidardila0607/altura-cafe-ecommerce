@@ -7,30 +7,41 @@
   background: var(--papel);
 }
 
-.filas {
-  margin-top: var(--esp-7);
-  border-top: 1px solid var(--linea-fuerte);
+.bajada {
+  margin-top: var(--esp-4);
 }
 
-.fila {
+/* Cuadrícula de 9 fichas: 3 columnas en escritorio, 2 en tableta y 1 en móvil. */
+.rejilla {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: var(--esp-7);
+  border-top: 1px solid var(--linea-fuerte);
+  border-left: 1px solid var(--linea);
+}
+
+.ficha {
+  padding: var(--esp-6) var(--esp-5);
+  border-right: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea);
+}
+
+.cabecera {
+  display: flex;
   align-items: center;
-  gap: var(--esp-4) clamp(1rem, 3vw, 3rem);
-  padding-block: var(--esp-6);
-  border-bottom: 1px solid var(--linea-fuerte);
+  gap: var(--esp-4);
 }
 
 .muestra {
   position: relative;
-  width: 5.5rem;
+  flex: none;
+  width: 3.25rem;
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--color-variedad);
 }
 
-/* Curvas de nivel claras sobre el color (la textura se usa como máscara). */
 .muestra::after {
   content: '';
   position: absolute;
@@ -41,22 +52,25 @@
 
 .nombre {
   color: var(--color-variedad);
-  font-size: var(--fs-800);
+  font-size: var(--fs-600);
   font-weight: 800;
   font-stretch: 75%;
-  letter-spacing: -0.035em;
-  line-height: 0.9;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
 }
 
 .texto {
-  max-width: 44ch;
+  margin-top: var(--esp-4);
   color: var(--texto-suave);
 }
 
 .accion {
-  display: grid;
-  justify-items: end;
-  text-align: right;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2) var(--esp-4);
+  margin-top: var(--esp-3);
 }
 
 .conteo {
@@ -65,27 +79,23 @@
   font-size: var(--fs-200);
 }
 
-.fila-esqueleto {
-  height: 7rem;
-  margin-top: var(--esp-4);
+.ficha-esqueleto {
+  height: 13rem;
+  margin: var(--esp-3);
 }
 
-@media (max-width: 899.98px) {
-  .fila {
-    grid-template-columns: 4rem minmax(0, 1fr);
+@media (max-width: 1099.98px) {
+  .rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639.98px) {
+  .rejilla {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .muestra {
-    width: 4rem;
-  }
-
-  .texto,
-  .accion {
-    grid-column: 1 / -1;
-  }
-
-  .accion {
-    justify-items: start;
-    text-align: left;
+  .ficha {
+    padding-inline: var(--esp-4);
   }
 }

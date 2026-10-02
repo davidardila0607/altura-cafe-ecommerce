@@ -14,8 +14,8 @@ const cliente = { email: process.env['ALTURA_CLIENTE_EMAIL'] ?? '', password: pr
 
 const NOMBRE_CAFE = 'Prueba e2e Altura';
 const NOMBRE_VARIEDAD = 'Variedad e2e';
-const IMAGEN = '../backend/seed/imagenes/03-pitalito-reserva-340g.png';
-const IMAGEN_SVG = '../backend/seed/imagenes/03-pitalito-reserva-340g.svg';
+const IMAGEN = '../backend/seed/imagenes/08-pitalito-reserva-340g.png';
+const IMAGEN_SVG = '../backend/seed/imagenes/08-pitalito-reserva-340g.svg';
 
 test.describe('Panel de administración @una-vez', () => {
   test.describe.configure({ mode: 'serial' });
@@ -89,6 +89,7 @@ test.describe('Panel de administración @una-vez', () => {
     await panel.getByRole('button', { name: 'Guardar' }).click();
     await expect(panel.getByText('Escribe el nombre del café (máximo 100 caracteres).')).toBeVisible();
     await expect(panel.getByText('Elige una variedad.')).toBeVisible();
+    await expect(panel.getByText('Elige un proceso.')).toBeVisible();
 
     // Imagen: tipo y tamaño se validan antes de subir.
     const archivo = panel.locator('#cafe-imagen');
@@ -101,6 +102,7 @@ test.describe('Panel de administración @una-vez', () => {
 
     await panel.getByLabel('Nombre').fill(NOMBRE_CAFE);
     await panel.getByLabel('Variedad').selectOption({ label: 'Geisha' });
+    await panel.getByLabel('Proceso').selectOption({ label: 'Honey' });
     await panel.getByLabel('Presentación').selectOption({ label: '340 g' });
     await panel.getByLabel('Origen').fill('Huila');
     await panel.getByLabel('Stock (unidades)').fill('7');
@@ -110,25 +112,31 @@ test.describe('Panel de administración @una-vez', () => {
     await expect(page.getByText(`Café «${NOMBRE_CAFE}» creado.`)).toBeVisible({ timeout: 30_000 });
     const fila = page.getByTestId('fila-cafe').filter({ hasText: NOMBRE_CAFE });
     await expect(fila).toContainText(/\$\s45\.000/);
+    await expect(fila).toContainText('Geisha · Honey · 340 g');
 
     // La API guardó la imagen de Cloudinary.
-    const creado = ((await (await request.get(`${API}/cafes`)).json()) as { nombre: string; imagenUrl: string; imagenPublicId: string }[]).find(
-      (c) => c.nombre === NOMBRE_CAFE,
-    )!;
+    const creado = (
+      (await (await request.get(`${API}/cafes`)).json()) as { nombre: string; procesoNombre: string; imagenUrl: string; imagenPublicId: string }[]
+    ).find((c) => c.nombre === NOMBRE_CAFE)!;
     expect(creado.imagenUrl).toMatch(/^https:\/\/res\.cloudinary\.com\//);
     expect(creado.imagenPublicId).toMatch(/^cafes\//);
+    expect(creado.procesoNombre).toBe('Honey');
 
     // ----- Se ve en la tienda al recargar -----
     await page.goto('/productos?q=e2e');
     const tarjeta = page.locator('app-tarjeta-cafe').filter({ hasText: NOMBRE_CAFE });
     await expect(tarjeta).toBeVisible();
     await expect(tarjeta.locator('img')).toHaveAttribute('src', /res\.cloudinary\.com/);
+    await expect(tarjeta.locator('app-etiqueta-cafe')).toHaveText([/Geisha/, /Honey/]);
 
     // ----- Editar -----
     await page.goto('/admin/inventario');
     await page.getByRole('button', { name: `Editar ${NOMBRE_CAFE} 340 g` }).click();
     const edicion = page.getByRole('dialog', { name: 'Editar café' });
     await expect(edicion.getByLabel('Nombre')).toHaveValue(NOMBRE_CAFE);
+    // El formulario de edición trae el proceso guardado; se cambia a Fermentado.
+    await expect(edicion.getByLabel('Proceso').locator('option:checked')).toHaveText('Honey');
+    await edicion.getByLabel('Proceso').selectOption({ label: 'Fermentado' });
     await edicion.getByLabel('Stock (unidades)').fill('3');
     await edicion.getByLabel('Precio (COP)').fill('47000');
     await edicion.getByRole('button', { name: 'Guardar' }).click();
@@ -137,6 +145,7 @@ test.describe('Panel de administración @una-vez', () => {
     await page.goto('/productos?q=e2e');
     await expect(tarjeta.locator('.precio')).toHaveText(/\$\s47\.000/);
     await expect(tarjeta.locator('.disponibilidad')).toHaveText('Quedan 3');
+    await expect(tarjeta.locator('app-etiqueta-cafe')).toHaveText([/Geisha/, /Fermentado/]);
 
     // ----- Eliminar con confirmación -----
     await page.goto('/admin/inventario');

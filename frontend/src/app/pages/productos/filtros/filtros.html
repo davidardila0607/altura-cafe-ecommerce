@@ -8,7 +8,7 @@
           [id]="prefijo() + '-buscar'"
           type="search"
           class="campo"
-          placeholder="Nombre, origen o variedad"
+          placeholder="Nombre, origen o proceso"
           autocomplete="off"
           [value]="filtros().q"
           (input)="buscar($event)"
@@ -19,19 +19,55 @@
 
   <fieldset class="grupo">
     <legend class="titulo-grupo">Variedad</legend>
-    <div class="chips">
+    <div class="chips" [id]="prefijo() + '-variedades'">
       <button type="button" class="chip" [attr.aria-pressed]="filtros().variedad === null" (click)="cambiar.emit({ variedad: null })">
         Todas
       </button>
-      @for (v of variedades(); track v.id) {
+      @for (v of variedadesVisibles(); track v.id; let i = $index) {
         <button
           type="button"
           class="chip"
+          [style.--i]="i"
           [attr.aria-pressed]="filtros().variedad === normalizar(v.nombre)"
           (click)="cambiar.emit({ variedad: normalizar(v.nombre) })"
         >
           <span class="muestra" [style.background-color]="colorVariedad(v.nombre)" aria-hidden="true"></span>
           {{ v.nombre }}
+          <span class="cantidad">{{ conteo(conteoVariedades(), v.nombre) }}<span class="visually-hidden"> cafés</span></span>
+        </button>
+      }
+    </div>
+    @if (hayOcultas()) {
+      <button
+        type="button"
+        class="ver-mas"
+        [attr.aria-expanded]="verTodas()"
+        [attr.aria-controls]="prefijo() + '-variedades'"
+        (click)="verTodas.set(!verTodas())"
+      >
+        {{ verTodas() ? 'Ver menos variedades' : 'Ver las ' + variedades().length + ' variedades' }}
+        <i class="bi bi-chevron-down" [class.girado]="verTodas()" aria-hidden="true"></i>
+      </button>
+    }
+  </fieldset>
+
+  <fieldset class="grupo">
+    <legend class="titulo-grupo">Proceso</legend>
+    <div class="chips">
+      <button type="button" class="chip" [attr.aria-pressed]="filtros().proceso === null" (click)="cambiar.emit({ proceso: null })">
+        Todos
+      </button>
+      @for (p of procesos(); track p.id) {
+        <button
+          type="button"
+          class="chip chip-proceso"
+          [style.--color-proceso]="marcaProceso(p.nombre).color"
+          [attr.aria-pressed]="filtros().proceso === normalizar(p.nombre)"
+          (click)="cambiar.emit({ proceso: normalizar(p.nombre) })"
+        >
+          <i [class]="'bi ' + marcaProceso(p.nombre).icono" aria-hidden="true"></i>
+          {{ p.nombre }}
+          <span class="cantidad">{{ conteo(conteoProcesos(), p.nombre) }}<span class="visually-hidden"> cafés</span></span>
         </button>
       }
     </div>

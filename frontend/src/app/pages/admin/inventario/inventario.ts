@@ -9,6 +9,7 @@ import { Avisos } from '../../../core/services/avisos';
 import { Cafes } from '../../../core/services/cafes';
 import { ImagenSubida, Imagenes } from '../../../core/services/imagenes';
 import { Presentaciones } from '../../../core/services/presentaciones';
+import { Procesos } from '../../../core/services/procesos';
 import { Variedades } from '../../../core/services/variedades';
 import { mensajeDeError } from '../../../core/utils/errores';
 import { optimizarImagenCloudinary } from '../../../core/utils/imagenes';
@@ -21,7 +22,7 @@ import { EstadoError } from '../../../shared/estado-error/estado-error';
 const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
 const TAMANO_MAXIMO = 5 * 1024 * 1024; // 5 MB
 
-type CampoCafe = 'nombre' | 'variedadId' | 'presentacionGramos' | 'origen' | 'stock' | 'precio';
+type CampoCafe = 'nombre' | 'variedadId' | 'procesoId' | 'presentacionGramos' | 'origen' | 'stock' | 'precio';
 
 /**
  * Inventario de cafés (/admin/inventario): lista con búsqueda, crear y editar en un panel
@@ -36,6 +37,7 @@ type CampoCafe = 'nombre' | 'variedadId' | 'presentacionGramos' | 'origen' | 'st
 export class Inventario {
   private readonly cafesApi = inject(Cafes);
   private readonly variedadesApi = inject(Variedades);
+  private readonly procesosApi = inject(Procesos);
   private readonly presentacionesApi = inject(Presentaciones);
   private readonly imagenesApi = inject(Imagenes);
   private readonly avisos = inject(Avisos);
@@ -43,6 +45,7 @@ export class Inventario {
 
   protected readonly cafes = rxResource({ stream: () => this.cafesApi.listar() });
   protected readonly variedades = rxResource({ stream: () => this.variedadesApi.listar() });
+  protected readonly procesos = rxResource({ stream: () => this.procesosApi.listar() });
   protected readonly presentaciones = rxResource({ stream: () => this.presentacionesApi.listar() });
 
   // ===== Lista y búsqueda =====
@@ -51,7 +54,7 @@ export class Inventario {
   protected readonly visibles = computed(() => {
     const texto = normalizarTexto(this.busqueda());
     return this.todos().filter(
-      (c) => !texto || [c.nombre, c.origen, c.variedadNombre].some((campo) => normalizarTexto(campo).includes(texto)),
+      (c) => !texto || [c.nombre, c.origen, c.variedadNombre, c.procesoNombre].some((campo) => normalizarTexto(campo).includes(texto)),
     );
   });
 
@@ -70,6 +73,7 @@ export class Inventario {
   protected readonly formulario = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
     variedadId: [0, [Validators.min(1)]],
+    procesoId: [0, [Validators.min(1)]],
     presentacionGramos: [0, [Validators.min(1)]],
     origen: ['', [Validators.required, Validators.maxLength(100)]],
     stock: [0, [Validators.required, Validators.min(0), entero]],
@@ -83,7 +87,7 @@ export class Inventario {
 
   protected abrirNuevo(): void {
     this.prepararPanel(null);
-    this.formulario.reset({ nombre: '', variedadId: 0, presentacionGramos: 0, origen: '', stock: 0, precio: 0 });
+    this.formulario.reset({ nombre: '', variedadId: 0, procesoId: 0, presentacionGramos: 0, origen: '', stock: 0, precio: 0 });
     this.panel().nativeElement.showModal();
   }
 
@@ -92,6 +96,7 @@ export class Inventario {
     this.formulario.reset({
       nombre: cafe.nombre,
       variedadId: cafe.variedadId,
+      procesoId: cafe.procesoId,
       presentacionGramos: cafe.presentacionGramos,
       origen: cafe.origen,
       stock: cafe.stock,
@@ -168,6 +173,7 @@ export class Inventario {
       const datos: CafeGuardar = {
         nombre: valores.nombre.trim(),
         variedadId: Number(valores.variedadId),
+        procesoId: Number(valores.procesoId),
         presentacionGramos: Number(valores.presentacionGramos),
         origen: valores.origen.trim(),
         stock: Number(valores.stock),

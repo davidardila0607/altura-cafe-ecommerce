@@ -1,29 +1,36 @@
 <section class="seccion" aria-labelledby="variedades-titulo">
   <div class="contenedor">
     <h2 id="variedades-titulo" class="titulo-seccion">Las variedades de la casa</h2>
+    @if (filas().length) {
+      <p class="bajada">{{ filas().length }} variedades sembradas en laderas colombianas, cada una con su color en la tienda.</p>
+    }
 
     @if (cargando()) {
-      <div aria-busy="true">
+      <div class="rejilla" aria-busy="true">
         <p class="visually-hidden" role="status">Cargando variedades…</p>
-        @for (n of [1, 2, 3]; track n) {
-          <span class="esqueleto fila-esqueleto" aria-hidden="true"></span>
+        @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+          <span class="esqueleto ficha-esqueleto" aria-hidden="true"></span>
         }
       </div>
     } @else if (error()) {
       <app-estado-error titulo="No pudimos cargar las variedades" (reintentar)="reintentar.emit()" />
     } @else {
-      <ul class="filas">
-        @for (fila of filas(); track fila.id) {
-          <li class="fila" appRevelar [style.--color-variedad]="fila.color">
-            <!-- Muestra: curvas de nivel en el color de la variedad. -->
-            <span class="muestra revelar-imagen" aria-hidden="true"></span>
-            <h3 class="nombre revelar-texto">{{ fila.nombre }}</h3>
-            <p class="texto revelar-texto">{{ fila.texto }}</p>
-            <div class="accion revelar-texto">
-              @if (fila.conteo) {
-                <span class="conteo">{{ fila.conteo }}</span>
-              }
-              <a class="enlace-texto" routerLink="/productos" [queryParams]="{ variedad: fila.clave }">Ver cafés {{ fila.nombre }}</a>
+      <ul class="rejilla">
+        @for (fila of filas(); track fila.id; let i = $index) {
+          <li class="ficha" appRevelar [style.--color-variedad]="fila.color">
+            <div class="revelar-texto" [style.transition-delay.ms]="(i % 3) * 70">
+              <div class="cabecera">
+                <!-- Muestra: curvas de nivel claras sobre el color de la variedad. -->
+                <span class="muestra" aria-hidden="true"></span>
+                <h3 class="nombre">{{ fila.nombre }}</h3>
+              </div>
+              <p class="texto">{{ fila.texto }}</p>
+              <div class="accion">
+                <a class="enlace-texto" routerLink="/productos" [queryParams]="{ variedad: fila.clave }">Ver cafés {{ fila.nombre }}</a>
+                @if (fila.conteo) {
+                  <span class="conteo">{{ fila.conteo }}</span>
+                }
+              </div>
             </div>
           </li>
         }

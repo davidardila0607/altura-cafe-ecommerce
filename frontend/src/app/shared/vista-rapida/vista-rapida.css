@@ -87,7 +87,7 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   object-fit: cover;
-  object-position: 50% 62%;
+  object-position: 50% 55%;
   border-radius: var(--radio-tarjeta);
   box-shadow: 0 40px 70px -30px rgb(0 0 0 / 0.6);
   /* Mismo nombre que la imagen de la card durante el vuelo (ver vista-rapida.ts). */
@@ -110,19 +110,12 @@
   background: var(--niebla);
 }
 
-.variedad {
+.etiquetas {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--color-variedad);
-  font-weight: 700;
-}
-
-.muestra {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 3px;
-  background: var(--color-variedad);
+  gap: 0.5rem 0.75rem;
+  padding-right: var(--esp-7);
 }
 
 .gramos {

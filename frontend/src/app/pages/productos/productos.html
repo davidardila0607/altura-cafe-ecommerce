@@ -1,7 +1,7 @@
 <header class="encabezado">
   <div class="contenedor">
     <h1 class="display titulo-catalogo">Nuestros cafés</h1>
-    <p class="bajada">Lotes de fincas colombianas, tostados por variedad. Filtra por presentación, origen o disponibilidad y encuentra el tuyo.</p>
+    <p class="bajada">Veinticinco lotes de cinco regiones de Colombia. Filtra por variedad, proceso, presentación u origen y encuentra el tuyo.</p>
   </div>
   <img class="cresta" src="paisaje/cresta-1.svg" alt="" aria-hidden="true" width="1440" height="600" />
 </header>
@@ -12,6 +12,9 @@
       prefijo="lateral"
       [filtros]="filtros()"
       [variedades]="listaVariedades()"
+      [procesos]="listaProcesos()"
+      [conteoVariedades]="conteoVariedades()"
+      [conteoProcesos]="conteoProcesos()"
       [presentaciones]="listaPresentaciones()"
       [origenes]="origenes()"
       [activos]="activos()"
@@ -83,7 +86,7 @@
         <h2 class="vacio-titulo">No hay cafés que coincidan con tu búsqueda</h2>
         <p class="vacio-texto">
           @if (filtros().q) {
-            Prueba con otra palabra (por ejemplo, un origen como «Huila») o quita algún filtro.
+            Prueba con otra palabra (por ejemplo, un origen como «Huila» o un proceso como «Honey») o quita algún filtro.
           } @else {
             Prueba quitando algún filtro: hay {{ resumen() }} en el catálogo.
           }
@@ -100,6 +103,16 @@
             [prioridad]="i < 3"
             (ver)="cafeSeleccionado.set($event)"
           />
+          @if (esPortada() && i === 2) {
+            <app-guia-procesos
+              class="guia-procesos"
+              [style.--columnas-3]="columnasGuia().tres"
+              [style.--columnas-2]="columnasGuia().dos"
+              [procesos]="listaProcesos()"
+              [conteos]="conteoProcesos()"
+              (elegir)="cambiar({ proceso: $event })"
+            />
+          }
         }
       </div>
     }
@@ -122,6 +135,9 @@
           [conBuscador]="true"
           [filtros]="filtros()"
           [variedades]="listaVariedades()"
+          [procesos]="listaProcesos()"
+          [conteoVariedades]="conteoVariedades()"
+          [conteoProcesos]="conteoProcesos()"
           [presentaciones]="listaPresentaciones()"
           [origenes]="origenes()"
           [activos]="activos()"

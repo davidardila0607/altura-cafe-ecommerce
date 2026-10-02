@@ -21,7 +21,7 @@
               [src]="imagenDeVuelo() ?? url"
               [attr.srcset]="imagenDeVuelo() ? null : srcset()"
               sizes="(min-width: 768px) 420px, 70vw"
-              [alt]="'Bolsa de café ' + c.nombre + ', variedad ' + c.variedadNombre + ', ' + c.presentacionGramos + ' g'"
+              [alt]="'Bolsa de café ' + c.nombre + ', variedad ' + c.variedadNombre + ', proceso ' + c.procesoNombre + ', ' + c.presentacionGramos + ' g'"
               width="600"
               height="750"
             />
@@ -34,11 +34,11 @@
           <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
 
-        <p class="variedad">
-          <span class="muestra" aria-hidden="true"></span>
-          {{ c.variedadNombre }}
+        <div class="etiquetas">
+          <app-etiqueta-cafe tipo="variedad" [nombre]="c.variedadNombre" />
+          <app-etiqueta-cafe tipo="proceso" [nombre]="c.procesoNombre" />
           <span class="gramos">{{ c.presentacionGramos }} g</span>
-        </p>
+        </div>
         <h2 id="vista-titulo" class="nombre">{{ c.nombre }}</h2>
         <p class="precio">{{ c.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</p>
 
@@ -50,6 +50,15 @@
           <div>
             <dt>Variedad</dt>
             <dd>{{ c.variedadNombre }}</dd>
+          </div>
+          <div>
+            <dt>Proceso</dt>
+            <dd>
+              {{ c.procesoNombre }}
+              @if (proceso().enTaza) {
+                <span class="estado">{{ proceso().enTaza }}</span>
+              }
+            </dd>
           </div>
           <div>
             <dt>Presentación</dt>

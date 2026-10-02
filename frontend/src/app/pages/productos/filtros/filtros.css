@@ -54,3 +54,74 @@
 .limpiar {
   justify-self: start;
 }
+
+/* Número de cafés de cada opción (mono, discreto). */
+.cantidad {
+  color: var(--texto-suave);
+  font-family: var(--fuente-mono);
+  font-size: var(--fs-100);
+  font-weight: 500;
+}
+
+.chip[aria-pressed='true'] .cantidad {
+  color: var(--texto-claro-suave);
+}
+
+/* Proceso: ícono en su color; activo, el chip se llena con ese color. */
+.chip-proceso .bi {
+  color: var(--color-proceso);
+}
+
+.chip-proceso[aria-pressed='true'] {
+  border-color: var(--color-proceso);
+  background: var(--color-proceso);
+}
+
+.chip-proceso[aria-pressed='true'] .bi,
+.chip-proceso[aria-pressed='true'] .cantidad {
+  color: #fff;
+}
+
+.ver-mas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  margin-top: var(--esp-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bosque);
+  font-size: var(--fs-200);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: var(--cereza);
+  text-underline-offset: 0.3em;
+}
+
+.ver-mas .bi {
+  transition: rotate 240ms var(--ease-salida);
+}
+
+.ver-mas .bi.girado {
+  rotate: 180deg;
+}
+
+/* Los chips que aparecen al pedir "Ver las N variedades" entran en cascada corta. */
+@media (prefers-reduced-motion: no-preference) {
+  .chip {
+    transition:
+      opacity 220ms var(--ease-salida),
+      translate 260ms var(--ease-salida),
+      transform var(--dur-presion) var(--ease-salida),
+      background-color var(--dur-rapida) ease,
+      border-color var(--dur-rapida) ease,
+      color var(--dur-rapida) ease;
+    transition-delay: calc(var(--i, 0) * 25ms), calc(var(--i, 0) * 25ms), 0ms, 0ms, 0ms, 0ms;
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+}

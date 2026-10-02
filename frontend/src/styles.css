@@ -36,10 +36,20 @@
   --error: #a3271f;
   --exito: var(--musgo);
 
-  /* Variedades (también en core/data/contenido-marca.ts). Todas con 4,5:1 o más con texto blanco. */
-  --variedad-castillo: #8a5a2b;
+  /* Variedades y procesos (también en core/data/contenido-marca.ts).
+     Todos con 4,5:1 o más como texto sobre papel y con texto blanco encima. */
+  --variedad-castillo: #7a4a26;
+  --variedad-caturra: #3b6b34;
+  --variedad-colombia: #a2482a;
+  --variedad-tipica: #7e5a10;
+  --variedad-tabi: #4a5868;
+  --variedad-bourbon-rojo: #9e2433;
+  --variedad-bourbon-amarillo: #7a6400;
+  --variedad-bourbon-rosado: #b03a6b;
   --variedad-geisha: #2d6a5e;
-  --variedad-moka: #6e3150;
+  --proceso-lavado: #2e6a8a;
+  --proceso-honey: #875700;
+  --proceso-fermentado: #6e2e4a;
 
   /* ---------- Tipografía ---------- */
   --fuente: 'Bricolage Grotesque Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;

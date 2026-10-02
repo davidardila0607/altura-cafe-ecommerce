@@ -18,7 +18,7 @@
     id="buscar-inventario"
     type="search"
     class="campo"
-    placeholder="Nombre, origen o variedad"
+    placeholder="Nombre, origen, variedad o proceso"
     autocomplete="off"
     [value]="busqueda()"
     (input)="busqueda.set($any($event.target).value)"
@@ -60,7 +60,7 @@
             </td>
             <td>
               <span class="nombre-fila">{{ cafe.nombre }}</span><br />
-              <span class="detalle-fila">{{ cafe.variedadNombre }} · {{ cafe.presentacionGramos }} g</span>
+              <span class="detalle-fila">{{ cafe.variedadNombre }} · {{ cafe.procesoNombre }} · {{ cafe.presentacionGramos }} g</span>
             </td>
             <td data-titulo="Origen">{{ cafe.origen }}</td>
             <td class="numero" data-titulo="Stock" [class.agotado]="cafe.stock === 0">{{ cafe.stock }}</td>
@@ -133,6 +133,23 @@
         </div>
 
         <div class="grupo-campo">
+          <label for="cafe-proceso" class="etiqueta">Proceso</label>
+          <select id="cafe-proceso" class="campo" formControlName="procesoId" [attr.aria-invalid]="mostrarError('procesoId')" aria-describedby="cafe-proceso-error">
+            <option [ngValue]="0" disabled>Elige un proceso</option>
+            @for (p of procesos.value() ?? []; track p.id) {
+              <option [ngValue]="p.id">{{ p.nombre }}</option>
+            }
+          </select>
+          <p id="cafe-proceso-error" class="mensaje-error">
+            @if (mostrarError('procesoId')) {
+              Elige un proceso.
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="doble">
+        <div class="grupo-campo">
           <label for="cafe-presentacion" class="etiqueta">Presentación</label>
           <select id="cafe-presentacion" class="campo" formControlName="presentacionGramos" [attr.aria-invalid]="mostrarError('presentacionGramos')" aria-describedby="cafe-presentacion-error">
             <option [ngValue]="0" disabled>Elige una presentación</option>
@@ -146,16 +163,16 @@
             }
           </p>
         </div>
-      </div>
 
-      <div class="grupo-campo">
-        <label for="cafe-origen" class="etiqueta">Origen</label>
-        <input id="cafe-origen" class="campo" formControlName="origen" maxlength="100" placeholder="Por ejemplo, Huila" [attr.aria-invalid]="mostrarError('origen')" aria-describedby="cafe-origen-error" />
-        <p id="cafe-origen-error" class="mensaje-error">
-          @if (mostrarError('origen')) {
-            Escribe el origen (máximo 100 caracteres).
-          }
-        </p>
+        <div class="grupo-campo">
+          <label for="cafe-origen" class="etiqueta">Origen</label>
+          <input id="cafe-origen" class="campo" formControlName="origen" maxlength="100" placeholder="Por ejemplo, Huila" [attr.aria-invalid]="mostrarError('origen')" aria-describedby="cafe-origen-error" />
+          <p id="cafe-origen-error" class="mensaje-error">
+            @if (mostrarError('origen')) {
+              Escribe el origen (máximo 100 caracteres).
+            }
+          </p>
+        </div>
       </div>
 
       <div class="doble">

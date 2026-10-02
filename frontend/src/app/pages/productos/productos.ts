@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Cafe } from '../../core/models/cafe';
 import { Cafes } from '../../core/services/cafes';
 import { Presentaciones } from '../../core/services/presentaciones';
+import { Procesos } from '../../core/services/procesos';
 import { Variedades } from '../../core/services/variedades';
 import { cambiosDeMedia, coincideMedia } from '../../core/utils/medios';
 import { conTransicion } from '../../core/utils/transicion';
@@ -15,6 +16,7 @@ import { AtraparFoco } from '../../shared/atrapar-foco/atrapar-foco';
 import {
   aplicarFiltros,
   contarFiltrosActivos,
+  contarPor,
   FILTROS_VACIOS,
   Filtros as EstadoFiltros,
   filtrosAUrl,
@@ -25,6 +27,7 @@ import {
   ORDENES,
 } from './catalogo';
 import { Filtros } from './filtros/filtros';
+import { GuiaProcesos } from './guia-procesos/guia-procesos';
 
 /** Espera antes de escribir la búsqueda en la URL mientras se teclea. */
 const ESPERA_URL_MS = 300;
@@ -34,7 +37,7 @@ const CONSULTA_ANCHO_AMPLIO = '(min-width: 1200px)';
 
 @Component({
   selector: 'app-productos',
-  imports: [Filtros, TarjetaCafe, VistaRapida, EstadoError, AtraparFoco],
+  imports: [Filtros, GuiaProcesos, TarjetaCafe, VistaRapida, EstadoError, AtraparFoco],
   templateUrl: './productos.html',
   styleUrl: './productos.css',
 })
@@ -42,6 +45,7 @@ export class Productos {
   private readonly cafesApi = inject(Cafes);
   private readonly variedadesApi = inject(Variedades);
   private readonly presentacionesApi = inject(Presentaciones);
+  private readonly procesosApi = inject(Procesos);
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
   private readonly appRef = inject(ApplicationRef);
@@ -49,6 +53,7 @@ export class Productos {
   protected readonly cafes = rxResource({ stream: () => this.cafesApi.listar() });
   protected readonly variedades = rxResource({ stream: () => this.variedadesApi.listar() });
   protected readonly presentaciones = rxResource({ stream: () => this.presentacionesApi.listar() });
+  protected readonly procesos = rxResource({ stream: () => this.procesosApi.listar() });
 
   protected readonly ordenes = ORDENES;
 
@@ -65,25 +70,34 @@ export class Productos {
     this.presentaciones.hasValue() ? this.presentaciones.value() : [],
   );
   protected readonly origenes = computed(() => opcionesDeOrigen(this.todos()));
+  protected readonly listaProcesos = computed(() => (this.procesos.hasValue() ? this.procesos.value() : []));
+  /** Cafés por variedad y por proceso (sobre todo el catálogo): el número de cada chip. */
+  protected readonly conteoVariedades = computed(() => contarPor(this.todos(), 'variedadNombre'));
+  protected readonly conteoProcesos = computed(() => contarPor(this.todos(), 'procesoNombre'));
 
   private readonly anchoAmplio = toSignal(cambiosDeMedia(CONSULTA_ANCHO_AMPLIO), {
     initialValue: coincideMedia(CONSULTA_ANCHO_AMPLIO),
   });
 
   /**
-   * Jerarquía: con el orden "Destacados", sin filtros y en la grilla de 3 columnas, el primer
-   * café ocupa un bloque de 2x2. Solo si las filas quedan completas (resultados múltiplo de 3).
+   * "Portada" del catálogo: orden "Destacados", sin filtros ni búsqueda. Solo ahí la grilla
+   * tiene jerarquía: el primer café ocupa un bloque de 2x2 (en la grilla de 3 columnas) y,
+   * después de la tercera card, aparece la ficha de los procesos.
    */
-  protected readonly conDestacado = computed(() => {
+  protected readonly esPortada = computed(
+    () => this.filtros().orden === 'destacados' && this.activos() === 0 && !this.filtros().q && this.resultados().length >= 6,
+  );
+  protected readonly conDestacado = computed(() => this.esPortada() && this.anchoAmplio());
+
+  /**
+   * Cuántas columnas ocupa la ficha de procesos para que ninguna fila quede incompleta.
+   * - Con 3 columnas: la destacada usa 4 celdas, así que las cards suman n + 3 celdas;
+   *   la ficha completa la última fila (3 - n % 3 columnas) o, si ya estaba completa, ocupa una fila entera.
+   * - Con 2 columnas (sin destacada): 1 columna si n es impar o la fila entera si es par.
+   */
+  protected readonly columnasGuia = computed(() => {
     const n = this.resultados().length;
-    return (
-      this.anchoAmplio() &&
-      this.filtros().orden === 'destacados' &&
-      this.activos() === 0 &&
-      !this.filtros().q &&
-      n >= 6 &&
-      n % 3 === 0
-    );
+    return { tres: n % 3 === 0 ? 3 : 3 - (n % 3), dos: n % 2 === 1 ? 1 : 2 };
   });
 
   protected readonly resumen = computed(() => {
@@ -144,6 +158,9 @@ export class Productos {
     }
     if (this.presentaciones.error()) {
       this.presentaciones.reload();
+    }
+    if (this.procesos.error()) {
+      this.procesos.reload();
     }
   }
 
