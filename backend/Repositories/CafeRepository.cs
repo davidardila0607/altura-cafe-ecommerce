@@ -71,7 +71,7 @@ namespace CafeApi.Repositories
         }
 
         // ✅ Proyección única a CafeResponseDto.
-        // Se traduce a un solo SELECT con INNER JOIN a variedades.
+        // Se traduce a un solo SELECT con INNER JOIN a variedades y a procesos.
         private static IQueryable<CafeResponseDto> ProyectarAResponse(
             IQueryable<Cafe> cafes)
         {
@@ -81,6 +81,8 @@ namespace CafeApi.Repositories
                 Nombre = c.Nombre,
                 VariedadId = c.VariedadId,
                 VariedadNombre = c.Variedad.Nombre,
+                ProcesoId = c.ProcesoId,
+                ProcesoNombre = c.Proceso.Nombre,
                 PresentacionGramos = (int)c.Presentacion,
                 Origen = c.Origen,
                 Stock = c.Stock,

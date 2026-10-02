@@ -15,6 +15,12 @@ namespace CafeApi.Models
         // ✅ Variedad a la que pertenece el café.
         public Variedad Variedad { get; set; } = null!;
 
+        // ✅ Relación con el proceso de beneficio (FK obligatoria).
+        public int ProcesoId { get; set; }
+
+        // ✅ Proceso del café (Lavado, Honey, Fermentado).
+        public Proceso Proceso { get; set; } = null!;
+
         // ✅ Presentación en gramos (340 o 500).
         public Presentacion Presentacion { get; set; }
 

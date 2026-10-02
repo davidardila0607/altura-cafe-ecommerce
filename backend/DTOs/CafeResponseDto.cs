@@ -15,6 +15,11 @@ namespace CafeApi.DTOs
 
         public string VariedadNombre { get; set; } = string.Empty;
 
+        // ✅ Proceso del café.
+        public int ProcesoId { get; set; }
+
+        public string ProcesoNombre { get; set; } = string.Empty;
+
         // ✅ Presentación en gramos (340 o 500).
         public int PresentacionGramos { get; set; }
 

@@ -72,6 +72,11 @@ Content-Type: application/json
 DELETE {{baseUrl}}/api/variedades/{{crearVariedad.response.body.$.id}}
 Authorization: Bearer {{token}}
 
+### ===== Procesos =====
+
+### Listar procesos (público) - Lavado, Honey y Fermentado
+GET {{baseUrl}}/api/procesos
+
 ### ===== Presentaciones =====
 
 ### Listar presentaciones (público)
@@ -104,6 +109,7 @@ Content-Type: application/json
 {
   "nombre": "Café Castillo",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 500,
   "origen": "Huila, Colombia",
   "stock": 25,
@@ -115,6 +121,41 @@ Content-Type: application/json
 ### Obtener café por id (público)
 GET {{baseUrl}}/api/cafes/{{crearCafe.response.body.$.id}}
 
+### Crear café con un proceso que no existe - 400
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Castillo",
+  "variedadId": 1,
+  "procesoId": 99,
+  "presentacionGramos": 500,
+  "origen": "Huila",
+  "stock": 5,
+  "precio": 38000
+}
+
+### Mismo café con otro proceso (Honey) - 201 (el café único incluye el proceso)
+# @name crearCafeHoney
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Castillo",
+  "variedadId": 1,
+  "procesoId": 2,
+  "presentacionGramos": 500,
+  "origen": "Huila",
+  "stock": 5,
+  "precio": 40000
+}
+
+### Eliminar el café Honey de prueba (Administrador)
+DELETE {{baseUrl}}/api/cafes/{{crearCafeHoney.response.body.$.id}}
+Authorization: Bearer {{token}}
+
 ### Crear café duplicado con otras mayúsculas - 409
 POST {{baseUrl}}/api/cafes
 Authorization: Bearer {{token}}
@@ -123,6 +164,7 @@ Content-Type: application/json
 {
   "nombre": "CAFÉ CASTILLO",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 500,
   "origen": "Huila, Colombia",
   "stock": 5,
@@ -137,6 +179,7 @@ Content-Type: application/json
 {
   "nombre": "Café Pergamino",
   "variedadId": 2,
+  "procesoId": 1,
   "presentacionGramos": 250,
   "origen": "Nariño, Colombia",
   "stock": 10,
@@ -151,6 +194,7 @@ Content-Type: application/json
 {
   "nombre": "Café Castillo",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 340,
   "origen": "Huila, Colombia",
   "stock": 30,
@@ -170,6 +214,7 @@ Content-Type: application/json
 {
   "nombre": "Sin token",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 340,
   "origen": "Colombia",
   "stock": 1,
@@ -184,6 +229,7 @@ Content-Type: application/json
 {
   "nombre": "Sin permiso",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 340,
   "origen": "Colombia",
   "stock": 1,

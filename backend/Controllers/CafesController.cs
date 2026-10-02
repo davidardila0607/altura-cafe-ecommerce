@@ -15,14 +15,19 @@ namespace CafeApi.Controllers
     public class CafesController : ControllerBase
     {
         private const string MensajeCafeDuplicado =
-            "Ya existe un café con ese nombre, variedad y presentación.";
+            "Ya existe un café con ese nombre, variedad, proceso y presentación.";
 
         private const string MensajeVariedadInexistente =
             "La variedad indicada no existe.";
 
+        private const string MensajeProcesoInexistente =
+            "El proceso indicado no existe.";
+
         private readonly ICafeRepository _cafeRepository;
 
         private readonly IVariedadRepository _variedadRepository;
+
+        private readonly IProcesoRepository _procesoRepository;
 
         private readonly ICloudinaryService _cloudinaryService;
 
@@ -32,12 +37,15 @@ namespace CafeApi.Controllers
         public CafesController(
             ICafeRepository cafeRepository,
             IVariedadRepository variedadRepository,
+            IProcesoRepository procesoRepository,
             ICloudinaryService cloudinaryService,
             ILogger<CafesController> logger)
         {
             _cafeRepository = cafeRepository;
 
             _variedadRepository = variedadRepository;
+
+            _procesoRepository = procesoRepository;
 
             _cloudinaryService = cloudinaryService;
 
@@ -108,11 +116,20 @@ namespace CafeApi.Controllers
                 return ValidationProblem(ModelState);
             }
 
+            // ✅ El proceso debe existir.
+            if (!await _procesoRepository.ExistsAsync(dto.ProcesoId, cancellationToken))
+            {
+                ModelState.AddModelError(nameof(dto.ProcesoId), MensajeProcesoInexistente);
+
+                return ValidationProblem(ModelState);
+            }
+
             // ✅ Creamos una entidad Cafe a partir del DTO.
             var cafe = new Cafe
             {
                 Nombre = dto.Nombre.Trim(),
                 VariedadId = dto.VariedadId,
+                ProcesoId = dto.ProcesoId,
                 Presentacion = dto.PresentacionGramos,
                 Origen = dto.Origen.Trim(),
                 Stock = dto.Stock,
@@ -192,11 +209,20 @@ namespace CafeApi.Controllers
                 return ValidationProblem(ModelState);
             }
 
+            // ✅ El proceso debe existir.
+            if (!await _procesoRepository.ExistsAsync(dto.ProcesoId, cancellationToken))
+            {
+                ModelState.AddModelError(nameof(dto.ProcesoId), MensajeProcesoInexistente);
+
+                return ValidationProblem(ModelState);
+            }
+
             // ✅ Se guarda para borrar la imagen anterior si cambia.
             var publicIdAnterior = cafe.ImagenPublicId;
 
             cafe.Nombre = dto.Nombre.Trim();
             cafe.VariedadId = dto.VariedadId;
+            cafe.ProcesoId = dto.ProcesoId;
             cafe.Presentacion = dto.PresentacionGramos;
             cafe.Origen = dto.Origen.Trim();
             cafe.Stock = dto.Stock;

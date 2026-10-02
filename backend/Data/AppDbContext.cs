@@ -16,6 +16,9 @@ namespace CafeApi.Data
         // ✅ Tabla variedades.
         public DbSet<Variedad> Variedades => Set<Variedad>();
 
+        // ✅ Tabla procesos.
+        public DbSet<Proceso> Procesos => Set<Proceso>();
+
         // ✅ Tabla cafes.
         public DbSet<Cafe> Cafes => Set<Cafe>();
 

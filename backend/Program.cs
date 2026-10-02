@@ -76,6 +76,8 @@ builder.Services.AddScoped<IVariedadRepository, VariedadRepository>();
 
 builder.Services.AddScoped<ICafeRepository, CafeRepository>();
 
+builder.Services.AddScoped<IProcesoRepository, ProcesoRepository>();
+
 // ⏳ ICartRepository/CartRepository e IUserRepository/UserRepository
 // no se registran: siguen basados en ADO.NET y el carrito está pendiente.
 

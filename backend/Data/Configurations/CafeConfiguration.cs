@@ -7,10 +7,10 @@ namespace CafeApi.Data.Configurations
     // ✅ Configuración Fluent API de la tabla cafes.
     public class CafeConfiguration : IEntityTypeConfiguration<Cafe>
     {
-        // ✅ Índice único sobre (lower(nombre), variedad_id, presentacion_gramos).
-        // EF Core no modela índices por expresión, por eso se crea
-        // con migrationBuilder.Sql en la migración InitialCreate.
-        public const string IndiceCafeUnico = "ux_cafes_nombre_variedad_presentacion";
+        // ✅ Índice único sobre (lower(nombre), variedad_id, proceso_id, presentacion_gramos).
+        // EF Core no modela índices por expresión, por eso se crea con
+        // migrationBuilder.Sql en la migración AgregarProcesosYVariedades.
+        public const string IndiceCafeUnico = "ux_cafes_nombre_variedad_proceso_presentacion";
 
         public void Configure(EntityTypeBuilder<Cafe> builder)
         {
@@ -69,6 +69,13 @@ namespace CafeApi.Data.Configurations
             builder.HasOne(c => c.Variedad)
                 .WithMany(v => v.Cafes)
                 .HasForeignKey(c => c.VariedadId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ✅ FK obligatoria a procesos con ON DELETE RESTRICT.
+            builder.HasOne(c => c.Proceso)
+                .WithMany(p => p.Cafes)
+                .HasForeignKey(c => c.ProcesoId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
         }
