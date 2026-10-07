@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { requierePermiso } from './core/auth/guard';
+import { requierePermiso, requiereSesion } from './core/auth/guard';
 
 export const routes: Routes = [
   {
@@ -17,6 +17,13 @@ export const routes: Routes = [
         path: 'productos',
         title: 'Nuestros cafés | Altura',
         loadComponent: () => import('./pages/productos/productos').then((m) => m.Productos),
+      },
+      {
+        // Guía 2: sin sesión, el guard lleva a /login?volver=/carrito.
+        path: 'carrito',
+        title: 'Tu carrito | Altura',
+        canMatch: [requiereSesion],
+        loadComponent: () => import('./pages/carrito/carrito').then((m) => m.PaginaCarrito),
       },
     ],
   },

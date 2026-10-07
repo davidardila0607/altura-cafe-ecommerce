@@ -1,0 +1,67 @@
+/* En la card queda por encima de la capa clicable de "Ver producto" (z-index 2). */
+:host {
+  position: relative;
+  z-index: 3;
+  display: block;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--esp-3) var(--esp-4);
+}
+
+.agregar {
+  flex: 1;
+  min-width: 11rem;
+}
+
+/* Botón deshabilitado que explica por qué no se puede agregar. */
+.bloqueado {
+  width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.mensaje {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--esp-2);
+  margin-top: var(--esp-3);
+  color: var(--musgo);
+  font-weight: 600;
+  font-size: var(--fs-200);
+}
+
+.mensaje:empty {
+  display: none;
+}
+
+.mensaje.error {
+  color: var(--error);
+}
+
+.mensaje .enlace-texto {
+  padding-block: 0.2rem;
+}
+
+/* ===== Compacta (cards): selector y botón en una sola fila ===== */
+:host(.compacta) .fila {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+:host(.compacta) .agregar {
+  min-width: 0;
+  min-height: 2.75rem;
+  padding-inline: var(--esp-4);
+}
+
+:host(.compacta) .bloqueado {
+  min-height: 2.75rem;
+  padding-block: 0.5rem;
+  font-size: var(--fs-200);
+}

@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { APIRequestContext, Page } from '@playwright/test';
 import { randomBytes } from 'node:crypto';
-import { API, expect, test } from './fixtures';
+import { API, esperarAnimaciones, expect, test } from './fixtures';
 
 /*
  * Usuarios (Guía 1: registro, login y JWT) y panel de administración (/admin).
@@ -340,6 +340,7 @@ test.describe('Usuarios y panel de administración @una-vez', () => {
 
   test('axe-core sin violaciones (login con aviso, menú de cuenta, inventario, formulario y variedades)', async ({ page }) => {
     const revisar = async (nombre: string) => {
+      await esperarAnimaciones(page);
       const resultado = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'best-practice']).analyze();
       expect(resultado.violations.map((v) => `${nombre}: ${v.id}`)).toEqual([]);
     };

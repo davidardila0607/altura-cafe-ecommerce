@@ -58,3 +58,19 @@ export function vigilarPeticionesApi(page: Page): string[] {
   });
   return peticiones;
 }
+
+/**
+ * Espera a que terminen las animaciones con fin (entradas y fundidos) antes de medir con axe:
+ * a mitad de un fundido los colores aún no son los finales y el contraste sale bajo.
+ * Las animaciones infinitas (niebla a la deriva, cinta) se ignoran.
+ */
+export async function esperarAnimaciones(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
+}

@@ -1,0 +1,39 @@
+@if (auth.autenticado()) {
+  <button type="button" class="boton-icono icono" aria-haspopup="dialog" [attr.aria-label]="etiqueta()" data-testid="boton-carrito" (click)="abrir()">
+    <i class="bi bi-bag" aria-hidden="true"></i>
+    @if (carrito.totalUnidades() > 0) {
+      <span #contador class="contador-carrito" aria-hidden="true" data-testid="contador-carrito">{{ carrito.totalUnidades() }}</span>
+    }
+  </button>
+
+  <dialog #panel appAtraparFoco class="hoja" aria-labelledby="panel-carrito-titulo" (click)="clicFuera($event)" (close)="alCerrar()">
+    <div class="hoja-panel">
+      <div class="hoja-cabecera">
+        <h2 id="panel-carrito-titulo" class="hoja-titulo">Tu carrito</h2>
+        <button type="button" class="boton-icono" aria-label="Cerrar carrito" (click)="cerrar()">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="hoja-cuerpo">
+        @if (abierto()) {
+          <app-lista-carrito [compacta]="true" />
+        }
+      </div>
+      @if (abierto() && carrito.productos().length > 0) {
+        <div class="hoja-pie">
+          <a class="enlace-texto" routerLink="/carrito">Ver carrito completo</a>
+        </div>
+      }
+    </div>
+  </dialog>
+} @else {
+  <a
+    class="boton-icono icono"
+    routerLink="/login"
+    [queryParams]="{ volver: router.url }"
+    aria-label="Carrito (inicia sesión para usarlo)"
+    title="Carrito"
+  >
+    <i class="bi bi-bag" aria-hidden="true"></i>
+  </a>
+}

@@ -157,6 +157,10 @@
   color: var(--texto-claro);
 }
 
+.compra {
+  margin-top: var(--esp-4);
+}
+
 .ver {
   display: inline-flex;
   align-items: center;

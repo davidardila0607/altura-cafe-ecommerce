@@ -1,11 +1,15 @@
 import { Component, input, model } from '@angular/core';
 
-/** Selector visual de cantidad (−  n  +), acotado entre 1 y `maximo`. */
+/**
+ * Selector visual de cantidad (−  n  +), acotado entre 1 y `maximo`.
+ * `etiqueta` da un nombre más claro en listas ("Cantidad de Pitalito"); con `compacto`
+ * la etiqueta solo la leen los lectores de pantalla.
+ */
 @Component({
   selector: 'app-selector-cantidad',
   template: `
     <div class="cantidad" role="group" [attr.aria-labelledby]="idEtiqueta">
-      <span [id]="idEtiqueta" class="etiqueta">Cantidad</span>
+      <span [id]="idEtiqueta" class="etiqueta" [class.visually-hidden]="compacto()">{{ etiqueta() }}</span>
       <div class="selector">
         <button type="button" aria-label="Disminuir cantidad" [disabled]="deshabilitado() || valor() <= 1" (click)="cambiar(-1)">
           <i class="bi bi-dash-lg" aria-hidden="true"></i>
@@ -68,11 +72,14 @@ export class SelectorCantidad {
   readonly valor = model(1);
   readonly maximo = input(10);
   readonly deshabilitado = input(false);
+  readonly etiqueta = input('Cantidad');
+  readonly compacto = input(false);
 
   protected readonly idEtiqueta = `cantidad-${Math.random().toString(36).slice(2, 8)}`;
 
   protected valorVisible(): number {
-    return this.deshabilitado() ? 0 : this.valor();
+    // Nunca muestra más que el máximo (por ejemplo, si el stock bajó mientras tanto).
+    return this.deshabilitado() ? 0 : Math.min(this.valor(), Math.max(1, this.maximo()));
   }
 
   protected cambiar(delta: number): void {

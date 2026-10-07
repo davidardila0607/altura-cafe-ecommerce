@@ -89,13 +89,7 @@
           </p>
         }
 
-        <div class="compra">
-          <app-selector-cantidad [(valor)]="cantidad" [maximo]="maximo()" [deshabilitado]="agotado()" />
-          <button type="button" class="boton boton-primario agregar" disabled aria-describedby="nota-carrito">
-            Agregar al carrito
-          </button>
-        </div>
-        <p id="nota-carrito" class="nota">El carrito estará disponible próximamente.</p>
+        <app-agregar-carrito class="compra" [cafe]="c" />
       </div>
     } @else {
       <h2 id="vista-titulo" class="visually-hidden">Vista rápida</h2>
