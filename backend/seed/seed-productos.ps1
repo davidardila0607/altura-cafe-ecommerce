@@ -6,7 +6,9 @@
     El catálogo (25 cafés) está en seed/catalogo.json: es la misma fuente que usa el
     generador de imágenes (frontend/herramientas/generar-bolsas.mjs).
 
-    1. Inicia sesión como Administrador en POST /api/auth/login.
+    1. Inicia sesión con POST /api/auth/Login (Guía 1) y lee el token de la propiedad
+       "token". Comprueba el rol con GET /api/auth/me: solo un Administrador puede crear
+       cafés, y cada café queda con esa cuenta como dueño (usuarioNombre).
     2. Resuelve el id de cada variedad y de cada proceso por su nombre
        (GET /api/variedades y GET /api/procesos).
     3. Por cada producto: si ya existe (mismo nombre sin importar mayúsculas, variedad,
@@ -28,10 +30,10 @@
 
 .EXAMPLE
     .\seed\seed-productos.ps1
-    (pide correo y contraseña del Administrador)
+    (pide correo y contraseña del Administrador; la contraseña no se ve al escribirla)
 
 .EXAMPLE
-    .\seed\seed-productos.ps1 -ApiBaseUrl http://localhost:5031/api -Email admin@cafeapi.com
+    .\seed\seed-productos.ps1 -ApiBaseUrl http://localhost:5031/api -Email tu-correo@ejemplo.com
 
 .EXAMPLE
     .\seed\seed-productos.ps1 -ActualizarImagenes
@@ -103,19 +105,21 @@ finally {
 
 # ===== Login =====
 Write-Host "API: $ApiBaseUrl"
-$login = Invoke-Api -Metodo 'POST' -Ruta '/auth/login' -Cuerpo ([ordered]@{ email = $Email; password = $passwordPlano })
+$login = Invoke-Api -Metodo 'POST' -Ruta '/auth/Login' -Cuerpo ([ordered]@{ email = $Email; password = $passwordPlano })
 $passwordPlano = $null
 
 if (-not $login.Ok) {
     Write-Host "No se pudo iniciar sesión (HTTP $($login.Codigo)). Revisa el correo y la contraseña." -ForegroundColor Red
     exit 1
 }
-if ($login.Datos.role -ne 'Administrador') {
-    Write-Host "La cuenta '$Email' no tiene rol Administrador." -ForegroundColor Red
+# ✅ La respuesta de Login es { token }; el rol se consulta con GET /api/auth/me.
+$token = $login.Datos.token
+$yo = Invoke-Api -Metodo 'GET' -Ruta '/auth/me' -Token $token
+if (-not $yo.Ok -or @($yo.Datos.roles) -notcontains 'Administrador') {
+    Write-Host "La cuenta '$Email' no tiene rol Administrador. Agrega el correo a Admin:Correos ANTES de registrarte o cambia el rol en la base de datos (ver CLAUDE.md)." -ForegroundColor Red
     exit 1
 }
-$token = $login.Datos.token
-Write-Host "Sesión iniciada como $Email (Administrador)." -ForegroundColor Green
+Write-Host "Sesión iniciada como $($yo.Datos.nombre) <$($yo.Datos.email)> (Administrador)." -ForegroundColor Green
 
 # ===== Variedades y cafés existentes =====
 $variedades = Invoke-Api -Metodo 'GET' -Ruta '/variedades'
