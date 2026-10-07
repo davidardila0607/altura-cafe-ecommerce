@@ -13,5 +13,11 @@ namespace CafeApi.Interfaces
 
         // ✅ Fuera de la guía: datos del usuario para GET /api/auth/me (null si ya no existe).
         Task<UsuarioActualDto?> ObtenerPorId(int id);
+
+        // ✅ Administración de usuarios (fuera de la guía): lista sin el hash de la contraseña.
+        Task<List<UsuarioAdminDto>> ObtenerUsuarios();
+
+        // ✅ Devuelve "El usuario no existe." o "Rol actualizado.".
+        Task<string> CambiarRol(int id, string rol);
     }
 }

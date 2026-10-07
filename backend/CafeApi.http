@@ -442,3 +442,55 @@ Authorization: Bearer {{tokenCliente}}
 ### Vaciar el carrito - 200 { mensaje: "Carrito vaciado." }
 DELETE {{baseUrl}}/api/Carrito/VaciarCarrito
 Authorization: Bearer {{tokenCliente}}
+
+
+### ===== Usuarios (administración) =====
+# Política GestionUsuarios (rol Administrador). El rol nuevo se aplica cuando
+# el usuario vuelve a iniciar sesión (el token viejo conserva el rol anterior).
+
+### Listar usuarios (Administrador) - 200 [{ id, nombre, email, rol, cafesCreados }], sin password
+# @name usuarios
+GET {{baseUrl}}/api/usuarios
+Authorization: Bearer {{token}}
+
+### Listar usuarios con la cuenta Cliente - 403
+GET {{baseUrl}}/api/usuarios
+Authorization: Bearer {{tokenCliente}}
+
+### Cambiar el rol de un usuario (Administrador) - 200 { mensaje: "Rol actualizado." }
+# Cambia 0 por el id del Cliente (sale de la lista anterior).
+PUT {{baseUrl}}/api/usuarios/0/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Cliente"
+}
+
+### Rol que no existe - 400
+PUT {{baseUrl}}/api/usuarios/0/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Editor"
+}
+
+### Usuario que no existe - 404 { mensaje: "El usuario no existe." }
+PUT {{baseUrl}}/api/usuarios/999999/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Cliente"
+}
+
+### Quitarse el propio rol - 409 { mensaje: "No puedes quitarte tu propio rol de administrador." }
+# Cambia 0 por el id del Administrador que inició sesión.
+PUT {{baseUrl}}/api/usuarios/0/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Cliente"
+}

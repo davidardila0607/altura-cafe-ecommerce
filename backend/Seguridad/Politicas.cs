@@ -10,10 +10,16 @@ namespace CafeApi.Seguridad
     {
         public const string GestionInventario = "GestionInventario";
 
+        // ✅ Ver la lista de usuarios y cambiar su rol (página /admin/usuarios).
+        public const string GestionUsuarios = "GestionUsuarios";
+
         // ✅ Registra todas las políticas. Se llama una vez desde Program.cs.
         public static void Registrar(AuthorizationBuilder autorizacion)
         {
             autorizacion.AddPolicy(GestionInventario, politica =>
+                politica.RequireRole(Roles.Administrador));
+
+            autorizacion.AddPolicy(GestionUsuarios, politica =>
                 politica.RequireRole(Roles.Administrador));
         }
     }
