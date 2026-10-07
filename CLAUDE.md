@@ -16,7 +16,7 @@ El proyecto es universitario y quienes lo entregan deben poder explicar cada par
 E-commerce de café de especialidad **Altura** (proyecto universitario en grupo):
 
 - **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés (25 en el seed), sus variedades (9), procesos (3) y presentaciones, y las imágenes de producto en Cloudinary.
-- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, Login y Registro solo visuales, y un **panel de administración** (`/admin`) con autenticación real por roles.
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, **Login y Registro reales** (Guía 1: usuarios en la base de datos, contraseñas con hash y JWT propio) y un **panel de administración** (`/admin`) solo para el rol Administrador.
 
 Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El repositorio anterior (`pablorja/CafeApi`) ya no se usa. No se hace force push ni se reescribe el historial.
 
@@ -170,7 +170,6 @@ Se usaron como referencia visual (búsqueda en el catálogo con el MCP de 21st);
 | Microsoft.AspNetCore.Authentication.JwtBearer / OpenApi | 10.0.12 |
 | Swashbuckle.AspNetCore | 10.2.3 |
 | CloudinaryDotNet | 1.29.3 |
-| Google.Apis.Auth | 1.68.0 |
 | Base de datos local | PostgreSQL 17 (`cafeapi_dev`) |
 
 ## Arquitectura del backend
@@ -180,11 +179,12 @@ Rutas relativas a `backend/`.
 ```
 Controller  →  Interfaces/IXRepository  →  Repositories/XRepository  →  Data/AppDbContext (EF Core)  →  PostgreSQL
 ImagesController / CafesController  →  Interfaces/ICloudinaryService  →  Services/CloudinaryService  →  Cloudinary
+AuthController  →  Interfaces/IUsuarioRepository  →  Repositories/UsuarioRepository  →  AppDbContext (tabla usuario) + JwtSettings
 ```
 
 - **Controllers/**: validan (DataAnnotations + reglas como "la variedad existe"), mapean DTO ↔ entidad y deciden el código HTTP. No hay capa de servicios de negocio (decisión del grupo: se mantiene Controller → Repository).
 - **Repositories/**: todos los métodos son `*Async` y reciben `CancellationToken`. Las lecturas usan `AsNoTracking()` y proyectan directamente a DTO con `Select` (un solo SELECT con JOIN, sin N+1). Para modificar o borrar: `FindAsync` (con seguimiento) → el controlador cambia la entidad → `UpdateAsync`/`DeleteAsync` (que llaman a `SaveChangesAsync`).
-- **Data/AppDbContext.cs**: `DbSet` de `Variedades`, `Procesos` y `Cafes`. Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
+- **Data/AppDbContext.cs**: `DbSet` de `Variedades`, `Procesos`, `Cafes` y `Usuario` (en singular, como la guía). Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
 - **Data/Migrations/**: migraciones de EF Core. **Son la fuente de verdad del esquema** (ya no existe `database/schema.sql`).
 - **Data/DbUpdateExceptionExtensions.cs**: detecta violaciones de unicidad (23505) y de clave foránea (23503) de PostgreSQL para responder 409.
 - **Seguridad/**: `Roles` y `Politicas` (autorización por políticas; ver "Autorización").
@@ -213,6 +213,16 @@ Semilla (`HasData`, con descripción): 1 Castillo, 2 Caturra, 3 Colombia, 4 Típ
 
 Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una **tabla** (no un enum como `Presentacion`) porque tiene nombre y descripción y se podrían agregar procesos sin cambiar el código.
 
+**usuario** (Guía 1, migración `AddUsuario`)
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| id | integer identity | PK |
+| nombre | varchar(100) | obligatorio |
+| email | varchar(150) | obligatorio, único (`ux_usuario_email`); se guarda en minúsculas y sin espacios |
+| password | text | obligatorio; hash de `PasswordHasher` (empieza por `AQAAAA`), nunca el texto |
+| rol | varchar(20) | obligatorio, `CHECK (rol IN ('Administrador','Cliente'))`, por defecto `Cliente` |
+
 **cafes**
 
 | Columna | Tipo | Reglas |
@@ -227,6 +237,7 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 | precio | numeric(12,0) | `CHECK > 0`, pesos colombianos sin decimales |
 | imagen_url | varchar(500) | opcional |
 | imagen_public_id | varchar(255) | opcional |
+| usuario_id | integer | FK → usuario, `ON DELETE RESTRICT` (índice `ix_cafes_usuario_id`); el dueño: sale del JWT al crear y el PUT no lo cambia |
 | created_at / updated_at | timestamptz | UTC, los asigna `AppDbContext` |
 
 Índice único `ux_cafes_nombre_variedad_proceso_presentacion` sobre `(lower(nombre), variedad_id, proceso_id, presentacion_gramos)`: el mismo café puede venderse con dos procesos distintos. Se crea con `migrationBuilder.Sql` (EF Core no modela índices por expresión, así que **no aparece en el snapshot**: si se recrea una migración, hay que volver a añadirlo a mano en `Up` y `Down`). Reemplaza al índice anterior `ux_cafes_nombre_variedad_presentacion` de `InitialCreate`.
@@ -235,7 +246,9 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 
 `Presentacion` es un enum en código (`G340 = 340`, `G500 = 500`), no una tabla. En JSON viaja como número (`presentacionGramos: 340`).
 
-Entidades **fuera** del DbContext (pendientes): `Usuario`, `Cart`, `CartItem`.
+**Migración `AddUsuario`**: crea `usuario` y agrega `cafes.usuario_id NOT NULL` **sin valor por defecto**. Por eso exige la tabla `cafes` vacía: los cafés anteriores no tenían dueño y se borraron antes (por la API, para borrar también sus imágenes). El modelo `Usuario` anterior (Email, Nombre, Role, EsGoogleUser, FechaCreacion) nunca estuvo en el DbContext ni en una migración, así que no hubo tabla que transformar.
+
+Entidades **fuera** del DbContext (pendientes): `Cart`, `CartItem`.
 
 ## Endpoints y permisos
 
@@ -243,9 +256,9 @@ Entidades **fuera** del DbContext (pendientes): `Usuario`, `Cart`, `CartItem`.
 
 | Método | Ruta | Permiso | Respuestas |
 |---|---|---|---|
-| POST | /api/auth/login | Público | 200 `LoginResponseDto`, 401 |
-| POST | /api/auth/google | Público | 200, 401 |
-| GET | /api/auth/me | Cualquier JWT válido | 200 `UsuarioActualDto` (email, nombre, roles), 401 |
+| POST | /api/auth/Register | Público | 200 `{ mensaje }`; 400 `{ mensaje: "El usuario ya existe." }` o de validación |
+| POST | /api/auth/Login | Público | 200 `{ token }`; 400 de validación; 401 `{ mensaje: "Usuario o contraseña incorrectos." }` |
+| GET | /api/auth/me | Cualquier JWT válido | 200 `UsuarioActualDto` (email, nombre, roles; leídos de la base con el claim NameIdentifier), 401 |
 | GET | /api/cafes | Público | 200 `CafeResponseDto[]` |
 | GET | /api/cafes/{id} | Público | 200, 404 |
 | POST | /api/cafes | Inventario | 201 `CafeResponseDto`, 400, 401, 403, 409 duplicado |
@@ -264,10 +277,10 @@ Entidades **fuera** del DbContext (pendientes): `Usuario`, `Cart`, `CartItem`.
 Reglas relevantes:
 - Sin token → **401**; con token pero sin el permiso (por ejemplo, la cuenta Cliente) → **403**.
 - `variedadId` o `procesoId` inexistente → 400 (`ValidationProblem`: "La variedad indicada no existe." / "El proceso indicado no existe."). `procesoId` es obligatorio al crear y al editar. Duplicados → 409 `ProblemDetails` con mensaje en español ("Ya existe un café con ese nombre, variedad, proceso y presentación.").
-- `CafeResponseDto`: id, nombre, variedadId, variedadNombre, procesoId, procesoNombre, presentacionGramos, origen, stock, precio, imagenUrl, imagenPublicId, disponible, estadoStock (Agotado / Pocas unidades ≤10 / Disponible ≤50 / Alta disponibilidad).
+- `CafeResponseDto`: id, nombre, variedadId, variedadNombre, procesoId, procesoNombre, presentacionGramos, origen, stock, precio, imagenUrl, imagenPublicId, usuarioId, usuarioNombre (quien lo creó), disponible, estadoStock (Agotado / Pocas unidades ≤10 / Disponible ≤50 / Alta disponibilidad).
 - Imágenes: Base64 con o sin prefijo `data:image/...;base64,`; el formato se detecta por la firma de bytes (jpg, png, webp); máximo 5 MB; carpeta `cafes` de Cloudinary.
 - Flujo de imagen: `POST /api/images` → guardar `imageUrl` + `publicId` en el café (POST/PUT). Si un PUT cambia el `imagenPublicId`, la anterior se borra de Cloudinary; un DELETE borra la imagen del café. Si Cloudinary falla al borrar, se registra en el log y la operación **no** falla. Si el guardado del café falla después de subir, el panel llama a `DELETE /api/images` para no dejar la imagen huérfana.
-- El JWT lleva los claims `email`, `unique_name` (nombre) y `role`; `GET /api/auth/me` los devuelve.
+- El JWT lleva los claims `ClaimTypes.NameIdentifier` (id), `Name`, `Email` y `Role`. En el JSON del token llegan como URIs largas (por ejemplo `http://schemas.microsoft.com/ws/2008/06/identity/claims/role`); el frontend las traduce en `core/auth/token.ts`.
 - Swagger (`/swagger`) tiene el botón *Authorize* (Bearer): pega solo el token.
 
 ## Autorización (roles y políticas)
@@ -281,17 +294,85 @@ Reglas relevantes:
 2. En `Politicas.cs` cambia la regla a `politica.RequireRole(Roles.Administrador, Roles.Editor)`.
 3. En el frontend agrega el rol al permiso en `frontend/src/app/core/auth/permisos.ts`: `'inventario.gestionar': ['Administrador', 'Editor']`.
 
-**Agregar un usuario autorizado**: hoy las cuentas son fijas (`CuentasDePrueba` en `AuthController`); agrega una línea con correo, contraseña, nombre visible y rol. Cuando exista la tabla de usuarios, el rol saldrá de la base de datos y las políticas seguirán igual.
+**Dar rol de administrador**: ver "Guía 1" (agregar el correo a `Admin:Correos` antes de registrarse, o un `UPDATE` en la base de datos).
 
 ## Panel de administración
 
-- **Entrar**: en la tienda, footer → "Acceso administrador" (o directamente `http://localhost:4200/admin`). Se ingresa con la cuenta de rol Administrador definida en `AuthController` (pide la contraseña al equipo; no se escribe en la documentación). Una cuenta Cliente ve "Esta cuenta no tiene permiso para administrar el inventario."
-- **Rutas**: `/admin/ingresar` (acceso), `/admin/inventario` (cafés), `/admin/variedades`. Todo `/admin` está protegido con `canMatch` por permiso y se carga de forma diferida.
-- **Inventario**: lista con búsqueda (sin tildes), crear y editar en un panel lateral (nombre, variedad, presentación, origen, stock, precio e imagen con vista previa; tipo jpg/png/webp y 5 MB se validan antes de subir), eliminar con confirmación "Esta acción es irreversible", avisos de éxito y mensajes en español para 400, 401, 403, 404 y 409.
+- **Entrar**: con la misma sesión de la tienda. Menú de cuenta del navbar → "Panel de administración" (solo aparece al rol Administrador), footer → "Acceso administrador" o `http://localhost:4200/admin`. Sin sesión, el guard lleva a `/login?volver=/admin…`; con una cuenta Cliente, a `/login?permiso=denegado`, que muestra "No tienes permiso para entrar al panel de administración.".
+- **Rutas**: `/admin/inventario` (cafés), `/admin/variedades`. Todo `/admin` está protegido con `canMatch` por permiso y se carga de forma diferida. La pantalla `/admin/ingresar` se eliminó.
+- **Inventario**: lista con búsqueda (sin tildes), columna **"Creado por"** (`usuarioNombre`), crear y editar en un panel lateral (nombre, variedad, presentación, origen, stock, precio e imagen con vista previa; tipo jpg/png/webp y 5 MB se validan antes de subir), eliminar con confirmación "Esta acción es irreversible", avisos de éxito y mensajes en español para 400, 401, 403, 404 y 409.
 - **Variedades**: crear, editar y eliminar (409 si tiene cafés).
-- **Sesión**: token en `sessionStorage` (se borra al cerrar la pestaña); se cierra sola al expirar el JWT (`Jwt:ExpiresInMinutes`). Un 401 de la API cierra la sesión y lleva a `/admin/ingresar`; un 403 muestra "No tienes permiso para esta acción".
+- **Sesión**: token en `localStorage` (sobrevive a cerrar la pestaña); se cierra sola al expirar el JWT (`JwtSettings:DurationInMinutes`, 60). Un 401 de la API a una petición con sesión la cierra y lleva a `/login` ("Tu sesión terminó. Vuelve a iniciar sesión."); un 403 muestra "No tienes permiso para esta acción". "Cerrar sesión" en el panel lleva a `/login`.
 - Los cambios se ven en Inicio y Productos al recargar (leen la misma API).
-- El **Login y el Registro públicos (`/login`, `/registro`) siguen siendo solo visuales**: no usan `Auth` ni llaman a la API (lo verifican las e2e).
+
+## Guía 1: usuarios, login, registro y JWT
+
+Implementación de `docs/guias/guia-1-usuarios-login-jwt.md` (guía del profesor). Se respetaron sus nombres de clases, métodos, DTOs, sección de configuración, rutas y migración. El "Producto" de la guía es nuestro `Cafe`.
+
+**En palabras sencillas**
+
+- **JWT** (JSON Web Token): un texto en tres partes (`cabecera.datos.firma`) que la API entrega al iniciar sesión. Los *datos* (claims) dicen quién es el usuario (id, nombre, correo y rol) y cuándo expira el token. Cualquiera puede leerlos (no están cifrados), pero nadie puede cambiarlos sin romper la firma.
+- **Firma con `JwtSettings:Key`**: la API calcula la firma con HMAC-SHA256 y su clave secreta (`UsuarioRepository.GenerarToken`). En cada petición, `AddJwtBearer` (Program.cs) vuelve a calcularla y comprueba emisor (`EcommerceApi`), audiencia (`EcommerceAngular`) y expiración (60 min). Si alguien cambia el rol dentro del token, la firma ya no coincide y la API responde 401. Por eso la clave solo vive en `appsettings.Development.json`.
+- **`PasswordHasher<Usuario>`**: la contraseña nunca se guarda. Se guarda un *hash* con sal aleatoria y miles de iteraciones (PBKDF2), que empieza por `AQAAAA`. Al iniciar sesión, `VerifyHashedPassword` repite el cálculo con la contraseña escrita y compara. Dos usuarios con la misma contraseña tienen hashes distintos.
+- **`[Authorize]`**: el endpoint exige un token válido; sin él, 401. `[Authorize(Policy = Politicas.GestionInventario)]` además exige el rol Administrador; con otro rol, 403. Los GET siguen públicos.
+- **Leer el usuario del token**: en un controlador, `User` son los claims del token ya validado. `int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)` da el id del usuario; así `POST /api/cafes` guarda al dueño sin que el cliente lo envíe.
+
+**Paso de la guía → archivo**
+
+| Paso | Archivo |
+|---|---|
+| 1. Clase Usuario | `backend/Models/Usuario.cs` |
+| 2. Modificar Producto | `backend/Models/Cafe.cs`, `backend/Data/Configurations/CafeConfiguration.cs` (FK `RESTRICT`) |
+| 3. DbContext | `backend/Data/AppDbContext.cs`, `backend/Data/Configurations/UsuarioConfiguration.cs` |
+| 4. Migración | `backend/Data/Migrations/*_AddUsuario.cs` |
+| 5. DTOs | `backend/DTOs/UsuarioDto.cs`, `backend/DTOs/LoginDto.cs` |
+| 6. Configuración JWT | `backend/appsettings.json`, `appsettings.example.json`, `appsettings.Development.json` (ignorado) |
+| 7. JwtSettings | `backend/Models/JwtSettings.cs` |
+| 8. Program.cs | `backend/Program.cs` |
+| 9–12. Repositorio | `backend/Interfaces/IUsuarioRepository.cs`, `backend/Repositories/UsuarioRepository.cs` |
+| 13. AuthController | `backend/Controllers/AuthController.cs` |
+| 14. Crear producto con el JWT | `backend/Interfaces/ICafeRepository.cs`, `backend/Repositories/CafeRepository.cs`, `backend/Controllers/CafesController.cs`, `backend/DTOs/CafeResponseDto.cs` |
+| 15. Proteger endpoints | `CafesController`, `VariedadesController`, `ImagesController` (ya tenían `[Authorize(Policy = …)]`) |
+| Frontend | `core/auth/` (`auth.ts`, `token.ts`, `guard.ts`, `interceptor.ts`), `pages/login`, `pages/registro`, `shared/menu-usuario`, `pages/admin/inventario` (columna "Creado por") |
+
+**Adaptaciones respecto a la guía**
+
+| # | Adaptación | Motivo |
+|---|---|---|
+| 1 | `Usuario.Rol` (`"Cliente"` por defecto) | El panel y la política `GestionInventario` dependen del rol. |
+| 2 | DataAnnotations en español en `UsuarioDto` y `LoginDto` | Errores claros (400 automático de `[ApiController]`); el frontend valida igual. |
+| 3 | Se conservan las políticas (`Politicas.Registrar`) además de `AddAuthorization()` | Escribir cafés, variedades e imágenes sigue siendo solo para Administrador. |
+| 4 | Email con `Trim().ToLowerInvariant()` al registrar y al iniciar sesión | "Ana@Correo.com " y "ana@correo.com" son la misma cuenta, y basta un índice único simple. |
+| 5 | Rol al registrarse según `Admin:Correos` (si no, Cliente); `IConfiguration` en el constructor | Crear administradores sin cuentas fijas en el código. |
+| 6 | Claim `ClaimTypes.Role` en `GenerarToken` | Lo leen `[Authorize(Policy)]` y el frontend. |
+| 7 | `AuthController` traduce el texto del repositorio a códigos HTTP: Register 400/200 `{ mensaje }`; Login 401 `{ mensaje }` o 200 `{ token }` | Con `Ok()` siempre, el frontend no puede saber si el login falló. |
+
+**Otras diferencias (decisiones tomadas)**
+
+- `ICafeRepository.CreateAsync(Cafe cafe, int userId, CancellationToken)`: el `userId` va antes del `CancellationToken` porque, por convención de .NET, el token de cancelación siempre es el último parámetro. El repositorio recibe la entidad (no el DTO), como ya hacía el proyecto: los controladores mapean DTO → entidad.
+- `IUsuarioRepository.ObtenerPorId(int id)` no está en la guía: se agregó porque `GET /api/auth/me` se conservó y ahora lee los datos de la base con el claim NameIdentifier, siguiendo el patrón Controller → Repository.
+- La tabla `usuario` queda en singular (sale del nombre del `DbSet` de la guía). `cafes.usuario_id` no tiene valor por defecto (la tabla debía estar vacía).
+- `[Route("api/auth")]` fijo: las rutas quedan exactamente `/api/auth/Register` y `/api/auth/Login`.
+- Se eliminaron: el login con cuentas fijas (`LoginRequestDto`, `LoginResponseDto`), el de Google (`GoogleLoginRequest` y el paquete `Google.Apis.Auth`), la sección `"Jwt"`, `UserDto` y el `IUserRepository`/`UserRepository` ADO.NET, que nunca se registró. La guía los reemplaza con `IUsuarioRepository`.
+- `Admin:Correos` local incluye también `davidardila0607@gmail.com`: el plan pedía registrar esa cuenta como Administrador, y fuera de la lista habría quedado como Cliente. (Al final, el equipo cargó el catálogo con la cuenta de `desarrollo.testing@gmail.com`).
+- Skills frente a la guía (gana la guía):
+  - `dotnet-webapi` recomienda DTOs `sealed record`, capa de servicios y Problem Details. Se mantuvieron las clases, el patrón Controller → Repository y las respuestas `{ mensaje }`/`{ token }`.
+  - `create-datadriven-aspnetcore` pediría CRUD completo de Usuario; la guía no lo incluye.
+  - `optimizing-ef-core-queries`: `AnyAsync` y `FirstOrDefaultAsync` comparan la columna `email` sin funciones (ya está en minúsculas), así que usan el índice único. `/me` y `usuarioNombre` usan proyección: el JOIN de cafés solo lee el nombre, nunca el hash.
+- Frontend: formularios reactivos (no Signal Forms), por coherencia con el resto del proyecto.
+
+**Cómo dar rol de administrador**
+
+1. Antes de registrarse: agrega el correo a `Admin:Correos` en `backend/appsettings.Development.json` y regístrate (Swagger, `CafeApi.http` o `/registro`).
+2. Si la cuenta ya existe, cambia el rol en PostgreSQL (`psql` está en `C:\Program Files\PostgreSQL\17\bin\psql.exe`):
+
+```sql
+UPDATE usuario SET rol = 'Administrador' WHERE email = 'correo@ejemplo.com';
+```
+
+El rol viaja dentro del token: el usuario debe **cerrar sesión e iniciarla otra vez** para que el cambio se note.
+
+**Clave JWT**: la clave local anterior (sección `"Jwt"`, del compañero) quedó **reemplazada** por una nueva de 64 bytes en `JwtSettings:Key`. Los tokens emitidos con la clave anterior ya no sirven. Cada integrante genera la suya (ver "Configuración").
 
 ## Configuración
 
@@ -302,15 +383,15 @@ Copia `appsettings.example.json` → `appsettings.Development.json` y rellena:
 | Clave | Uso |
 |---|---|
 | `ConnectionStrings:CafeDatabase` | PostgreSQL local (`Host=localhost;Port=5432;Database=cafeapi_dev;Username=postgres;Password=...`) |
-| `Google:ClientId` | Login con Google |
-| `Jwt:Key` | Clave HMAC, 32 bytes aleatorios en Base64 |
-| `Jwt:Issuer` / `Jwt:Audience` / `Jwt:ExpiresInMinutes` | `CafeApi` / `CafeApiUsers` / `60` |
+| `JwtSettings:Key` | Clave secreta con la que la API firma los JWT: 64 bytes aleatorios en Base64. En `appsettings.json` y `appsettings.example.json` solo va el marcador `CLAVE_SECRETA_DEL_PROYECTO` |
+| `JwtSettings:Issuer` / `Audience` / `DurationInMinutes` | `EcommerceApi` / `EcommerceAngular` / `60` (valores de la guía) |
+| `Admin:Correos` | Correos que se registran como Administrador (comparados en minúsculas). Local: `davidardila0607@gmail.com`, `desarrollo.testing@gmail.com` y `e2e-admin@altura.test` (este último **solo para las pruebas automáticas**) |
 | `CloudinarySettings:CloudName` / `ApiKey` / `ApiSecret` | Cuenta de Cloudinary |
 | `Logging:LogLevel` | `Information` / `Microsoft.AspNetCore: Warning` |
 
-Generar una `Jwt:Key` (PowerShell):
+Generar una `JwtSettings:Key` (PowerShell):
 ```powershell
-$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
+$b = New-Object byte[] 64; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
 ```
 
 **Nunca** subas secretos a Git ni los escribas en `appsettings.json` / `appsettings.example.json`.
@@ -328,7 +409,7 @@ dotnet run --launch-profile http         # http://localhost:5031  (https: 7031)
 ```
 
 - Swagger: http://localhost:5031/swagger — OpenAPI: `/openapi/v1.json` (solo en Development).
-- `CafeApi.http`: peticiones de prueba (login → token → resto). Reemplaza `TU_CONTRASEÑA`.
+- `CafeApi.http`: peticiones de prueba (Register → Login → token → resto, con los casos 400/401/403). Reemplaza el correo y `TU_CONTRASEÑA`.
 - psql no está en el PATH: `"C:\Program Files\PostgreSQL\17\bin\psql.exe" -h localhost -U postgres -d cafeapi_dev`.
 - Al probar con `curl` desde Git Bash, envía el cuerpo con `--data-binary @archivo.json`: pasar JSON con tildes como argumento lo convierte a ANSI y la API responde 400.
 
@@ -339,11 +420,11 @@ El catálogo vive en **`backend/seed/catalogo.json`** (25 cafés: imagen, nombre
 `backend/seed/seed-productos.ps1` (Windows PowerShell 5.1 o 7; archivo UTF-8 con BOM):
 
 1. Pide correo y contraseña del Administrador (o `-Email`/`-Password` como `SecureString`; `-ApiBaseUrl`, por defecto `http://localhost:5031/api`). Para pasar un `SecureString`, ejecuta el script **en la misma sesión** (`& .\seed\seed-productos.ps1 -Email ... -Password $clave`): no viaja a un proceso `powershell` nuevo.
-2. `POST /api/auth/login` → token. Resuelve `variedadId` y `procesoId` por nombre con `GET /api/variedades` y `GET /api/procesos`.
+2. `POST /api/auth/Login` → token (propiedad `token`); `GET /api/auth/me` comprueba que la cuenta sea Administrador. Resuelve `variedadId` y `procesoId` por nombre con `GET /api/variedades` y `GET /api/procesos`.
 3. Por cada café: si ya existe (nombre sin mayúsculas + variedad + proceso + presentación, según `GET /api/cafes`) lo **omite sin subir imagen**; si no, `POST /api/images` y `POST /api/cafes` con `procesoId`, `imagenUrl` e `imagenPublicId`. Si el `POST` falla (por ejemplo 409), borra la imagen recién subida con `DELETE /api/images` y lo reporta como omitido.
 4. Los cuerpos se envían como bytes UTF-8 (las tildes llegan bien en PowerShell 5.1).
 
-Resultado verificado: primera ejecución "25 creados"; segunda, "0 creados, 25 omitidos" (sin subir imágenes). La API devuelve exactamente los 25 cafés del catálogo y la carpeta `cafes/` de Cloudinary tiene 25 imágenes, sin huérfanas.
+Resultado verificado: primera ejecución "25 creados"; segunda, "0 creados, 25 omitidos" (sin subir imágenes). Desde la Guía 1 cada café tiene dueño: la carga del 2026-10-06 la hizo la cuenta Administrador del equipo y los 25 cafés tienen ese `usuarioNombre`. La API devuelve exactamente los 25 cafés del catálogo y la carpeta `cafes/` de Cloudinary tiene 25 imágenes, sin huérfanas.
 
 | Región (origen) | Cafés |
 |---|---|
@@ -410,9 +491,8 @@ Solo se usaron fotos gratuitas (se descartaron las de Unsplash+). La primera ele
 |---|---|---|
 | `''` | Inicio | Altura \| Café de especialidad |
 | `productos` | Catálogo | Nuestros cafés \| Altura |
-| `login` | Login (solo visual) | Iniciar sesión \| Altura |
-| `registro` | Registro (solo visual) | Crear cuenta \| Altura |
-| `admin/ingresar` | Acceso al panel (real) | Ingresar al panel \| Altura |
+| `login` | Login (`POST /api/auth/Login`; acepta `?volver=`, `?cuenta=creada`, `?permiso=denegado`) | Iniciar sesión \| Altura |
+| `registro` | Registro (`POST /api/auth/Register`) | Crear cuenta \| Altura |
 | `admin` → `admin/inventario`, `admin/variedades` | Panel (guard `canMatch` por permiso, layout `Admin`) | Inventario \| Altura · Variedades \| Altura |
 | `**` | redirige a `''` | — |
 
@@ -420,8 +500,8 @@ Transición entre rutas con `withViewTransitions()`; las navegaciones que solo c
 
 **Estructura de `src/app/`:**
 
-- `core/auth/`: `permisos.ts` (mapa centralizado permiso → roles), `auth.ts` (servicio `Auth` con signals: login, sesión en `sessionStorage`, cierre al expirar, `tienePermiso`), `interceptor.ts` (Bearer solo a la API; 401 → cierra sesión; 403 → aviso), `guard.ts` (`requierePermiso(permiso)`, `canMatch`).
-- `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`UsuarioActual`/`RespuestaLogin`. Si cambia un DTO del backend, actualiza estos modelos.
+- `core/auth/`: `permisos.ts` (mapa centralizado permiso → roles), `token.ts` (`leerToken`: traduce los claims de .NET, con nombres en URI larga, a id, nombre, email, roles y expiración), `auth.ts` (servicio `Auth` con signals: `registrar`, `iniciarSesion`, sesión en `localStorage`, cierre al expirar, `tienePermiso`), `interceptor.ts` (Bearer solo a la API; 401 → cierra sesión y lleva a `/login`; 403 → aviso), `guard.ts` (`requierePermiso(permiso)`, `canMatch`: sin sesión → `/login?volver=`, sin permiso → `/login?permiso=denegado`).
+- `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`RespuestaLogin`/`RespuestaRegistro`. `Cafe` incluye `usuarioId` y `usuarioNombre`. Si cambia un DTO del backend, actualiza estos modelos.
 - `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel).
 - `core/data/`: `mapa-colombia.ts` (Natural Earth) y `contenido-marca.ts` (texto, color y notas de cata de las 9 variedades; texto, color, ícono y "en taza" de los 3 procesos con `marcaProceso()`; fotos del sitio, pasos del proceso, `ETAPAS_ASCENSO`). **Los productos, las variedades y los procesos siempre vienen de la API**; aquí solo está el texto de marca, asociado por nombre normalizado.
 - `core/utils/`: `gsap.ts` (`cargarGsap`, `refrescarScroll`), `medios.ts` (`matchMedia` seguro, `movimientoReducido`, `punteroFino`, `navegadorCompleto`), `imagenes.ts` (las fotos de producto se piden con el recorte `c_crop,g_center,w_0.86,h_0.86` antes de `f_auto,q_auto,w_N`: la bolsa llena más la card y mide lo mismo en la card, la vista rápida y el vuelo), `texto.ts`, `transicion.ts`, `validadores.ts` (`PATRON_CORREO`, `camposCoinciden`, `entero`), `errores.ts` (`mensajeDeError`: mensaje en español por código HTTP).
@@ -432,9 +512,9 @@ Transición entre rutas con `withViewTransitions()`; las navegaciones que solo c
   - **Bloque "Tres procesos, tres tazas"** (`GuiaProcesos`): arriba de la grilla, a todo el ancho de la columna de productos, debajo de la barra "25 cafés / Ordenar por". Compacto (~200 px en escritorio): título y bajada a la izquierda y los tres procesos en columnas con ícono, descripción y "Ver N cafés"; en móvil, los procesos van en una fila con desplazamiento horizontal. "Ver N cafés" aplica el mismo filtro de la barra lateral (`?proceso=`); el proceso activo se tiñe de su color y su botón queda como píldora (`aria-pressed`); pulsarlo otra vez quita el filtro.
   - **Grilla uniforme**: todas las cards miden lo mismo (3 columnas a ≥1200 px, 2 en tableta, 1 en móvil). Para que los textos queden alineados entre cards, cada fila de la card ocupa una sola línea: variedad + gramos, nombre (con "…" si no cabe), origen + etiqueta de proceso, precio + disponibilidad. Una e2e mide que alto, imagen, nombre, origen y precio estén en la misma posición en las 25 cards.
   - Al filtrar, la URL se escribe con `scroll: 'manual'` (opción por navegación del router de Angular 22): la página no salta arriba; al cambiar de ruta sí se sube, como siempre.
-- `pages/login`, `pages/registro`: formularios reactivos solo visuales (validaciones, visto de campo válido, medidor de seguridad en Registro); al enviar válido muestran "… estará disponible próximamente." y **no** llaman a la API.
-- `pages/admin/`: `ingresar`, `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
-- `shared/`: `Navbar`, `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; Escape se atiende en `keydown`), `SelectorCantidad`, `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
+- `pages/login`, `pages/registro`: formularios reactivos conectados a la API (Guía 1). Registro valida igual que `UsuarioDto` (nombre obligatorio de hasta 100 caracteres, correo válido, contraseña de 6 o más, confirmación) y al terminar lleva a `/login?cuenta=creada` ("Cuenta creada. Ahora inicia sesión."); un 400 muestra el mensaje del backend. Login vuelve a `?volver=` (solo rutas internas) o al Inicio; un 401 muestra "Usuario o contraseña incorrectos.".
+- `pages/admin/`: `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
+- `shared/`: `Navbar`, `MenuUsuario` (cuenta del navbar: sin sesión, ícono a `/login?volver=`; con sesión, la inicial y un menú *disclosure* con nombre, correo, "Panel de administración" solo para Administrador y "Cerrar sesión"; se cierra con Escape, clic fuera o al navegar; es un componente aparte por el presupuesto de 4 kB del CSS del navbar), `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; Escape se atiende en `keydown`), `SelectorCantidad`, `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
 - `src/environments/`: `apiBaseUrl` (`http://localhost:5031/api` en desarrollo; vacío en producción) y `cloudinaryBase`.
 
 **Comandos (desde `frontend/`):**
@@ -454,15 +534,18 @@ Si se cambia `angular.json` (estilos, fuentes), **reinicia `ng serve`**: no reca
 
 **e2e** (`frontend/e2e/*.e2e.ts`, dos proyectos de Playwright: `chromium` con movimiento y `movimiento-reducido` con `prefers-reduced-motion: reduce`; etiquetas `@movimiento`, `@reducido`, `@una-vez`):
 - `altura.e2e.ts`: Inicio (3 destacados de la API con Cloudinary, 9 variedades con enlace al catálogo, altímetro, mapa con 5 orígenes → catálogo filtrado, galería anclada / fila con movimiento reducido), navegación (estado activo, navbar sólido, menú móvil, login ↔ registro), Productos (25 cafés; variedad + proceso + presentación combinados en la URL; "Ver las 9 variedades"; bloque de procesos arriba de la grilla que filtra, marca el activo y no mueve la página; cards del mismo tamaño y alineadas; sin desplazamiento horizontal a 375 px; búsquedas "narino", "honey" y "rosado"; recarga; cards con etiquetas; vista rápida con proceso y color de variedad; vuelo de la bolsa; hoja de filtros en móvil), API caída, formularios sin peticiones a la API, axe-core en todas las vistas a 1440 y 375 px, capturas y grabación.
-- `admin.e2e.ts`: acceso sin sesión, credenciales incorrectas, cuenta Cliente sin acceso, crear café con imagen **y proceso** (Honey) → verlo en la tienda con sus etiquetas → editarlo (el formulario trae el proceso guardado; se cambia a Fermentado) → eliminarlo (y comprobar que la imagen ya no existe en Cloudinary), variedades (crear, duplicada 409, editar, no eliminar con cafés, eliminar), 403 y 401 simulados, axe del panel y cierre de sesión. **Necesita variables de entorno** con las cuentas de prueba (si faltan, se omite):
+- `admin.e2e.ts` (usuarios y panel; autocontenido, no depende del catálogo): sin sesión `/admin` → `/login?volver=`; registrar un Cliente desde `/registro` (y el 400 "El usuario ya existe."); contraseña incorrecta (401); el Cliente inicia sesión y vuelve a la página anterior, el menú muestra su nombre y correo sin "Panel de administración", la sesión sobrevive a recargar, `/admin` → "No tienes permiso", cerrar sesión desde el menú; el Administrador entra al panel desde el menú, crea un café con imagen y proceso, **"Creado por" muestra su nombre**, lo edita (el dueño no cambia) y lo elimina (la imagen desaparece de Cloudinary); variedades (crear, duplicada 409, no eliminar con cafés —crea uno por la API—, eliminar); 403 y 401 simulados; axe del login, el menú de cuenta y el panel; cerrar sesión en el panel. **Necesita variables de entorno** con la cuenta Administrador de pruebas, cuyo correo debe estar en `Admin:Correos` (si la cuenta no existe, se registra sola; sin las variables, se omite):
 
 ```powershell
-$env:ALTURA_ADMIN_EMAIL = '<correo admin>';    $env:ALTURA_ADMIN_PASSWORD = '<contraseña>'
-$env:ALTURA_CLIENTE_EMAIL = '<correo cliente>'; $env:ALTURA_CLIENTE_PASSWORD = '<contraseña>'
+$env:ALTURA_ADMIN_EMAIL = 'e2e-admin@altura.test'; $env:ALTURA_ADMIN_PASSWORD = '<contraseña>'
 npm run e2e
 ```
 
-Todo lo que crean estas pruebas lleva "e2e" en el nombre y se borra al terminar (también si una prueba falla). La fixture `consola` hace fallar cualquier prueba con errores de consola. Capturas y video (`hero-y-vista-rapida.webm`) en `frontend/e2e/capturas/` (ignorada por Git).
+El Cliente se registra en cada ejecución con un correo nuevo (`e2e-cliente-<número>@altura.test`) y una contraseña aleatoria. Los cafés y variedades de prueba llevan "e2e" en el nombre y se borran al terminar (también si una prueba falla). Los usuarios no se pueden borrar por la API; después de las pruebas se borran en PostgreSQL:
+
+```sql
+DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';  -- falla (RESTRICT) si alguno todavía tiene cafés
+``` La fixture `consola` hace fallar cualquier prueba con errores de consola. Capturas y video (`hero-y-vista-rapida.webm`) en `frontend/e2e/capturas/` (ignorada por Git).
 
 ## Skills usadas en el rediseño y cómo
 
@@ -542,23 +625,25 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 | Vista rápida con los datos de la lista + `GET /api/cafes/{id}` | La imagen está lista en el primer fotograma (requisito del vuelo) y los datos se actualizan igual. |
 | Escape de la vista rápida en `keydown` | Chrome no deja cancelar el evento `cancel` del `<dialog>` sin interacción previa y el cierre no se animaba. |
 | Altímetro decorativo (`aria-hidden`) y sin movimiento reducido | Cada sección ya tiene título; el número cambia con el scroll pero no es animación. |
-| Login y Registro públicos solo visuales; panel en `/admin` | Restricción del Taller 3: la administración es una zona separada con su propio acceso. |
+| Login y Registro reales y un solo acceso (`/login`) para la tienda y el panel | Guía 1. La pantalla `/admin/ingresar` se eliminó: el panel usa la misma sesión y el guard decide por rol. |
 | Autorización por políticas (`GestionInventario`) y mapa de permisos en el frontend | Agregar un rol después es cambiar una línea en cada lado, sin tocar controladores ni componentes. |
-| Sesión del panel en `sessionStorage` | Se borra al cerrar la pestaña; sobrevive a una recarga. |
+| Sesión en `localStorage` (antes `sessionStorage`) | Lo pide la Guía 1 para la tienda: la sesión dura lo que el token (60 min) aunque se cierre la pestaña. |
 | `DELETE /api/images` restringido a `cafes/` y con 409 si la imagen está en uso | Limpia subidas no usadas sin poder borrar otras imágenes de la cuenta. |
-| Credenciales de las e2e del panel por variables de entorno | No se escriben contraseñas en el repositorio. |
+| Credenciales de las e2e del panel por variables de entorno | No se escriben contraseñas en el repositorio. El Cliente de pruebas se registra en cada ejecución con un correo único y una contraseña aleatoria. |
 
 ## Problemas conocidos y pendientes
 
 - **Carrito pendiente**: `Cart`, `CartItem`, `ICartRepository`/`CartRepository` (lanza `NotImplementedException`) y los DTOs de carrito existen pero no están en el DbContext ni registrados en DI.
-- **Usuarios pendientes**: `Usuario` e `IUserRepository`/`UserRepository` (ADO.NET contra `public.users`) no están registrados. El login usa **dos cuentas fijas en `AuthController`**; Google Login no persiste usuarios.
-- **Rotar `Jwt:Key`**: dos claves antiguas quedaron en el historial de Git, una en `appsettings.json` (de `6829fba` a `4676745`) y otra en `appsettings.Development.json`, que se subió en `6829fba` y se borró en `a28795a`. Ese archivo también contenía el `Google:ClientId`, que es público. No se reescribió el historial porque el repo es privado. Ninguna de las dos claves está en uso: cada integrante debe generar la suya. Las credenciales de Cloudinary y la contraseña de PostgreSQL nunca se subieron (revisión del 2026-09-30).
+- **Login con Google eliminado** en la Guía 1 (endpoint `/api/auth/google`, `GoogleLoginRequest` y el paquete `Google.Apis.Auth`); se rehará en una guía posterior. Fuera de alcance por ahora: cambio y recuperación de contraseña, proveedores externos (Auth0) y borrar usuarios por la API.
+- **Rotar `Jwt:Key`**: dos claves antiguas quedaron en el historial de Git, una en `appsettings.json` (de `6829fba` a `4676745`) y otra en `appsettings.Development.json`, que se subió en `6829fba` y se borró en `a28795a`. Ese archivo también contenía el `Google:ClientId`, que es público. No se reescribió el historial porque el repo es privado. Ninguna de las dos claves está en uso: cada integrante debe generar la suya. En la Guía 1 la sección pasó a llamarse `JwtSettings` y la clave local anterior (del compañero) se **reemplazó** por una nueva de 64 bytes. Las credenciales de Cloudinary y la contraseña de PostgreSQL nunca se subieron (revisión del 2026-09-30).
 - `imagenPublicId` lo envía el cliente y no se valida contra Cloudinary: un publicId ajeno se borraría al eliminar/reemplazar el café (solo puede hacerlo quien tiene el permiso de inventario). Si una creación falla después de subir la imagen, el panel la borra con `DELETE /api/images`; un cliente que use la API directamente puede dejarla huérfana.
 - Los títulos de los 400 automáticos de validación salen en inglés ("One or more validation errors occurred."); los mensajes de cada campo sí están en español.
 - El diagnóstico de arranque de `Program.cs` muestra "PostgreSQL (Supabase)" para cualquier cadena con el puerto 5432, también en local.
 - `__EFMigrationsHistory` conserva su nombre original (la convención snake_case no lo cambia).
-- **Login y Registro públicos solo visuales** (requisito del taller). La autenticación real existe solo en el panel `/admin`, con las dos cuentas fijas del backend. "Agregar al carrito" está deshabilitado ("Próximamente").
-- El token del panel vive en `sessionStorage`: es visible para cualquier script de la página (no hay `HttpOnly` sin cookies); aceptable para el proyecto, no para producción.
+- "Agregar al carrito" está deshabilitado ("Próximamente").
+- El token vive en `localStorage`: es visible para cualquier script de la página (no hay `HttpOnly` sin cookies); aceptable para el proyecto, no para producción.
+- El login responde igual (401) a un correo que no existe y a una contraseña incorrecta, pero el Register sí revela si un correo ya está registrado ("El usuario ya existe."), como pide la guía.
+- `Admin:Correos` solo se consulta al **registrarse**: agregar un correo después no cambia el rol de una cuenta que ya existe (usa el `UPDATE` de la sección "Guía 1").
 - El frontend asume `ng serve` en el puerto 4200: es el único origen permitido por CORS en `Program.cs`. Otro puerto requiere cambiar el backend.
 - `environment.ts` (producción) tiene `apiBaseUrl` vacío: configúralo antes de desplegar.
 - Con la API apagada, el navegador registra 2 errores de red ("Failed to load resource") en consola; son inevitables y la app los maneja mostrando "Reintentar".

@@ -703,3 +703,36 @@ Ajustes de diseño en Productos.
 ### ✅ Calidad
 
 - `ng build` sin advertencias; 32 pruebas unitarias y 64 e2e en verde (nuevas: alineación de las cards, bloque de procesos sin salto de scroll, sin desplazamiento horizontal en móvil).
+
+---
+
+## [1.16.0] - 2026-10-06
+
+Guía 1 del profesor: usuarios, registro, login y JWT (`docs/guias/guia-1-usuarios-login-jwt.md`).
+
+### 🚀 Añadido
+
+- **Tabla `usuario`** (nombre, email único en minúsculas, contraseña con hash de `PasswordHasher` y rol) y **dueño de cada café** (`cafes.usuario_id`, FK `RESTRICT`), con la migración `AddUsuario`.
+- **`POST /api/auth/Register`** (200 o 400 "El usuario ya existe.") y **`POST /api/auth/Login`** (200 `{ token }` o 401 "Usuario o contraseña incorrectos."), con `UsuarioDto`, `LoginDto`, `IUsuarioRepository` y `UsuarioRepository` como la guía.
+- JWT firmado por la API con la sección **`JwtSettings`** (emisor `EcommerceApi`, audiencia `EcommerceAngular`, 60 minutos) y una clave nueva de 64 bytes; el token lleva id, nombre, correo y rol.
+- **`Admin:Correos`**: los correos de esa lista se registran como Administrador.
+- `POST /api/cafes` guarda como dueño al usuario del token; `CafeResponseDto` incluye `usuarioId` y `usuarioNombre`.
+- **Frontend**: `/registro` y `/login` conectados a la API; el nombre, el correo y el rol se leen del token; la sesión dura lo que el token (`localStorage`). Menú de cuenta en el navbar (inicial, nombre, correo, "Panel de administración" solo para Administrador y "Cerrar sesión"). Columna "Creado por" en el inventario.
+
+### 🔄 Cambiado
+
+- El panel usa la misma sesión de `/login`: sin sesión lleva a `/login` y con una cuenta Cliente muestra "No tienes permiso". Un 401 de la API cierra la sesión y lleva a `/login`.
+- `GET /api/auth/me` lee el usuario de la base de datos con el id del token.
+- `seed-productos.ps1` inicia sesión con `POST /api/auth/Login` y comprueba el rol con `GET /api/auth/me`.
+- Los 25 cafés del catálogo se borraron (con sus imágenes) y se volvieron a cargar con dueño.
+
+### 🗑️ Eliminado
+
+- Las dos cuentas fijas escritas en `AuthController`, el login con Google (`/api/auth/google` y el paquete `Google.Apis.Auth`), la sección `"Jwt"`, el `UserRepository` ADO.NET y la pantalla `/admin/ingresar`.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` sin advertencias.
+- 37 pruebas unitarias (nuevas: lectura de los claims del token y servicio `Auth`).
+- 64 pruebas e2e, entre ellas: registro desde `/registro`, login correcto e incorrecto, menú de cuenta del Cliente sin panel, `/admin` sin permiso, café creado por el Administrador con "Creado por" y axe-core del login y del menú.
+- Verificado por la API: Register 200/400, Login 200/401, `POST /api/cafes` 401 sin token, 403 con un Cliente y 201 con un Administrador; GET públicos 200; contraseñas guardadas como hash (`AQAAAA…`).
