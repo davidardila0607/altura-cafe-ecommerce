@@ -78,6 +78,14 @@ namespace CafeApi.Data.Configurations
                 .HasForeignKey(c => c.ProcesoId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ✅ FK obligatoria al usuario que creó el café, con ON DELETE RESTRICT:
+            // no se puede borrar un usuario que todavía tiene cafés.
+            builder.HasOne(c => c.Usuario)
+                .WithMany(u => u.Cafes)
+                .HasForeignKey(c => c.UsuarioId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

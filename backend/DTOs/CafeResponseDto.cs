@@ -37,6 +37,11 @@ namespace CafeApi.DTOs
 
         public string? ImagenPublicId { get; set; }
 
+        // ✅ Usuario que creó el café (Guía 1, paso 14).
+        public int UsuarioId { get; set; }
+
+        public string UsuarioNombre { get; set; } = string.Empty;
+
         // ✅ Indica si el producto puede comprarse.
         public bool Disponible => Stock > 0;
 

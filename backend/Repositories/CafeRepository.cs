@@ -45,8 +45,12 @@ namespace CafeApi.Repositories
 
         public async Task<int> CreateAsync(
             Cafe cafe,
+            int userId,
             CancellationToken cancellationToken)
         {
+            // ✅ El dueño es quien inició sesión; nunca lo envía el cliente en el cuerpo.
+            cafe.UsuarioId = userId;
+
             _context.Cafes.Add(cafe);
 
             await _context.SaveChangesAsync(cancellationToken);
@@ -71,7 +75,8 @@ namespace CafeApi.Repositories
         }
 
         // ✅ Proyección única a CafeResponseDto.
-        // Se traduce a un solo SELECT con INNER JOIN a variedades y a procesos.
+        // Se traduce a un solo SELECT con INNER JOIN a variedades, procesos y usuario
+        // (del usuario solo se leen id y nombre, nunca el email ni el hash).
         private static IQueryable<CafeResponseDto> ProyectarAResponse(
             IQueryable<Cafe> cafes)
         {
@@ -88,7 +93,9 @@ namespace CafeApi.Repositories
                 Stock = c.Stock,
                 Precio = c.Precio,
                 ImagenUrl = c.ImagenUrl,
-                ImagenPublicId = c.ImagenPublicId
+                ImagenPublicId = c.ImagenPublicId,
+                UsuarioId = c.UsuarioId,
+                UsuarioNombre = c.Usuario!.Nombre
             });
         }
 

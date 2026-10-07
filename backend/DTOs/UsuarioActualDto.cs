@@ -1,6 +1,7 @@
 namespace CafeApi.DTOs
 {
-    // ✅ Datos del usuario autenticado, leídos de los claims del JWT (GET /api/auth/me).
+    // ✅ Datos del usuario autenticado (GET /api/auth/me).
+    // Se leen de la base de datos con el Id que viene en el JWT (claim NameIdentifier).
     public class UsuarioActualDto
     {
         public string Email { get; set; } = string.Empty;

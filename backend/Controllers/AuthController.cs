@@ -1,178 +1,75 @@
 using CafeApi.DTOs;
-using CafeApi.Models;
-using CafeApi.Seguridad;
-using Google.Apis.Auth;
+using CafeApi.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace CafeApi.Controllers
 {
-    [Route("api/[controller]")]
+    // ✅ Guía 1, paso 13: registro e inicio de sesión.
+    // Rutas: POST /api/auth/Register y POST /api/auth/Login.
     [ApiController]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
+        private const string MensajeUsuarioExiste = "El usuario ya existe.";
+        private const string MensajeCredencialesIncorrectas = "Usuario o contraseña incorrectos.";
 
-        public AuthController(IConfiguration configuration)
+        private readonly IUsuarioRepository _usuarioRepository;
+
+        public AuthController(IUsuarioRepository usuarioRepository)
         {
-            _configuration = configuration;
+            _usuarioRepository = usuarioRepository;
         }
 
-        // ✅ Cuentas fijas de prueba (todavía no hay tabla de usuarios).
-        // Para agregar un usuario autorizado basta con añadir una línea con su rol.
-        private static readonly (string Email, string Password, string Nombre, string Rol)[] CuentasDePrueba =
-        [
-            ("admin@cafeapi.com", "123456", "Administración Altura", Roles.Administrador),
-            ("cliente@cafeapi.com", "123456", "Cliente de prueba", Roles.Cliente),
-        ];
-
-        // ✅ LOGIN PARA PRUEBAS JWT Y ROLES
-        // Permite iniciar sesión como Administrador o Cliente.
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequestDto request)
+        // ✅ Adaptación 7: la guía responde Ok() siempre, incluso cuando el registro o el
+        // login fallan, y así el frontend no puede saber qué pasó. El repositorio sigue
+        // devolviendo un texto (como la guía) y aquí ese texto se traduce a un código HTTP:
+        //   Register: "El usuario ya existe." → 400; registrado → 200. Ambos con { mensaje }.
+        //   Login: "Usuario o contraseña incorrectos." → 401 { mensaje }; si no, es el token → 200 { token }.
+        // Los datos inválidos (correo mal escrito, contraseña corta) los rechaza [ApiController] con 400.
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] UsuarioDto item)
         {
-            // ✅ Busca la cuenta (el correo sin distinguir mayúsculas).
-            var cuenta = CuentasDePrueba.FirstOrDefault(c =>
-                string.Equals(c.Email, request.Email.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                c.Password == request.Password);
+            var mensaje = await _usuarioRepository.Registrar(item);
 
-            // ✅ Credenciales incorrectas.
-            if (cuenta.Email is null)
+            if (mensaje == MensajeUsuarioExiste)
             {
-                return Unauthorized("Credenciales inválidas.");
+                return BadRequest(new { mensaje });
             }
 
-            // ✅ Genera JWT con email, nombre y rol.
-            var token = GenerateJwt(cuenta.Email, cuenta.Nombre, cuenta.Rol);
-
-            // ✅ Construimos la respuesta utilizando DTO.
-            var response = new LoginResponseDto
-            {
-                Token = token,
-
-                Email = cuenta.Email,
-
-                Role = cuenta.Rol
-            };
-
-            return Ok(response);
+            return Ok(new { mensaje });
         }
 
-        // ✅ USUARIO ACTUAL
-        // Devuelve lo que dice el JWT recibido: correo, nombre y roles.
-        // El frontend lo usa para saber quién inició sesión.
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto item)
+        {
+            var resultado = await _usuarioRepository.Login(item);
+
+            if (resultado == MensajeCredencialesIncorrectas)
+            {
+                return Unauthorized(new { mensaje = resultado });
+            }
+
+            return Ok(new { token = resultado });
+        }
+
+        // ✅ Usuario actual: el Id sale del token y el resto se lee de la base de datos.
         [HttpGet("me")]
         [Authorize]
-        public ActionResult<UsuarioActualDto> Me()
+        public async Task<ActionResult<UsuarioActualDto>> Me()
         {
-            return Ok(new UsuarioActualDto
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var usuario = await _usuarioRepository.ObtenerPorId(userId);
+
+            // ✅ El token es válido pero el usuario ya no existe (por ejemplo, se borró).
+            if (usuario == null)
             {
-                Email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
-                Nombre = User.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
-                Roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList()
-            });
-        }
-
-
-        // ✅ LOGIN CON GOOGLE
-        [HttpPost("google")]
-        public async Task<IActionResult> GoogleLogin(
-        [FromBody] GoogleLoginRequest request)
-        {
-            GoogleJsonWebSignature.Payload payload;
-
-            try
-            {
-                var settings =
-                new GoogleJsonWebSignature.ValidationSettings
-                {
-                    Audience = new[]
-                {
-                 _configuration["Google:ClientId"]
-                }
-                };
-
-                payload =
-                await GoogleJsonWebSignature.ValidateAsync(
-                request.IdToken,
-                settings
-                );
-            }
-            catch (InvalidJwtException)
-            {
-                return Unauthorized(
-                "Token de Google inválido."
-                );
+                return Unauthorized();
             }
 
-            // ✅ Los usuarios Google entran inicialmente como Cliente.
-            var jwt = GenerateJwt(
-            payload.Email,
-            payload.Name,
-            Roles.Cliente
-            );
-
-            return Ok(new
-            {
-                token = jwt,
-                email = payload.Email,
-                name = payload.Name,
-                role = Roles.Cliente
-            });
-        }
-
-        // ✅ GENERADOR DE JWT CON ROLES
-        private string GenerateJwt(
-        string email,
-        string name,
-        string role)
-        {
-            // ✅ Claims incluidos dentro del JWT.
-            var claims = new[]
-            {
-            // ✅ Correo electrónico.
-            new Claim(ClaimTypes.Email, email),
- 
-            // ✅ Nombre del usuario.
-            new Claim(ClaimTypes.Name, name),
- 
-            // ✅ Rol del usuario.
-            new Claim(ClaimTypes.Role, role)
-            };
-
-            // ✅ Clave secreta utilizada para firmar el JWT.
-            var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(
-            _configuration["Jwt:Key"]!
-            )
-            );
-
-            // ✅ Algoritmo de firma.
-            var creds = new SigningCredentials(
-            key,
-            SecurityAlgorithms.HmacSha256
-            );
-
-            // ✅ Construcción del Token.
-            var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-            double.Parse(
-            _configuration["Jwt:ExpiresInMinutes"]!
-            )
-            ),
-            signingCredentials: creds
-            );
-
-            // ✅ Convertir JWT a string.
-            return new JwtSecurityTokenHandler()
-            .WriteToken(token);
+            return Ok(usuario);
         }
     }
 }

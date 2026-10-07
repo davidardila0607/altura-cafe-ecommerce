@@ -40,6 +40,11 @@ namespace CafeApi.Models
         // Se necesita para poder borrar la imagen después.
         public string? ImagenPublicId { get; set; }
 
+        // ✅ Guía 1, paso 2: dueño del café (el usuario que lo creó, leído del JWT).
+        public int UsuarioId { get; set; }
+
+        public Usuario? Usuario { get; set; }
+
         // ✅ Fecha de creación (UTC). La asigna AppDbContext.
         public DateTime FechaCreacion { get; set; }
 

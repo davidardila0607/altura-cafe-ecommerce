@@ -10,6 +10,7 @@ using CafeApi.Middleware;
 using CafeApi.Configurations;
 using CafeApi.Services;
 using CafeApi.Seguridad;
+using CafeApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,8 +79,10 @@ builder.Services.AddScoped<ICafeRepository, CafeRepository>();
 
 builder.Services.AddScoped<IProcesoRepository, ProcesoRepository>();
 
-// ⏳ ICartRepository/CartRepository e IUserRepository/UserRepository
-// no se registran: siguen basados en ADO.NET y el carrito está pendiente.
+// ✅ Guía 1, paso 9: registro, login y JWT.
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+
+// ⏳ ICartRepository/CartRepository no se registra: el carrito está pendiente.
 
 // ✅ Registro del servicio Cloudinary.
 builder.Services.AddScoped<
@@ -87,36 +90,38 @@ ICloudinaryService,
 CloudinaryService>();
 
 //
-// ===== JWT AUTHENTICATION =====
+// ===== JWT AUTHENTICATION (Guía 1, paso 8) =====
 //
 
+// ✅ Lee la sección "JwtSettings" para inyectarla con IOptions<JwtSettings> (UsuarioRepository).
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+
+var jwtSettings = builder.Configuration
+    .GetSection("JwtSettings")
+    .Get<JwtSettings>();
+
+// ✅ Cada petición con "Authorization: Bearer <token>" se valida así: mismo emisor,
+// misma audiencia, sin expirar y firmado con nuestra Key.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters =
-            new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-
-                ValidIssuer =
-                    builder.Configuration["Jwt:Issuer"],
-
-                ValidAudience =
-                    builder.Configuration["Jwt:Audience"],
-
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(
-                            builder.Configuration["Jwt:Key"]!
-                        )
-                    )
-            };
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings!.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings.Key))
+        };
     });
 
-// ✅ Autorización por políticas (ver Seguridad/Politicas.cs).
+builder.Services.AddAuthorization();
+
+// ✅ Adaptación 3: sobre AddAuthorization se conservan las políticas por rol
+// (GestionInventario = Administrador; ver Seguridad/Politicas.cs).
 Politicas.Registrar(builder.Services.AddAuthorizationBuilder());
 
 builder.Services.AddControllers();

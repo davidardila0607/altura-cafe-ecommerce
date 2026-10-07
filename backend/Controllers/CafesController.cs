@@ -7,6 +7,7 @@ using CafeApi.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace CafeApi.Controllers
 {
@@ -101,7 +102,7 @@ namespace CafeApi.Controllers
         }
 
         // ✅ GESTIÓN DE INVENTARIO
-        // Requiere JWT válido + la política GestionInventario (hoy: rol Administrador).
+        // Requiere JWT válido ([Authorize], Guía 1 paso 15) + la política GestionInventario (rol Administrador).
         [HttpPost]
         [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<ActionResult<CafeResponseDto>> Post(
@@ -138,12 +139,15 @@ namespace CafeApi.Controllers
                 ImagenPublicId = dto.ImagenPublicId
             };
 
+            // ✅ Guía 1, paso 14: el dueño del café es el usuario del token.
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
             int id;
 
             try
             {
                 // ✅ Guardamos la entidad en la base de datos.
-                id = await _cafeRepository.CreateAsync(cafe, cancellationToken);
+                id = await _cafeRepository.CreateAsync(cafe, userId, cancellationToken);
             }
             catch (DbUpdateException ex)
                 when (ex.EsViolacionDeUnicidad(CafeConfiguration.IndiceCafeUnico))
@@ -229,6 +233,7 @@ namespace CafeApi.Controllers
             cafe.Precio = dto.Precio;
             cafe.ImagenUrl = dto.ImagenUrl;
             cafe.ImagenPublicId = dto.ImagenPublicId;
+            // ✅ El PUT no cambia el dueño (UsuarioId): sigue siendo quien lo creó.
 
             try
             {

@@ -22,6 +22,9 @@ namespace CafeApi.Data
         // ✅ Tabla cafes.
         public DbSet<Cafe> Cafes => Set<Cafe>();
 
+        // ✅ Guía 1, paso 3: tabla usuario (nombre del DbSet igual a la guía).
+        public DbSet<Usuario> Usuario { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // ✅ Aplica todas las clases IEntityTypeConfiguration
