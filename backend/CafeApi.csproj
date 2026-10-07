@@ -22,4 +22,11 @@
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
 	</ItemGroup>
 
+	<!-- La configuración local (con secretos) y el ejemplo nunca se copian al publicar:
+	     en producción todo llega por variables de entorno (ver DEPLOY.md). -->
+	<ItemGroup>
+		<Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+		<Content Update="appsettings.example.json" CopyToPublishDirectory="Never" />
+	</ItemGroup>
+
 </Project>
