@@ -5,10 +5,11 @@ import { Cafe } from '../../../core/models/cafe';
 import { Variedad } from '../../../core/models/variedad';
 import { contarCafes, normalizarTexto } from '../../../core/utils/texto';
 import { EstadoError } from '../../../shared/estado-error/estado-error';
+import { Revelar } from '../../../shared/revelar/revelar';
 
 @Component({
   selector: 'app-variedades',
-  imports: [RouterLink, EstadoError],
+  imports: [RouterLink, EstadoError, Revelar],
   templateUrl: './variedades.html',
   styleUrl: './variedades.css',
 })
@@ -31,7 +32,6 @@ export class Variedades {
         nombre: v.nombre,
         clave: normalizarTexto(v.nombre),
         color: marca.color,
-        colorTexto: marca.colorTexto,
         texto: marca.texto || v.descripcion || '',
         conteo: cantidad ? contarCafes(cantidad) : null,
       };

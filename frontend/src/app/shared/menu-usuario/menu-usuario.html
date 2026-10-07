@@ -1,0 +1,43 @@
+@if (auth.sesion(); as sesion) {
+  <button
+    type="button"
+    class="avatar"
+    aria-controls="menu-cuenta"
+    [attr.aria-expanded]="abierto()"
+    [attr.aria-label]="'Cuenta de ' + sesion.nombre"
+    (click)="alternar()"
+  >
+    <span aria-hidden="true">{{ inicial() }}</span>
+  </button>
+
+  <div id="menu-cuenta" class="panel" [hidden]="!abierto()" data-testid="menu-cuenta">
+    <p class="nombre">{{ sesion.nombre }}</p>
+    <p class="email">{{ sesion.email }}</p>
+    <ul class="opciones">
+      @if (auth.tienePermiso('inventario.gestionar')) {
+        <li>
+          <a routerLink="/admin">
+            <i class="bi bi-sliders" aria-hidden="true"></i>
+            Panel de administración
+          </a>
+        </li>
+      }
+      <li>
+        <button type="button" (click)="salir()">
+          <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+          Cerrar sesión
+        </button>
+      </li>
+    </ul>
+  </div>
+} @else {
+  <a
+    class="boton-icono"
+    routerLink="/login"
+    [queryParams]="volver() === '/' ? {} : { volver: volver() }"
+    aria-label="Iniciar sesión"
+    title="Iniciar sesión"
+  >
+    <i class="bi bi-person" aria-hidden="true"></i>
+  </a>
+}

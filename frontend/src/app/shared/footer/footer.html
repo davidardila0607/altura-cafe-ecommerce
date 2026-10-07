@@ -1,15 +1,17 @@
-<footer class="pie">
+<footer class="pie sobre-oscuro">
+  <img class="cresta" src="paisaje/cresta-4.svg" alt="" width="1440" height="600" aria-hidden="true" />
+
   <div class="contenedor rejilla">
     <div class="marca">
       <a routerLink="/" class="enlace-marca" aria-label="Altura, ir al inicio">
         <app-logo tono="claro" />
       </a>
-      <p class="frase">Café de especialidad colombiano, tostado con intención.</p>
+      <p class="frase">Café de ladera colombiana, tostado en tandas pequeñas.</p>
     </div>
 
     <nav class="columna" aria-label="Tienda">
       <p class="titulo-columna">Tienda</p>
-      <ul>
+      <ul class="lista">
         <li><a routerLink="/">Inicio</a></li>
         <li><a routerLink="/productos">Nuestros cafés</a></li>
       </ul>
@@ -17,7 +19,7 @@
 
     <nav class="columna" aria-label="Cuenta">
       <p class="titulo-columna">Cuenta</p>
-      <ul>
+      <ul class="lista">
         <li><a routerLink="/login">Iniciar sesión</a></li>
         <li><a routerLink="/registro">Crear cuenta</a></li>
       </ul>
@@ -25,7 +27,8 @@
   </div>
 
   <div class="contenedor legal">
-    <p>© {{ anio }} Altura · Café de especialidad colombiano</p>
-    <p>Fotografías de Unsplash</p>
+    <p>© {{ anio }} Altura. Café de especialidad colombiano.</p>
+    <p>Fotografías de Unsplash · Mapa de Natural Earth</p>
+    <a class="acceso-admin" routerLink="/admin">Acceso administrador</a>
   </div>
 </footer>

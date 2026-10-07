@@ -1,9 +1,10 @@
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
 import { Component, computed, input, output } from '@angular/core';
-import { marcaVariedad } from '../../core/data/contenido-marca';
 import { Cafe } from '../../core/models/cafe';
 import { optimizarImagenCloudinary, srcsetCloudinary } from '../../core/utils/imagenes';
+import { EtiquetaCafe } from '../etiqueta-cafe/etiqueta-cafe';
+import { Inclinar } from '../movimiento/inclinar';
 
 // Formato de precios en pesos colombianos ("$ 42.000").
 registerLocaleData(localeEsCo, 'es-CO');
@@ -13,7 +14,7 @@ const STOCK_BAJO = 5;
 
 @Component({
   selector: 'app-tarjeta-cafe',
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, Inclinar, EtiquetaCafe],
   templateUrl: './tarjeta-cafe.html',
   styleUrl: './tarjeta-cafe.css',
   host: {
@@ -35,8 +36,8 @@ export class TarjetaCafe {
   /** Prioriza la carga de la imagen (primeras cards visibles). */
   readonly prioridad = input(false);
 
-  /** "Ver producto": el padre abre la vista rápida. */
-  readonly ver = output<number>();
+  /** "Ver producto": el padre abre la vista rápida con este café. */
+  readonly ver = output<Cafe>();
 
   /** Imagen de Cloudinary con f_auto,q_auto,w_600. */
   protected readonly imagen = computed(() => optimizarImagenCloudinary(this.cafe().imagenUrl));
@@ -47,7 +48,6 @@ export class TarjetaCafe {
       : '(min-width: 1200px) 320px, (min-width: 576px) 45vw, 100vw',
   );
 
-  protected readonly marca = computed(() => marcaVariedad(this.cafe().variedadNombre));
 
   protected readonly disponibilidad = computed(() => {
     const stock = this.cafe().stock;

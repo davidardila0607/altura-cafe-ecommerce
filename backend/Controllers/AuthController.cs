@@ -1,173 +1,75 @@
 using CafeApi.DTOs;
-using CafeApi.Models;
-using Google.Apis.Auth;
+using CafeApi.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace CafeApi.Controllers
 {
-    [Route("api/[controller]")]
+    // ✅ Guía 1, paso 13: registro e inicio de sesión.
+    // Rutas: POST /api/auth/Register y POST /api/auth/Login.
     [ApiController]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
+        private const string MensajeUsuarioExiste = "El usuario ya existe.";
+        private const string MensajeCredencialesIncorrectas = "Usuario o contraseña incorrectos.";
 
-        public AuthController(IConfiguration configuration)
+        private readonly IUsuarioRepository _usuarioRepository;
+
+        public AuthController(IUsuarioRepository usuarioRepository)
         {
-            _configuration = configuration;
+            _usuarioRepository = usuarioRepository;
         }
 
-        // ✅ LOGIN PARA PRUEBAS JWT Y ROLES
-        // Permite iniciar sesión como Administrador o Cliente.
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequestDto request)
+        // ✅ Adaptación 7: la guía responde Ok() siempre, incluso cuando el registro o el
+        // login fallan, y así el frontend no puede saber qué pasó. El repositorio sigue
+        // devolviendo un texto (como la guía) y aquí ese texto se traduce a un código HTTP:
+        //   Register: "El usuario ya existe." → 400; registrado → 200. Ambos con { mensaje }.
+        //   Login: "Usuario o contraseña incorrectos." → 401 { mensaje }; si no, es el token → 200 { token }.
+        // Los datos inválidos (correo mal escrito, contraseña corta) los rechaza [ApiController] con 400.
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] UsuarioDto item)
         {
-            // ✅ Almacenará el rol del usuario autenticado.
-            string role;
+            var mensaje = await _usuarioRepository.Registrar(item);
 
-            // ✅ Usuario Administrador.
-            if (
-            request.Email == "admin@cafeapi.com" &&
-            request.Password == "123456"
-            )
+            if (mensaje == MensajeUsuarioExiste)
             {
-                role = "Administrador";
+                return BadRequest(new { mensaje });
             }
 
-            // ✅ Usuario Cliente.
-            else if (
-            request.Email == "cliente@cafeapi.com" &&
-            request.Password == "123456"
-            )
-            {
-                role = "Cliente";
-            }
-
-            // ✅ Credenciales incorrectas.
-            else
-            {
-                return Unauthorized("Credenciales inválidas.");
-            }
-
-            // ✅ Genera JWT incluyendo el rol.
-            var token = GenerateJwt(
-            request.Email,
-            request.Email,
-            role
-            );
-
-            // ✅ Construimos la respuesta utilizando DTO.
-            var response = new LoginResponseDto
-            {
-                Token = token,
-
-                Email = request.Email,
-
-                Role = role
-            };
-
-            return Ok(response);
+            return Ok(new { mensaje });
         }
 
-
-        // ✅ LOGIN CON GOOGLE
-        [HttpPost("google")]
-        public async Task<IActionResult> GoogleLogin(
-        [FromBody] GoogleLoginRequest request)
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto item)
         {
-            GoogleJsonWebSignature.Payload payload;
+            var resultado = await _usuarioRepository.Login(item);
 
-            try
+            if (resultado == MensajeCredencialesIncorrectas)
             {
-                var settings =
-                new GoogleJsonWebSignature.ValidationSettings
-                {
-                    Audience = new[]
-                {
-                 _configuration["Google:ClientId"]
-                }
-                };
-
-                payload =
-                await GoogleJsonWebSignature.ValidateAsync(
-                request.IdToken,
-                settings
-                );
-            }
-            catch (InvalidJwtException)
-            {
-                return Unauthorized(
-                "Token de Google inválido."
-                );
+                return Unauthorized(new { mensaje = resultado });
             }
 
-            // ✅ Los usuarios Google entran inicialmente como Cliente.
-            var jwt = GenerateJwt(
-            payload.Email,
-            payload.Name,
-            "Cliente"
-            );
-
-            return Ok(new
-            {
-                token = jwt,
-                email = payload.Email,
-                name = payload.Name,
-                role = "Cliente"
-            });
+            return Ok(new { token = resultado });
         }
 
-        // ✅ GENERADOR DE JWT CON ROLES
-        private string GenerateJwt(
-        string email,
-        string name,
-        string role)
+        // ✅ Usuario actual: el Id sale del token y el resto se lee de la base de datos.
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<ActionResult<UsuarioActualDto>> Me()
         {
-            // ✅ Claims incluidos dentro del JWT.
-            var claims = new[]
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var usuario = await _usuarioRepository.ObtenerPorId(userId);
+
+            // ✅ El token es válido pero el usuario ya no existe (por ejemplo, se borró).
+            if (usuario == null)
             {
-            // ✅ Correo electrónico.
-            new Claim(ClaimTypes.Email, email),
- 
-            // ✅ Nombre del usuario.
-            new Claim(ClaimTypes.Name, name),
- 
-            // ✅ Rol del usuario.
-            new Claim(ClaimTypes.Role, role)
-            };
+                return Unauthorized();
+            }
 
-            // ✅ Clave secreta utilizada para firmar el JWT.
-            var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(
-            _configuration["Jwt:Key"]!
-            )
-            );
-
-            // ✅ Algoritmo de firma.
-            var creds = new SigningCredentials(
-            key,
-            SecurityAlgorithms.HmacSha256
-            );
-
-            // ✅ Construcción del Token.
-            var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-            double.Parse(
-            _configuration["Jwt:ExpiresInMinutes"]!
-            )
-            ),
-            signingCredentials: creds
-            );
-
-            // ✅ Convertir JWT a string.
-            return new JwtSecurityTokenHandler()
-            .WriteToken(token);
+            return Ok(usuario);
         }
     }
 }

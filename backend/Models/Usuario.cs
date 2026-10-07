@@ -1,24 +1,23 @@
-﻿namespace CafeApi.Models
+namespace CafeApi.Models
 {
-    // ✅ Entidad que representa un usuario de CafeApi.
+    // ✅ Guía 1, paso 1: usuario registrado en la tienda (tabla "usuario").
     public class Usuario
     {
-        // ✅ Identificador único.
         public int Id { get; set; }
 
-        // ✅ Correo electrónico.
-        public string Email { get; set; } = string.Empty;
-
-        // ✅ Nombre visible.
         public string Nombre { get; set; } = string.Empty;
 
-        // ✅ Rol asignado.
-        public string Role { get; set; } = string.Empty;
+        // ✅ Se guarda en minúsculas y sin espacios (ver UsuarioRepository).
+        public string Email { get; set; } = string.Empty;
 
-        // ✅ Indica si el usuario inició sesión mediante Google.
-        public bool EsGoogleUser { get; set; }
+        // ✅ Nunca la contraseña en texto plano: es el hash de PasswordHasher.
+        public string Password { get; set; } = string.Empty;
 
-        // ✅ Fecha de creación del usuario.
-        public DateTime FechaCreacion { get; set; }
+        // ✅ Adaptación 1 (no está en la guía): el panel y la política
+        // GestionInventario dependen del rol ("Administrador" o "Cliente").
+        public string Rol { get; set; } = "Cliente";
+
+        // ✅ Cafés que creó este usuario (en la guía: Productos).
+        public ICollection<Cafe> Cafes { get; set; } = new List<Cafe>();
     }
 }

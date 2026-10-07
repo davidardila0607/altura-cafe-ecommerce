@@ -1,11 +1,12 @@
-<article class="tarjeta" [class.agotada]="disponibilidad().tipo === 'agotado'">
-  <div class="tarjeta-imagen">
+<article class="tarjeta" appInclinar [class.agotada]="disponibilidad().tipo === 'agotado'">
+  <div class="imagen">
     @if (imagen(); as url) {
       <img
         [src]="url"
         [attr.srcset]="srcset()"
         [attr.sizes]="sizes()"
-        [alt]="'Bolsa de café ' + cafe().nombre + ', variedad ' + cafe().variedadNombre + ', ' + cafe().presentacionGramos + ' g'"
+        [attr.data-bolsa]="cafe().id"
+        [alt]="'Bolsa de café ' + cafe().nombre + ', variedad ' + cafe().variedadNombre + ', proceso ' + cafe().procesoNombre + ', ' + cafe().presentacionGramos + ' g'"
         width="600"
         height="750"
         [attr.loading]="prioridad() ? 'eager' : 'lazy'"
@@ -17,34 +18,38 @@
     }
   </div>
 
-  <div class="tarjeta-cuerpo">
-    <p class="variedad" [style.color]="marca().colorTexto">
-      <span class="muestra" [style.background-color]="marca().color" aria-hidden="true"></span>
-      {{ cafe().variedadNombre }}
-      <span class="separador" aria-hidden="true">·</span>
+  <div class="cuerpo">
+    <!-- Cada fila ocupa una sola línea: así todas las cards de la grilla quedan alineadas. -->
+    <div class="fila">
+      <app-etiqueta-cafe tipo="variedad" [nombre]="cafe().variedadNombre" />
       <span class="gramos">{{ cafe().presentacionGramos }} g</span>
-    </p>
+    </div>
 
-    <h3 class="nombre">{{ cafe().nombre }}</h3>
+    <h3 class="nombre" [title]="cafe().nombre">{{ cafe().nombre }}</h3>
 
-    <p class="origen">
-      <i class="bi bi-geo-alt" aria-hidden="true"></i>
-      <span class="visually-hidden">Origen:</span>
-      {{ cafe().origen }}
-    </p>
+    <div class="fila">
+      <p class="origen">
+        <i class="bi bi-geo-alt" aria-hidden="true"></i>
+        <span class="visually-hidden">Origen:</span>
+        <span class="recorte">{{ cafe().origen }}</span>
+      </p>
+      <app-etiqueta-cafe tipo="proceso" [nombre]="cafe().procesoNombre" />
+    </div>
 
     <div class="pie">
       <p class="precio">{{ cafe().precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</p>
       <p class="disponibilidad" [attr.data-tipo]="disponibilidad().tipo">{{ disponibilidad().texto }}</p>
     </div>
 
+    <!-- El botón se extiende sobre toda la card (::after): cualquier clic en ella abre el producto. -->
     <button
       type="button"
-      class="btn btn-outline-dark ver"
+      class="ver"
       [attr.aria-label]="'Ver producto ' + cafe().nombre + ' ' + cafe().presentacionGramos + ' g'"
-      (click)="ver.emit(cafe().id)"
+      (click)="ver.emit(cafe())"
     >
       Ver producto
+      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
     </button>
   </div>
 </article>

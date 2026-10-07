@@ -15,7 +15,23 @@ export function cambiosDeMedia(consulta: string): Observable<boolean> {
   return fromEvent<MediaQueryListEvent>(window.matchMedia(consulta), 'change').pipe(map((e) => e.matches));
 }
 
+/**
+ * true en un navegador real. En las pruebas unitarias (jsdom) no hay matchMedia y GSAP
+ * fallaría al iniciar: ahí las animaciones de scroll simplemente no se crean.
+ */
+export function navegadorCompleto(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+}
+
 /** true si el usuario pidió movimiento reducido. */
 export function movimientoReducido(): boolean {
   return coincideMedia('(prefers-reduced-motion: reduce)');
+}
+
+/**
+ * true si hay un mouse o trackpad (puntero fino que puede "pasar por encima").
+ * En pantallas táctiles es false: ahí no existen la inclinación ni el efecto magnético.
+ */
+export function punteroFino(): boolean {
+  return coincideMedia('(hover: hover) and (pointer: fine)') && !movimientoReducido();
 }

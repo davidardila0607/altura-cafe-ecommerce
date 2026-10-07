@@ -1,49 +1,55 @@
-<div class="auth">
-  <app-panel-marca />
+<div class="acceso">
+  <app-paisaje-acceso class="fondo" frase="Empieza el ascenso." />
 
-  <main class="auth-contenido">
-    <form class="auth-formulario" [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
-      <h1 class="auth-titulo">Crear cuenta</h1>
-      <p class="auth-subtitulo">Regístrate para comprar tus cafés favoritos.</p>
+  <main class="tarjeta-acceso">
+    <form [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+      <h1 class="titulo-acceso">Crear cuenta</h1>
+      <p class="subtitulo-acceso">Regístrate para comprar tus cafés favoritos.</p>
 
-      <div class="auth-campo">
-        <label for="registro-nombre" class="form-label">Nombre completo</label>
-        <input
-          id="registro-nombre"
-          type="text"
-          class="form-control"
-          formControlName="nombre"
-          autocomplete="name"
-          [class.is-invalid]="mostrarError('nombre')"
-          [attr.aria-invalid]="mostrarError('nombre')"
-          aria-describedby="registro-nombre-error"
-        />
-        <div id="registro-nombre-error" class="auth-error" aria-live="polite">
+      <div class="campo-acceso" [class.valido]="esValido('nombre')">
+        <label for="registro-nombre" class="etiqueta">Nombre completo</label>
+        <div class="control">
+          <input
+            id="registro-nombre"
+            type="text"
+            class="campo"
+            formControlName="nombre"
+            autocomplete="name"
+            [attr.aria-invalid]="mostrarError('nombre')"
+            aria-describedby="registro-nombre-error"
+          />
+          <i class="bi bi-check2 marca-valido" aria-hidden="true"></i>
+          <span class="linea" aria-hidden="true"></span>
+        </div>
+        <div id="registro-nombre-error" class="mensaje-error" aria-live="polite">
           @if (mostrarError('nombre')) {
             <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
             @if (formulario.controls.nombre.hasError('required')) {
               Escribe tu nombre completo.
             } @else {
-              El nombre debe tener al menos 3 caracteres.
+              El nombre no puede superar los 100 caracteres.
             }
           }
         </div>
       </div>
 
-      <div class="auth-campo">
-        <label for="registro-correo" class="form-label">Correo electrónico</label>
-        <input
-          id="registro-correo"
-          type="email"
-          class="form-control"
-          formControlName="correo"
-          autocomplete="email"
-          placeholder="tucorreo@ejemplo.com"
-          [class.is-invalid]="mostrarError('correo')"
-          [attr.aria-invalid]="mostrarError('correo')"
-          aria-describedby="registro-correo-error"
-        />
-        <div id="registro-correo-error" class="auth-error" aria-live="polite">
+      <div class="campo-acceso" [class.valido]="esValido('correo')">
+        <label for="registro-correo" class="etiqueta">Correo electrónico</label>
+        <div class="control">
+          <input
+            id="registro-correo"
+            type="email"
+            class="campo"
+            formControlName="correo"
+            autocomplete="email"
+            placeholder="tucorreo@ejemplo.com"
+            [attr.aria-invalid]="mostrarError('correo')"
+            aria-describedby="registro-correo-error"
+          />
+          <i class="bi bi-check2 marca-valido" aria-hidden="true"></i>
+          <span class="linea" aria-hidden="true"></span>
+        </div>
+        <div id="registro-correo-error" class="mensaje-error" aria-live="polite">
           @if (mostrarError('correo')) {
             <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
             @if (formulario.controls.correo.hasError('required')) {
@@ -55,22 +61,21 @@
         </div>
       </div>
 
-      <div class="auth-campo">
-        <label for="registro-contrasena" class="form-label">Contraseña</label>
-        <div class="input-group">
+      <div class="campo-acceso">
+        <label for="registro-contrasena" class="etiqueta">Contraseña</label>
+        <div class="control">
           <input
             id="registro-contrasena"
-            class="form-control"
+            class="campo"
             formControlName="contrasena"
             autocomplete="new-password"
             [type]="mostrarContrasena() ? 'text' : 'password'"
-            [class.is-invalid]="mostrarError('contrasena')"
             [attr.aria-invalid]="mostrarError('contrasena')"
             aria-describedby="registro-contrasena-ayuda registro-contrasena-error"
           />
           <button
             type="button"
-            class="btn boton-ver"
+            class="boton-icono ver-contrasena"
             [attr.aria-label]="mostrarContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
             [attr.aria-pressed]="mostrarContrasena()"
             aria-controls="registro-contrasena"
@@ -78,11 +83,22 @@
           >
             <i class="bi" [class.bi-eye]="!mostrarContrasena()" [class.bi-eye-slash]="mostrarContrasena()" aria-hidden="true"></i>
           </button>
+          <span class="linea" aria-hidden="true"></span>
         </div>
-        @if (!mostrarError('contrasena')) {
-          <div id="registro-contrasena-ayuda" class="auth-ayuda">Mínimo {{ longitudMinima }} caracteres.</div>
-        }
-        <div id="registro-contrasena-error" class="auth-error" aria-live="polite">
+
+        <!-- Medidor de seguridad: cuatro segmentos que se llenan según lo que se escribe. -->
+        <div class="medidor" [style.--nivel-color]="nivel().color" aria-hidden="true">
+          @for (n of [1, 2, 3, 4]; track n) {
+            <span [class.lleno]="nivel().valor >= n"></span>
+          }
+        </div>
+        <p id="registro-contrasena-ayuda" class="ayuda" aria-live="polite">
+          Mínimo {{ longitudMinima }} caracteres.
+          @if (nivel().valor > 0) {
+            Seguridad: <strong>{{ nivel().texto }}</strong>.
+          }
+        </p>
+        <div id="registro-contrasena-error" class="mensaje-error" aria-live="polite">
           @if (mostrarError('contrasena')) {
             <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
             @if (formulario.controls.contrasena.hasError('required')) {
@@ -94,22 +110,21 @@
         </div>
       </div>
 
-      <div class="auth-campo">
-        <label for="registro-confirmacion" class="form-label">Confirmar contraseña</label>
-        <div class="input-group">
+      <div class="campo-acceso">
+        <label for="registro-confirmacion" class="etiqueta">Confirmar contraseña</label>
+        <div class="control">
           <input
             id="registro-confirmacion"
-            class="form-control"
+            class="campo"
             formControlName="confirmacion"
             autocomplete="new-password"
             [type]="mostrarConfirmacion() ? 'text' : 'password'"
-            [class.is-invalid]="mostrarError('confirmacion')"
             [attr.aria-invalid]="mostrarError('confirmacion')"
             aria-describedby="registro-confirmacion-error"
           />
           <button
             type="button"
-            class="btn boton-ver"
+            class="boton-icono ver-contrasena"
             [attr.aria-label]="mostrarConfirmacion() ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'"
             [attr.aria-pressed]="mostrarConfirmacion()"
             aria-controls="registro-confirmacion"
@@ -117,8 +132,9 @@
           >
             <i class="bi" [class.bi-eye]="!mostrarConfirmacion()" [class.bi-eye-slash]="mostrarConfirmacion()" aria-hidden="true"></i>
           </button>
+          <span class="linea" aria-hidden="true"></span>
         </div>
-        <div id="registro-confirmacion-error" class="auth-error" aria-live="polite">
+        <div id="registro-confirmacion-error" class="mensaje-error" aria-live="polite">
           @if (mostrarError('confirmacion')) {
             <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
             @if (formulario.controls.confirmacion.hasError('required')) {
@@ -130,16 +146,18 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary auth-enviar">Registrarse</button>
+      <div class="mensaje-error" role="alert">
+        @if (error(); as mensaje) {
+          <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+          {{ mensaje }}
+        }
+      </div>
 
-      @if (aviso(); as mensaje) {
-        <div class="auth-aviso" role="status">
-          <i class="bi bi-info-circle" aria-hidden="true"></i>
-          <span>{{ mensaje }}</span>
-        </div>
-      }
+      <button type="submit" class="boton boton-primario enviar" [disabled]="enviando()">
+        {{ enviando() ? 'Creando cuenta…' : 'Registrarse' }}
+      </button>
 
-      <p class="auth-alterno">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
+      <p class="alterno">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
     </form>
   </main>
 </div>

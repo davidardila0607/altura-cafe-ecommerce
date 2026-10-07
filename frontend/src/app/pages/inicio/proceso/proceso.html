@@ -1,32 +1,31 @@
-<section id="proceso" class="seccion" tabindex="-1" aria-labelledby="proceso-titulo">
-  <div class="contenedor">
-    <header class="encabezado">
-      <h2 id="proceso-titulo" class="titulo-seccion">De la montaña a tu taza</h2>
-      <p class="bajada">
-        Cuatro momentos separan una ladera colombiana de tu cocina. En cada uno se decide algo de lo que vas a
-        sentir en la taza.
-      </p>
-    </header>
-
-    <ol class="pasos">
+<!--
+  En escritorio (con movimiento) la sección se "ancla": queda fija en pantalla mientras el
+  scroll vertical mueve la pista de fotos hacia la izquierda. En móvil o con movimiento
+  reducido es una fila que se desliza con el dedo (scroll horizontal con imán).
+-->
+<section #seccion id="proceso" class="proceso" tabindex="-1" aria-labelledby="proceso-titulo">
+  <div class="pegajoso">
+    <ol #pista class="pista" tabindex="0" aria-label="Pasos del proceso, de la montaña a la taza">
+      <li class="intro">
+        <h2 id="proceso-titulo" class="titulo-seccion">De la montaña a tu taza</h2>
+        <p class="bajada">Cuatro momentos separan una ladera colombiana de tu cocina. En cada uno se decide algo de lo que vas a sentir en la taza.</p>
+      </li>
       @for (paso of pasos; track paso.titulo) {
-        <li class="paso" appRevelar>
-          <figure class="foto revelar-imagen">
+        <li class="paso">
+          <figure class="foto">
             <img
               [src]="paso.src"
               [attr.srcset]="paso.srcset"
-              sizes="(min-width: 992px) 40vw, 100vw"
+              sizes="(min-width: 900px) 34vw, 78vw"
               [alt]="paso.foto.alt"
               width="1200"
-              height="1200"
+              height="1500"
               loading="lazy"
               decoding="async"
             />
           </figure>
-          <div class="texto revelar-texto">
-            <h3 class="nombre-paso">{{ paso.titulo }}</h3>
-            <p>{{ paso.texto }}</p>
-          </div>
+          <h3 class="nombre-paso">{{ paso.titulo }}</h3>
+          <p class="texto-paso">{{ paso.texto }}</p>
         </li>
       }
     </ol>

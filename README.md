@@ -3,7 +3,7 @@
 E-commerce de café de especialidad colombiano **Altura**:
 
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
-- **frontend/**: aplicación Angular 22 (`altura-web`): Inicio editorial, catálogo de cafés con filtros y vista rápida, e inicio de sesión y registro (visuales).
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT) y un **panel de administración** de inventario en `/admin` para el rol Administrador.
 
 Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (rama principal: `main`).
 
@@ -11,7 +11,7 @@ Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (rama prin
 
 ## 🚀 Inicio rápido (si acabas de clonar el repo)
 
-**Stack:** ASP.NET Core 10 · EF Core 10 + PostgreSQL 17 (Npgsql) · JWT · Cloudinary · Angular 22 · Bootstrap 5 (solo CSS) · Vitest · Playwright.
+**Stack:** ASP.NET Core 10 · EF Core 10 + PostgreSQL 17 (Npgsql) · JWT · Cloudinary · Angular 22 · CSS propio + GSAP (ScrollTrigger) · Vitest · Playwright + axe-core.
 
 **Requisitos:** .NET SDK 10, PostgreSQL 17 en `localhost:5432`, Node.js 24 / npm 11 y una cuenta de Cloudinary (gratuita).
 
@@ -23,8 +23,8 @@ cd altura-cafe-ecommerce
 # 2. Configuración local (este archivo está en .gitignore: nunca lo subas)
 cd backend
 Copy-Item appsettings.example.json appsettings.Development.json
-#    Rellena: contraseña de PostgreSQL, Google:ClientId, una Jwt:Key nueva
-#    y las credenciales de Cloudinary (detalle en el paso 2 de abajo).
+#    Rellena: contraseña de PostgreSQL, una JwtSettings:Key nueva, tu correo en
+#    Admin:Correos y las credenciales de Cloudinary (detalle en el paso 2 de abajo).
 
 # 3. Crear la base cafeapi_dev con las migraciones de EF Core
 dotnet tool restore
@@ -33,7 +33,8 @@ dotnet ef database update
 # 4. Levantar la API (déjala corriendo) → http://localhost:5031/swagger
 dotnet run --launch-profile http
 
-# 5. En otra terminal, desde backend/: cargar los 6 cafés de ejemplo
+# 5. Regístrate con POST /api/auth/Register en Swagger (paso 4b de abajo).
+#    Luego, en otra terminal desde backend/, carga los 25 cafés del catálogo:
 powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1
 powershell -ExecutionPolicy Bypass -File .\seed\subir-imagenes-sitio.ps1
 
@@ -43,9 +44,9 @@ npm install
 npm start
 ```
 
-- `seed-productos.ps1` pide el correo y la contraseña de la cuenta Administrador (cuentas de prueba definidas en `backend/Controllers/AuthController.cs`).
+- `seed-productos.ps1` pide el correo y la contraseña de **tu** cuenta: debe ser Administrador (su correo en `Admin:Correos` antes de registrarte). Los cafés quedan a tu nombre.
 - El frontend debe usar el puerto **4200**: es el único origen permitido por CORS.
-- **No reutilices** valores de `Jwt:Key` que aparezcan en el historial de Git: genera una clave propia.
+- **No reutilices** claves JWT que aparezcan en el historial de Git: genera una `JwtSettings:Key` propia.
 
 Cada paso está explicado en detalle en [Cómo levantar el proyecto en local](#-cómo-levantar-el-proyecto-en-local-paso-a-paso). La guía técnica completa (arquitectura, decisiones y pendientes) está en `CLAUDE.md`.
 
@@ -59,7 +60,7 @@ altura-cafe-ecommerce
 │   ├── .config/              dotnet-ef como herramienta local
 │   ├── seed/                 Productos de ejemplo (script + imágenes) y fotos del sitio
 │   └── appsettings.example.json
-├── frontend/                 Aplicación Angular (src/, e2e/)
+├── frontend/                 Aplicación Angular (src/, public/, e2e/, herramientas/)
 ├── CLAUDE.md                 Guía técnica detallada (arquitectura, decisiones, pendientes)
 ├── README.md
 └── CHANGELOG.md
@@ -100,15 +101,15 @@ Abre `appsettings.Development.json` y rellena:
 | Clave | Qué poner |
 |---|---|
 | `ConnectionStrings:CafeDatabase` | `Host=localhost;Port=5432;Database=cafeapi_dev;Username=postgres;Password=TU_CONTRASEÑA` |
-| `Google:ClientId` | Client ID de Google del proyecto |
-| `Jwt:Key` | Clave aleatoria de 32 bytes en Base64 (ver abajo) |
-| `Jwt:Issuer` / `Jwt:Audience` / `Jwt:ExpiresInMinutes` | `CafeApi` / `CafeApiUsers` / `60` |
+| `JwtSettings:Key` | Clave secreta para firmar los JWT: 64 bytes aleatorios en Base64 (ver abajo). Reemplaza `CLAVE_SECRETA_DEL_PROYECTO` |
+| `JwtSettings:Issuer` / `Audience` / `DurationInMinutes` | `EcommerceApi` / `EcommerceAngular` / `60` (ya vienen en el ejemplo) |
+| `Admin:Correos` | Los correos que deben registrarse como **Administrador**, por ejemplo `["tu-correo@ejemplo.com"]`. Cualquier otro correo queda como Cliente |
 | `CloudinarySettings:CloudName` / `ApiKey` / `ApiSecret` | Credenciales de tu cuenta de Cloudinary |
 
-Para generar la `Jwt:Key` en PowerShell:
+Para generar la `JwtSettings:Key` en PowerShell (copia el resultado en `appsettings.Development.json`; no lo compartas ni lo subas a Git):
 
 ```powershell
-$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
+$b = New-Object byte[] 64; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
 ```
 
 ### 3. Crear la base de datos
@@ -120,7 +121,7 @@ dotnet tool restore
 dotnet ef database update
 ```
 
-Esto crea la base `cafeapi_dev` (si no existe), las tablas y las variedades iniciales (Castillo, Geisha y Moka).
+Esto crea la base `cafeapi_dev` (si no existe), las tablas (incluida `usuario`), las **9 variedades** (Castillo, Caturra, Colombia, Típica, Tabi, Bourbon Rojo, Bourbon Amarillo, Bourbon Rosado y Geisha) y los **3 procesos** (Lavado, Honey y Fermentado).
 
 ### 4. Ejecutar la API
 
@@ -135,6 +136,20 @@ dotnet run --launch-profile http
 
 Deja esta terminal abierta.
 
+### 4b. Registrarte e iniciar sesión
+
+En Swagger (http://localhost:5031/swagger):
+
+1. **POST /api/auth/Register** → *Try it out* →
+   ```json
+   { "nombre": "Tu nombre", "email": "tu-correo@ejemplo.com", "password": "una-contraseña" }
+   ```
+   La contraseña debe tener 6 caracteres o más. Respuesta **200** `{ "mensaje": "Usuario registrado correctamente." }`; si el correo ya existe, **400** `{ "mensaje": "El usuario ya existe." }`. Si tu correo está en `Admin:Correos`, la cuenta queda como **Administrador**.
+2. **POST /api/auth/Login** con el mismo correo y contraseña → **200** `{ "token": "eyJ…" }` (con datos incorrectos, **401** "Usuario o contraseña incorrectos.").
+3. Opcional: **Authorize** → pega solo el token → **GET /api/auth/me** muestra tu nombre y tu rol.
+
+También puedes registrarte desde la tienda en http://localhost:4200/registro e iniciar sesión en `/login`. ¿Te registraste antes de poner tu correo en `Admin:Correos`? Cambia el rol en la base de datos (ver CLAUDE.md, sección "Guía 1") y vuelve a iniciar sesión.
+
 ### 5. Cargar los productos de ejemplo
 
 Con la API corriendo, abre **otra terminal** y, desde `backend/`:
@@ -143,9 +158,18 @@ Con la API corriendo, abre **otra terminal** y, desde `backend/`:
 powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1
 ```
 
-El script pide el correo y la contraseña de la cuenta **Administrador**. Después sube las 6 imágenes de `seed/imagenes/` a Cloudinary y crea los 6 cafés de ejemplo. Es idempotente: si un café ya existe, lo omite sin subir su imagen, así que puedes ejecutarlo varias veces. Para usar otra URL de la API: `-ApiBaseUrl http://localhost:5031/api`.
+El script pide el correo y la contraseña de tu cuenta **Administrador** (la contraseña no se ve al escribirla). Inicia sesión con `POST /api/auth/Login`, así que cada café queda con tu nombre como dueño. Lee el catálogo de `seed/catalogo.json` (25 cafés de Santander, Huila, Nariño, Magdalena y Cauca, cada uno con variedad, proceso, presentación, stock y precio), sube su imagen de `seed/imagenes/` a Cloudinary y crea el café. Es idempotente: si un café ya existe (mismo nombre, variedad, proceso y presentación), lo omite sin subir su imagen, así que puedes ejecutarlo varias veces. Para usar otra URL de la API: `-ApiBaseUrl http://localhost:5031/api`.
 
-Comprueba el resultado en http://localhost:5031/api/cafes: deben aparecer 6 cafés con imágenes de `res.cloudinary.com`.
+Comprueba el resultado en http://localhost:5031/api/cafes: deben aparecer 25 cafés con imágenes de `res.cloudinary.com`.
+
+**Regenerar las imágenes de producto** (opcional; ya están en el repositorio). Desde `frontend/`, con `npm install` hecho:
+
+```powershell
+node herramientas/generar-bolsas.mjs        # las 25
+node herramientas/generar-bolsas.mjs 09 10  # solo las que empiezan por 09 y 10
+```
+
+Dibuja cada bolsa a partir de `catalogo.json` y escribe el SVG y el PNG (1600×1600, < 600 kB) en `backend/seed/imagenes/`. Luego súbelas con `-ActualizarImagenes` (abajo).
 
 **¿Cambiaron las imágenes de `seed/imagenes/`?** Para reemplazar las imágenes de los cafés que ya existen (conservando sus datos), usa:
 
@@ -157,7 +181,7 @@ Sube cada imagen nueva y actualiza el café con `PUT /api/cafes/{id}`; la API bo
 
 ### 5b. Subir las fotografías del sitio
 
-El Inicio, el Login y el Registro usan fotos de Unsplash alojadas en tu Cloudinary (carpeta `sitio`). Desde `backend/`:
+El Inicio (cielo del hero, proceso y cierre) usa fotos de Unsplash alojadas en tu Cloudinary (carpeta `sitio`). Desde `backend/`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\seed\subir-imagenes-sitio.ps1
@@ -187,7 +211,16 @@ npx playwright install chromium    # solo la primera vez
 npm run e2e                        # pruebas end-to-end (Playwright)
 ```
 
-Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
+Las e2e corren dos veces: con animaciones y con "reducir movimiento". Incluyen axe-core (accesibilidad). Las capturas y un video corto quedan en `frontend/e2e/capturas/` (ignorada por Git).
+
+Las pruebas de **usuarios y del panel** necesitan una cuenta Administrador de pruebas en variables de entorno. Su correo debe estar en `Admin:Correos` (por ejemplo `e2e-admin@altura.test`); si la cuenta no existe, las pruebas la registran. Sin las variables, esas pruebas se omiten:
+
+```powershell
+$env:ALTURA_ADMIN_EMAIL = 'e2e-admin@altura.test'; $env:ALTURA_ADMIN_PASSWORD = '<una contraseña>'
+npm run e2e
+```
+
+Registran un Cliente nuevo desde `/registro`, y crean y borran un café, una variedad y una imagen en Cloudinary (todo con "e2e" en el nombre). Los usuarios de prueba se borran después en PostgreSQL: `DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';`.
 
 ---
 
@@ -195,18 +228,27 @@ Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
 
 | Ruta | Vista |
 |---|---|
-| `/` | Inicio: hero, selección de la casa (3 cafés de la API), proceso "De la montaña a tu taza", mapa de orígenes, variedades y cierre |
-| `/productos` | Catálogo: filtros por variedad, presentación, origen y disponibilidad, orden, búsqueda y vista rápida |
-| `/login` | Iniciar sesión (solo visual) |
-| `/registro` | Crear cuenta (solo visual) |
+| `/` | Inicio "Ascenso": hero con la montaña en capas, selección de la casa (3 cafés de la API), proceso "De la montaña a tu taza" (galería horizontal), cinta de notas de cata, mapa de orígenes, variedades y cierre. Un altímetro marca la altura de cada sección |
+| `/productos` | Catálogo: filtros en listas (variedad, proceso, origen) y presentación, disponibilidad, orden, búsqueda, bloque de los tres procesos arriba de la grilla y vista rápida |
+| `/login` | Iniciar sesión (`POST /api/auth/Login`); vuelve a la página anterior |
+| `/registro` | Crear cuenta (`POST /api/auth/Register`) |
+| `/admin/inventario` · `/admin/variedades` | Panel: cafés (con imagen) y variedades |
 
-- Productos, variedades y presentaciones vienen de la API; nada de eso está escrito en el código.
-- El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen o variedad sin importar tildes ni mayúsculas.
-- Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=geisha&presentacion=500`): se pueden compartir y sobreviven a recargar.
-- "Ver producto" abre una vista rápida (panel lateral en escritorio, hoja inferior en móvil) con todos los datos del café. "Agregar al carrito" aparece deshabilitado ("Próximamente").
+- Productos, variedades, procesos y presentaciones vienen de la API; nada de eso está escrito en el código (solo los textos de marca y los colores de cada variedad y proceso).
+- El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen, variedad o proceso sin importar tildes ni mayúsculas (por ejemplo, "honey" o "narino").
+- Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=caturra&proceso=lavado&presentacion=500`): se pueden compartir y sobreviven a recargar. Cada café muestra su variedad (muestra de color) y su proceso (etiqueta con ícono).
+- "Ver producto" (o cualquier clic en la card) abre la vista rápida: la bolsa "vuela" desde la card y el panel toma el color de la variedad. "Agregar al carrito" aparece deshabilitado ("Próximamente").
 - Precios en pesos colombianos (`$ 42.000`); disponibilidad "N disponibles", "Quedan N" (5 o menos) o "Agotado".
-- Login y Registro validan los campos, pero **todavía no llaman a la API**: al enviar muestran "… estará disponible próximamente."
-- Stack: Angular 22 (standalone, signals, `@if`/`@for`), Bootstrap 5 (solo CSS, muy personalizado), Bootstrap Icons y las fuentes variables Fraunces e Inter vía npm. Transiciones con View Transitions; todo respeta "reducir movimiento".
+- Registro e inicio de sesión reales: la sesión se guarda en el navegador (`localStorage`) y dura lo que el token (60 minutos). Con sesión, el navbar muestra tu inicial y un menú con tu nombre, tu correo, "Panel de administración" (solo Administrador) y "Cerrar sesión".
+- Todo respeta "reducir movimiento" (la página es igual de completa, sin animaciones de desplazamiento) y funciona con teclado.
+- Stack: Angular 22 (standalone, signals), sistema de diseño propio (sin Bootstrap; quedan los Bootstrap Icons), fuentes Bricolage Grotesque y Geist Mono vía npm, GSAP + ScrollTrigger cargado solo en el Inicio y View Transitions.
+
+### Panel de administración
+
+1. Inicia sesión en `/login` con una cuenta **Administrador** y abre el menú de tu cuenta → **"Panel de administración"** (también: footer → "Acceso administrador", o http://localhost:4200/admin). Sin sesión, te lleva a `/login`; una cuenta Cliente ve "No tienes permiso".
+2. En la tabla, la columna **"Creado por"** muestra quién creó cada café.
+3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés).
+4. Los cambios se ven en el Inicio y en Productos al recargar. La sesión se cierra sola cuando vence el token o con "Cerrar sesión".
 
 ---
 
@@ -214,11 +256,12 @@ Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
 
 | Método | Ruta | Permiso |
 |---|---|---|
-| POST | `/api/auth/login` | Público |
-| POST | `/api/auth/google` | Público |
+| POST | `/api/auth/Register` | Público (200 `{ mensaje }`, 400 si el correo ya existe) |
+| POST | `/api/auth/Login` | Público (200 `{ token }`, 401 si los datos son incorrectos) |
+| GET | `/api/auth/me` | Usuario autenticado (devuelve correo, nombre y roles) |
 | GET | `/api/cafes` | Público |
 | GET | `/api/cafes/{id}` | Público |
-| POST | `/api/cafes` | Usuario autenticado |
+| POST | `/api/cafes` | Administrador |
 | PUT | `/api/cafes/{id}` | Administrador |
 | DELETE | `/api/cafes/{id}` | Administrador |
 | GET | `/api/variedades` | Público |
@@ -227,23 +270,34 @@ Las capturas de las e2e quedan en `frontend/e2e/capturas/` (ignorada por Git).
 | PUT | `/api/variedades/{id}` | Administrador |
 | DELETE | `/api/variedades/{id}` | Administrador (409 si tiene cafés) |
 | GET | `/api/presentaciones` | Público |
+| GET | `/api/procesos` | Público (Lavado, Honey, Fermentado) |
 | POST | `/api/images` | Administrador |
+| DELETE | `/api/images?publicId=cafes/…` | Administrador (borra una imagen subida que no se usó) |
 
-`backend/CafeApi.http` tiene peticiones de ejemplo: primero el login y luego el resto, reutilizando el token.
+`backend/CafeApi.http` tiene peticiones de ejemplo: primero Register y Login (el token queda en una variable) y luego el resto, con los casos 400, 401 y 403.
 
 ---
 
 ## 🗄️ Modelo de Datos
 
+### usuario
+
+- `id`, `nombre` (máx. 100), `email` (único, máx. 150, en minúsculas), `password` (hash de `PasswordHasher`, nunca la contraseña), `rol` (`Administrador` o `Cliente`).
+
 ### variedades
 
 - `id`, `nombre` (obligatorio, único, máx. 100), `descripcion` (opcional).
-- Variedades iniciales: Castillo, Geisha, Moka.
+- Variedades iniciales (9): Castillo, Caturra, Colombia, Típica, Tabi, Bourbon Rojo, Bourbon Amarillo, Bourbon Rosado y Geisha, cada una con descripción.
+
+### procesos
+
+- `id`, `nombre` (obligatorio, único, máx. 50), `descripcion` (opcional).
+- Procesos iniciales: Lavado, Honey y Fermentado.
 
 ### cafes
 
-- `id`, `nombre` (máx. 100), `variedad_id` (FK, `ON DELETE RESTRICT`), `presentacion_gramos` (340 o 500), `origen` (máx. 100), `stock` (≥ 0), `precio` (`numeric(12,0)`, > 0, pesos colombianos sin decimales), `imagen_url`, `imagen_public_id`, `created_at`, `updated_at` (UTC).
-- No puede haber dos cafés con el mismo nombre (sin importar mayúsculas), variedad y presentación: la API responde **409**.
+- `id`, `nombre` (máx. 100), `variedad_id` (FK, `ON DELETE RESTRICT`), `proceso_id` (FK, `ON DELETE RESTRICT`, obligatorio), `presentacion_gramos` (340 o 500), `origen` (máx. 100), `stock` (≥ 0), `precio` (`numeric(12,0)`, > 0, pesos colombianos sin decimales), `imagen_url`, `imagen_public_id`, `usuario_id` (FK al usuario que lo creó, sale del token), `created_at`, `updated_at` (UTC).
+- No puede haber dos cafés con el mismo nombre (sin importar mayúsculas), variedad, proceso y presentación: la API responde **409**. Un `procesoId` o `variedadId` que no existe responde **400**.
 
 ### Presentaciones
 
@@ -266,10 +320,11 @@ Enum en código (no es una tabla): `340 g` y `500 g`. `GET /api/presentaciones` 
 
 ## 🔐 Seguridad
 
-La API usa JSON Web Tokens (JWT) para proteger los endpoints que modifican datos.
+La API usa JSON Web Tokens (JWT) que firma ella misma con `JwtSettings:Key` para proteger los endpoints que modifican datos. Las contraseñas se guardan con hash (`PasswordHasher`). Los GET son públicos.
 
-- **Administrador:** crear, actualizar y eliminar cafés y variedades; subir imágenes.
-- **Cliente:** consultar cafés, variedades y presentaciones; crear cafés.
+- Las escrituras usan la política **`GestionInventario`** (`backend/Seguridad/Politicas.cs`), que hoy exige el rol **Administrador**: crear, actualizar y eliminar cafés y variedades; subir y borrar imágenes.
+- **Cliente:** consultar cafés, variedades y presentaciones (recibe 403 en cualquier escritura).
+- Para dar acceso a otro rol (por ejemplo "Editor") se cambia solo la política y el mapa de permisos del frontend (`frontend/src/app/core/auth/permisos.ts`); los controladores no se tocan. Detalle en CLAUDE.md, sección "Autorización".
 - `401 Unauthorized`: petición sin token o con token inválido. `403 Forbidden`: token válido sin el rol necesario.
 
 ---
@@ -301,9 +356,8 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 
 ## 🚧 Próximos Pasos
 
-- Autenticación real en el frontend (login, registro y sesión)
+- Login con Google, cambio y recuperación de contraseña
 - Carrito de compras y pedidos (la vista rápida ya tiene el selector de cantidad)
-- Rotación de `Jwt:Key`
 - Deploy
 
 ---

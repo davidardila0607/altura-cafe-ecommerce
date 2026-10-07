@@ -15,6 +15,11 @@ namespace CafeApi.DTOs
 
         public string VariedadNombre { get; set; } = string.Empty;
 
+        // ✅ Proceso del café.
+        public int ProcesoId { get; set; }
+
+        public string ProcesoNombre { get; set; } = string.Empty;
+
         // ✅ Presentación en gramos (340 o 500).
         public int PresentacionGramos { get; set; }
 
@@ -31,6 +36,11 @@ namespace CafeApi.DTOs
         public string? ImagenUrl { get; set; }
 
         public string? ImagenPublicId { get; set; }
+
+        // ✅ Usuario que creó el café (Guía 1, paso 14).
+        public int UsuarioId { get; set; }
+
+        public string UsuarioNombre { get; set; } = string.Empty;
 
         // ✅ Indica si el producto puede comprarse.
         public bool Disponible => Stock > 0;

@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { requierePermiso } from './core/auth/guard';
 
 export const routes: Routes = [
   {
@@ -28,6 +29,25 @@ export const routes: Routes = [
     path: 'registro',
     title: 'Crear cuenta | Altura',
     loadComponent: () => import('./pages/registro/registro').then((m) => m.Registro),
+  },
+  // ===== Administración: misma sesión de /login; solo entra el rol Administrador =====
+  {
+    path: 'admin',
+    canMatch: [requierePermiso('inventario.gestionar')],
+    loadComponent: () => import('./layout/admin/admin').then((m) => m.Admin),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'inventario' },
+      {
+        path: 'inventario',
+        title: 'Inventario | Altura',
+        loadComponent: () => import('./pages/admin/inventario/inventario').then((m) => m.Inventario),
+      },
+      {
+        path: 'variedades',
+        title: 'Variedades | Altura',
+        loadComponent: () => import('./pages/admin/variedades/variedades-admin').then((m) => m.VariedadesAdmin),
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];

@@ -1,26 +1,46 @@
+<!-- Cada cresta tiene dos partes: el div (lo mueve GSAP con el scroll) y la imagen (hace la
+     entrada con CSS). Separadas, las dos animaciones no se pisan. -->
 <section class="hero" aria-labelledby="hero-titulo">
-  <div class="texto">
-    <h1 id="hero-titulo" class="titulo-hero">Café de altura, tostado con intención</h1>
-    <p class="bajada">
-      Lotes de fincas colombianas de ladera, tostados en tandas pequeñas para que cada taza sepa a su origen.
-    </p>
-    <div class="acciones">
-      <a class="btn btn-primary btn-lg" routerLink="/productos">Explorar cafés</a>
-      <button type="button" class="btn btn-outline-dark btn-lg" (click)="irAHistoria()">Nuestra historia</button>
-    </div>
-  </div>
-
-  <figure class="foto">
+  <!-- Cielo: foto de ladera con niebla que se desvanece hacia abajo, y la luz del amanecer. -->
+  <div class="cielo" aria-hidden="true">
     <img
+      class="foto"
       [src]="src"
       [attr.srcset]="srcset"
-      sizes="(min-width: 992px) 54vw, 100vw"
-      [alt]="foto.alt"
+      sizes="100vw"
+      alt=""
       width="1600"
       height="2400"
       loading="eager"
       fetchpriority="high"
       decoding="async"
     />
-  </figure>
+    <span class="sol"></span>
+  </div>
+
+  <div class="capa capa-1" aria-hidden="true"><img src="paisaje/cresta-1.svg" alt="" width="1440" height="600" /></div>
+
+  <h1 id="hero-titulo" class="palabra">
+    <span class="letras" aria-hidden="true">
+      @for (letra of letras; track $index) {
+        <span class="letra" [style.--i]="$index">{{ letra }}</span>
+      }
+    </span>
+    <span class="visually-hidden">Altura, café de especialidad colombiano</span>
+  </h1>
+
+  <div class="capa capa-2" aria-hidden="true"><img src="paisaje/cresta-2.svg" alt="" width="1440" height="600" /></div>
+  <div class="capa capa-3" aria-hidden="true"><img src="paisaje/cresta-3.svg" alt="" width="1440" height="600" /></div>
+  <div class="capa capa-4" aria-hidden="true"><img src="paisaje/cresta-4.svg" alt="" width="1440" height="600" /></div>
+
+  <div class="contenido sobre-oscuro">
+    <div class="contenedor">
+      <p class="lema">Sube con nosotros hasta la finca donde nace tu café.</p>
+      <p class="detalle">Lotes de ladera colombiana, tostados en tandas pequeñas.</p>
+      <div class="acciones">
+        <a class="boton boton-primario" appMagnetico routerLink="/productos">Explorar cafés</a>
+        <button type="button" class="boton boton-claro" (click)="irAlProceso()">Ver el proceso</button>
+      </div>
+    </div>
+  </div>
 </section>

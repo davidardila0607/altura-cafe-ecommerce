@@ -1,108 +1,120 @@
-<div class="contenedor catalogo">
-  <header class="encabezado">
-    <h1 class="titulo-catalogo">Nuestros cafés</h1>
-    <p class="bajada">
-      Lotes de fincas colombianas, tostados por variedad. Filtra por presentación, origen o disponibilidad y
-      encuentra el tuyo.
-    </p>
-  </header>
+<header class="encabezado">
+  <div class="contenedor">
+    <h1 class="display titulo-catalogo">Nuestros cafés</h1>
+    <p class="bajada">Veinticinco lotes de cinco regiones de Colombia. Filtra por variedad, proceso, presentación u origen y encuentra el tuyo.</p>
+  </div>
+  <img class="cresta" src="paisaje/cresta-1.svg" alt="" aria-hidden="true" width="1440" height="600" />
+</header>
 
-  <div class="disposicion">
-    <aside class="lateral" aria-label="Filtros del catálogo">
-      <app-filtros
-        prefijo="lateral"
-        [filtros]="filtros()"
-        [variedades]="listaVariedades()"
-        [presentaciones]="listaPresentaciones()"
-        [origenes]="origenes()"
-        [activos]="activos()"
-        (cambiar)="cambiar($event)"
-        (limpiar)="limpiar()"
-      />
-    </aside>
+<div class="contenedor disposicion">
+  <aside class="lateral" aria-label="Filtros del catálogo">
+    <app-filtros
+      prefijo="lateral"
+      [filtros]="filtros()"
+      [variedades]="listaVariedades()"
+      [procesos]="listaProcesos()"
+      [conteoVariedades]="conteoVariedades()"
+      [conteoProcesos]="conteoProcesos()"
+      [conteoOrigenes]="conteoOrigenes()"
+      [total]="todos().length"
+      [presentaciones]="listaPresentaciones()"
+      [origenes]="origenes()"
+      [activos]="activos()"
+      (cambiar)="cambiar($event)"
+      (limpiar)="limpiar()"
+    />
+  </aside>
 
-    <section class="resultados" aria-labelledby="resultados-titulo">
-      <h2 id="resultados-titulo" class="visually-hidden">Resultados del catálogo</h2>
-      <div class="barra-herramientas">
-        <div class="estado-busqueda">
-          <p id="resumen-catalogo" class="resumen" aria-live="polite">
-            @if (!cafes.isLoading() && !cafes.error()) {
-              <span data-testid="resumen">{{ resumen() }}</span>
-            }
-          </p>
-          @if (filtros().q) {
-            <button type="button" class="busqueda-activa" (click)="cambiar({ q: '' })" [attr.aria-label]="'Quitar búsqueda ' + filtros().q">
-              “{{ filtros().q }}”
-              <i class="bi bi-x" aria-hidden="true"></i>
-            </button>
+  <section class="resultados" aria-labelledby="resultados-titulo">
+    <h2 id="resultados-titulo" class="visually-hidden">Resultados del catálogo</h2>
+    <div class="barra-herramientas">
+      <div class="estado-busqueda">
+        <p id="resumen-catalogo" class="resumen" aria-live="polite">
+          @if (!cafes.isLoading() && !cafes.error()) {
+            <span data-testid="resumen">{{ resumen() }}</span>
           }
-        </div>
-
-        <div class="controles">
-          <button type="button" class="btn btn-outline-dark boton-filtrar" (click)="abrirPanel()" aria-haspopup="dialog">
-            <i class="bi bi-sliders2" aria-hidden="true"></i>
-            Filtrar
-            @if (activos() > 0) {
-              <span class="contador" [attr.aria-label]="activos() + ' filtros activos'">{{ activos() }}</span>
-            }
+        </p>
+        @if (filtros().q) {
+          <button type="button" class="chip busqueda-activa" (click)="cambiar({ q: '' })" [attr.aria-label]="'Quitar búsqueda ' + filtros().q">
+            “{{ filtros().q }}”
+            <i class="bi bi-x" aria-hidden="true"></i>
           </button>
-
-          <label class="orden">
-            <span class="etiqueta-orden">Ordenar por</span>
-            <select class="form-select" [value]="filtros().orden" (change)="ordenar($event)">
-              @for (o of ordenes; track o.valor) {
-                <option [value]="o.valor" [selected]="o.valor === filtros().orden">{{ o.etiqueta }}</option>
-              }
-            </select>
-          </label>
-        </div>
+        }
       </div>
 
-      @if (cafes.isLoading()) {
-        <div class="rejilla" aria-busy="true">
-          <p class="visually-hidden" role="status">Cargando cafés…</p>
-          @for (n of [1, 2, 3, 4, 5, 6]; track n) {
-            <div class="esqueleto-tarjeta" aria-hidden="true">
-              <span class="esqueleto foto-esqueleto"></span>
-              <span class="esqueleto" style="width: 38%; height: 0.8rem; margin: 1.25rem 1.5rem 0"></span>
-              <span class="esqueleto" style="width: 72%; height: 1.4rem; margin: 0.7rem 1.5rem 0"></span>
-              <span class="esqueleto" style="width: 50%; height: 0.8rem; margin: 0.7rem 1.5rem 1.5rem"></span>
-            </div>
+      <div class="controles">
+        <button type="button" class="boton boton-contorno boton-filtrar" (click)="abrirPanel()" aria-haspopup="dialog">
+          <i class="bi bi-sliders2" aria-hidden="true"></i>
+          Filtrar
+          @if (activos() > 0) {
+            <span class="contador" [attr.aria-label]="activos() + ' filtros activos'">{{ activos() }}</span>
           }
-        </div>
-      } @else if (cafes.error()) {
-        <app-estado-error (reintentar)="reintentar()" />
-      } @else if (resultados().length === 0) {
-        <div class="vacio" role="status">
-          <svg class="vacio-dibujo" viewBox="0 0 120 80" aria-hidden="true" focusable="false">
-            <path d="M6 70 L38 26 L54 46 L76 12 L114 70 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-            <path d="M48 38 L54 46 L60 36" fill="none" stroke="#B5562F" stroke-width="2" stroke-linejoin="round" />
-          </svg>
-          <h2 class="vacio-titulo">No hay cafés que coincidan con tu búsqueda</h2>
-          <p class="vacio-texto">
-            @if (filtros().q) {
-              Prueba con otra palabra (por ejemplo, un origen como «Huila») o quita algún filtro.
-            } @else {
-              Prueba quitando algún filtro: hay {{ resumen() }} en el catálogo.
+        </button>
+
+        <label class="orden">
+          <span class="etiqueta-orden">Ordenar por</span>
+          <select class="campo" [value]="filtros().orden" (change)="ordenar($event)">
+            @for (o of ordenes; track o.valor) {
+              <option [value]="o.valor" [selected]="o.valor === filtros().orden">{{ o.etiqueta }}</option>
             }
-          </p>
-          <button type="button" class="btn btn-primary" (click)="limpiar()">Limpiar filtros</button>
-        </div>
-      } @else {
-        <div class="rejilla" [class.con-destacado]="conDestacado()" data-testid="catalogo">
-          @for (cafe of resultados(); track cafe.id; let i = $index) {
-            <app-tarjeta-cafe
-              [cafe]="cafe"
-              [variante]="conDestacado() && i === 0 ? 'destacada' : 'normal'"
-              [nombreTransicion]="true"
-              [prioridad]="i < 3"
-              (ver)="idVistaRapida.set($event)"
-            />
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Bloque de procesos: arriba de la grilla, a todo el ancho de la columna de productos. -->
+    @if (!cafes.isLoading() && !cafes.error() && listaProcesos().length) {
+      <app-guia-procesos
+        class="guia-procesos"
+        [procesos]="listaProcesos()"
+        [conteos]="conteoProcesos()"
+        [activo]="filtros().proceso"
+        (elegir)="cambiar({ proceso: $event })"
+      />
+    }
+
+    @if (cafes.isLoading()) {
+      <div class="rejilla" aria-busy="true">
+        <p class="visually-hidden" role="status">Cargando cafés…</p>
+        @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+          <div class="esqueleto-tarjeta" aria-hidden="true">
+            <span class="esqueleto foto-esqueleto"></span>
+            <span class="esqueleto" style="width: 38%; height: 0.8rem; margin: 1.25rem 1.5rem 0"></span>
+            <span class="esqueleto" style="width: 72%; height: 1.4rem; margin: 0.7rem 1.5rem 0"></span>
+            <span class="esqueleto" style="width: 50%; height: 0.8rem; margin: 0.7rem 1.5rem 1.5rem"></span>
+          </div>
+        }
+      </div>
+    } @else if (cafes.error()) {
+      <app-estado-error (reintentar)="reintentar()" />
+    } @else if (resultados().length === 0) {
+      <div class="vacio" role="status">
+        <!-- Una cumbre vacía con su bandera: llegaste, pero aquí no hay cafés. -->
+        <svg class="vacio-dibujo" viewBox="0 -12 160 108" aria-hidden="true" focusable="false">
+          <path d="M6 92 L56 30 L76 54 L104 14 L154 92 Z" class="vacio-montana" />
+          <path d="M104 14 V-6" class="vacio-mastil" />
+          <path d="M104 -6 L122 0 L104 6 Z" class="vacio-bandera" />
+          <path d="M20 72 h40 M80 80 h52" class="vacio-niebla" />
+        </svg>
+        <h2 class="vacio-titulo">No hay cafés que coincidan con tu búsqueda</h2>
+        <p class="vacio-texto">
+          @if (filtros().q) {
+            Prueba con otra palabra (por ejemplo, un origen como «Huila» o un proceso como «Honey») o quita algún filtro.
+          } @else {
+            Prueba quitando algún filtro: hay {{ resumen() }} en el catálogo.
           }
-        </div>
-      }
-    </section>
-  </div>
+        </p>
+        <button type="button" class="boton boton-primario" (click)="limpiar()">Limpiar filtros</button>
+      </div>
+    } @else {
+      <!-- Todas las cards miden lo mismo: 3 columnas en escritorio, 2 en tableta y 1 en móvil. -->
+      <div class="rejilla" data-testid="catalogo">
+        @for (cafe of resultados(); track cafe.id; let i = $index) {
+          <app-tarjeta-cafe [cafe]="cafe" [nombreTransicion]="true" [prioridad]="i < 3" (ver)="cafeSeleccionado.set($event)" />
+        }
+      </div>
+    }
+  </section>
 </div>
 
 <!-- Filtros en móvil: hoja deslizable -->
@@ -110,7 +122,7 @@
   <div class="hoja-panel">
     <div class="hoja-cabecera">
       <h2 id="hoja-titulo" class="hoja-titulo">Filtros</h2>
-      <button type="button" class="hoja-cerrar" aria-label="Cerrar filtros" (click)="cerrarPanel()">
+      <button type="button" class="boton-icono" aria-label="Cerrar filtros" (click)="cerrarPanel()">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
@@ -121,6 +133,11 @@
           [conBuscador]="true"
           [filtros]="filtros()"
           [variedades]="listaVariedades()"
+          [procesos]="listaProcesos()"
+          [conteoVariedades]="conteoVariedades()"
+          [conteoProcesos]="conteoProcesos()"
+          [conteoOrigenes]="conteoOrigenes()"
+          [total]="todos().length"
           [presentaciones]="listaPresentaciones()"
           [origenes]="origenes()"
           [activos]="activos()"
@@ -130,9 +147,9 @@
       }
     </div>
     <div class="hoja-pie">
-      <button type="button" class="btn btn-primary w-100" (click)="cerrarPanel()">Ver {{ resumen() }}</button>
+      <button type="button" class="boton boton-primario boton-ancho" (click)="cerrarPanel()">Ver {{ resumen() }}</button>
     </div>
   </div>
 </dialog>
 
-<app-vista-rapida [cafeId]="idVistaRapida()" (cerrar)="idVistaRapida.set(null)" />
+<app-vista-rapida [cafe]="cafeSeleccionado()" (cerrar)="cafeSeleccionado.set(null)" />

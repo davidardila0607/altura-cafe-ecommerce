@@ -3,17 +3,25 @@
     Carga los productos de ejemplo de Altura (cafés + imágenes en Cloudinary) a través de la API.
 
 .DESCRIPTION
-    1. Inicia sesión como Administrador en POST /api/auth/login.
-    2. Resuelve el id de cada variedad por su nombre (GET /api/variedades).
-    3. Por cada producto: si ya existe (mismo nombre sin importar mayúsculas, variedad y
-       presentación) lo omite SIN subir imagen; si no, sube la imagen con POST /api/images
-       y crea el café con POST /api/cafes enviando imagenUrl e imagenPublicId.
+    El catálogo (25 cafés) está en seed/catalogo.json: es la misma fuente que usa el
+    generador de imágenes (frontend/herramientas/generar-bolsas.mjs).
+
+    1. Inicia sesión con POST /api/auth/Login (Guía 1) y lee el token de la propiedad
+       "token". Comprueba el rol con GET /api/auth/me: solo un Administrador puede crear
+       cafés, y cada café queda con esa cuenta como dueño (usuarioNombre).
+    2. Resuelve el id de cada variedad y de cada proceso por su nombre
+       (GET /api/variedades y GET /api/procesos).
+    3. Por cada producto: si ya existe (mismo nombre sin importar mayúsculas, variedad,
+       proceso y presentación) lo omite SIN subir imagen; si no, sube la imagen con
+       POST /api/images y crea el café con POST /api/cafes enviando imagenUrl e
+       imagenPublicId. Si la creación falla, borra la imagen recién subida
+       (DELETE /api/images) para no dejarla huérfana en Cloudinary.
 
     Es idempotente: se puede ejecutar varias veces sin duplicar cafés ni imágenes.
 
     Con -ActualizarImagenes, a los cafés que ya existen se les sube la imagen nueva de
     seed/imagenes/ y se hace PUT /api/cafes/{id} conservando sus datos actuales (nombre,
-    variedad, presentación, origen, stock y precio) y enviando el nuevo imagenUrl e
+    variedad, proceso, presentación, origen, stock y precio) y enviando el nuevo imagenUrl e
     imagenPublicId. El backend borra la imagen anterior de Cloudinary. Los cafés que no
     existen se crean como en el modo normal.
 
@@ -22,10 +30,10 @@
 
 .EXAMPLE
     .\seed\seed-productos.ps1
-    (pide correo y contraseña del Administrador)
+    (pide correo y contraseña del Administrador; la contraseña no se ve al escribirla)
 
 .EXAMPLE
-    .\seed\seed-productos.ps1 -ApiBaseUrl http://localhost:5031/api -Email admin@cafeapi.com
+    .\seed\seed-productos.ps1 -ApiBaseUrl http://localhost:5031/api -Email tu-correo@ejemplo.com
 
 .EXAMPLE
     .\seed\seed-productos.ps1 -ActualizarImagenes
@@ -42,15 +50,8 @@ $ErrorActionPreference = 'Stop'
 $ApiBaseUrl = $ApiBaseUrl.TrimEnd('/')
 $carpetaImagenes = Join-Path $PSScriptRoot 'imagenes'
 
-# ✅ Productos de ejemplo.
-$productos = @(
-    @{ Nombre = 'Mesa de los Santos'; Variedad = 'Castillo'; Gramos = 340; Origen = 'Santander'; Stock = 24; Precio = 42000;  Imagen = '01-mesa-de-los-santos-340g.png' },
-    @{ Nombre = 'Mesa de los Santos'; Variedad = 'Castillo'; Gramos = 500; Origen = 'Santander'; Stock = 15; Precio = 58000;  Imagen = '02-mesa-de-los-santos-500g.png' },
-    @{ Nombre = 'Pitalito Reserva';   Variedad = 'Geisha';   Gramos = 340; Origen = 'Huila';     Stock = 8;  Precio = 89000;  Imagen = '03-pitalito-reserva-340g.png' },
-    @{ Nombre = 'Volcán Galeras';     Variedad = 'Moka';     Gramos = 340; Origen = 'Nariño';    Stock = 12; Precio = 54000;  Imagen = '04-volcan-galeras-340g.png' },
-    @{ Nombre = 'Sierra Nevada';      Variedad = 'Castillo'; Gramos = 500; Origen = 'Magdalena'; Stock = 0;  Precio = 61000;  Imagen = '05-sierra-nevada-500g.png' },
-    @{ Nombre = 'Tierradentro';       Variedad = 'Geisha';   Gramos = 500; Origen = 'Cauca';     Stock = 5;  Precio = 118000; Imagen = '06-tierradentro-500g.png' }
-)
+# ✅ Catálogo de ejemplo (seed/catalogo.json, UTF-8).
+$productos = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot 'catalogo.json') | ConvertFrom-Json
 
 # ✅ Llama a la API y devuelve @{ Ok; Codigo; Datos; Error } sin lanzar excepción por códigos HTTP.
 function Invoke-Api {
@@ -86,8 +87,8 @@ function Invoke-Api {
     }
 }
 
-function Get-Clave([string]$nombre, [int]$variedadId, [int]$gramos) {
-    return '{0}|{1}|{2}' -f $nombre.Trim().ToLowerInvariant(), $variedadId, $gramos
+function Get-Clave([string]$nombre, [int]$variedadId, [int]$procesoId, [int]$gramos) {
+    return '{0}|{1}|{2}|{3}' -f $nombre.Trim().ToLowerInvariant(), $variedadId, $procesoId, $gramos
 }
 
 # ===== Credenciales =====
@@ -104,19 +105,21 @@ finally {
 
 # ===== Login =====
 Write-Host "API: $ApiBaseUrl"
-$login = Invoke-Api -Metodo 'POST' -Ruta '/auth/login' -Cuerpo ([ordered]@{ email = $Email; password = $passwordPlano })
+$login = Invoke-Api -Metodo 'POST' -Ruta '/auth/Login' -Cuerpo ([ordered]@{ email = $Email; password = $passwordPlano })
 $passwordPlano = $null
 
 if (-not $login.Ok) {
     Write-Host "No se pudo iniciar sesión (HTTP $($login.Codigo)). Revisa el correo y la contraseña." -ForegroundColor Red
     exit 1
 }
-if ($login.Datos.role -ne 'Administrador') {
-    Write-Host "La cuenta '$Email' no tiene rol Administrador." -ForegroundColor Red
+# ✅ La respuesta de Login es { token }; el rol se consulta con GET /api/auth/me.
+$token = $login.Datos.token
+$yo = Invoke-Api -Metodo 'GET' -Ruta '/auth/me' -Token $token
+if (-not $yo.Ok -or @($yo.Datos.roles) -notcontains 'Administrador') {
+    Write-Host "La cuenta '$Email' no tiene rol Administrador. Agrega el correo a Admin:Correos ANTES de registrarte o cambia el rol en la base de datos (ver CLAUDE.md)." -ForegroundColor Red
     exit 1
 }
-$token = $login.Datos.token
-Write-Host "Sesión iniciada como $Email (Administrador)." -ForegroundColor Green
+Write-Host "Sesión iniciada como $($yo.Datos.nombre) <$($yo.Datos.email)> (Administrador)." -ForegroundColor Green
 
 # ===== Variedades y cafés existentes =====
 $variedades = Invoke-Api -Metodo 'GET' -Ruta '/variedades'
@@ -125,11 +128,17 @@ if (-not $variedades.Ok) { Write-Host "No se pudieron leer las variedades (HTTP 
 $idsVariedad = @{}
 foreach ($v in $variedades.Datos) { $idsVariedad[$v.nombre.ToLowerInvariant()] = [int]$v.id }
 
+$procesos = Invoke-Api -Metodo 'GET' -Ruta '/procesos'
+if (-not $procesos.Ok) { Write-Host "No se pudieron leer los procesos (HTTP $($procesos.Codigo))." -ForegroundColor Red; exit 1 }
+
+$idsProceso = @{}
+foreach ($p in $procesos.Datos) { $idsProceso[$p.nombre.ToLowerInvariant()] = [int]$p.id }
+
 $cafes = Invoke-Api -Metodo 'GET' -Ruta '/cafes'
 if (-not $cafes.Ok) { Write-Host "No se pudieron leer los cafés (HTTP $($cafes.Codigo))." -ForegroundColor Red; exit 1 }
 
 $existentes = @{}
-foreach ($c in $cafes.Datos) { $existentes[(Get-Clave $c.nombre $c.variedadId $c.presentacionGramos)] = $c }
+foreach ($c in $cafes.Datos) { $existentes[(Get-Clave $c.nombre $c.variedadId $c.procesoId $c.presentacionGramos)] = $c }
 
 # ===== Carga =====
 $creados = 0; $actualizados = 0; $omitidos = 0; $fallidos = 0
@@ -140,17 +149,29 @@ function Send-Imagen([string]$ruta) {
     return Invoke-Api -Metodo 'POST' -Ruta '/images' -Token $token -Cuerpo @{ imagenBase64 = "data:image/png;base64,$base64" }
 }
 
+# ✅ Borra una imagen subida que al final no se usó (solo carpeta cafes/).
+function Remove-Imagen([string]$publicId) {
+    $borrado = Invoke-Api -Metodo 'DELETE' -Ruta "/images?publicId=$([Uri]::EscapeDataString($publicId))" -Token $token
+    if (-not $borrado.Ok) { Write-Host "          (no se pudo borrar la imagen sin usar $publicId)" -ForegroundColor Yellow }
+}
+
 foreach ($p in $productos) {
-    $etiqueta = '{0} · {1} · {2} g' -f $p.Nombre, $p.Variedad, $p.Gramos
-    $variedadId = $idsVariedad[$p.Variedad.ToLowerInvariant()]
+    $etiqueta = '{0} · {1} · {2} · {3} g' -f $p.nombre, $p.variedad, $p.proceso, $p.presentacion
+    $variedadId = $idsVariedad[$p.variedad.ToLowerInvariant()]
+    $procesoId = $idsProceso[$p.proceso.ToLowerInvariant()]
 
     if (-not $variedadId) {
-        Write-Host "  FALLO   $etiqueta -> la variedad '$($p.Variedad)' no existe." -ForegroundColor Red
+        Write-Host "  FALLO   $etiqueta -> la variedad '$($p.variedad)' no existe." -ForegroundColor Red
+        $fallidos++; continue
+    }
+    if (-not $procesoId) {
+        Write-Host "  FALLO   $etiqueta -> el proceso '$($p.proceso)' no existe." -ForegroundColor Red
         $fallidos++; continue
     }
 
-    $rutaImagen = Join-Path $carpetaImagenes $p.Imagen
-    $existente = $existentes[(Get-Clave $p.Nombre $variedadId $p.Gramos)]
+    $archivoImagen = "$($p.imagen).png"
+    $rutaImagen = Join-Path $carpetaImagenes $archivoImagen
+    $existente = $existentes[(Get-Clave $p.nombre $variedadId $procesoId $p.presentacion)]
 
     # ✅ Idempotencia: si ya existe, se omite antes de subir la imagen (salvo -ActualizarImagenes).
     if ($existente -and -not $ActualizarImagenes) {
@@ -159,7 +180,7 @@ foreach ($p in $productos) {
     }
 
     if (-not (Test-Path $rutaImagen)) {
-        Write-Host "  FALLO   $etiqueta -> no se encontró la imagen $($p.Imagen)." -ForegroundColor Red
+        Write-Host "  FALLO   $etiqueta -> no se encontró la imagen $archivoImagen." -ForegroundColor Red
         $fallidos++; continue
     }
 
@@ -175,6 +196,7 @@ foreach ($p in $productos) {
         $put = Invoke-Api -Metodo 'PUT' -Ruta "/cafes/$($existente.id)" -Token $token -Cuerpo ([ordered]@{
             nombre             = $existente.nombre
             variedadId         = [int]$existente.variedadId
+            procesoId          = [int]$existente.procesoId
             presentacionGramos = [int]$existente.presentacionGramos
             origen             = $existente.origen
             stock              = [int]$existente.stock
@@ -188,19 +210,21 @@ foreach ($p in $productos) {
             $actualizados++
         }
         else {
-            Write-Host "  FALLO   $etiqueta -> no se pudo actualizar (HTTP $($put.Codigo)): $($put.Error). Imagen sin usar: $($imagen.Datos.publicId)" -ForegroundColor Red
+            Write-Host "  FALLO   $etiqueta -> no se pudo actualizar (HTTP $($put.Codigo)): $($put.Error)" -ForegroundColor Red
+            Remove-Imagen $imagen.Datos.publicId
             $fallidos++
         }
         continue
     }
 
     $cafe = Invoke-Api -Metodo 'POST' -Ruta '/cafes' -Token $token -Cuerpo ([ordered]@{
-        nombre             = $p.Nombre
+        nombre             = $p.nombre
         variedadId         = $variedadId
-        presentacionGramos = $p.Gramos
-        origen             = $p.Origen
-        stock              = $p.Stock
-        precio             = $p.Precio
+        procesoId          = $procesoId
+        presentacionGramos = [int]$p.presentacion
+        origen             = $p.origen
+        stock              = [int]$p.stock
+        precio             = [decimal]$p.precio
         imagenUrl          = $imagen.Datos.imageUrl
         imagenPublicId     = $imagen.Datos.publicId
     })
@@ -210,12 +234,14 @@ foreach ($p in $productos) {
         $creados++
     }
     elseif ($cafe.Codigo -eq 409) {
-        # Otro proceso lo creó entre la consulta y el POST; la imagen recién subida queda huérfana.
-        Write-Host "  OMITIDO $etiqueta (409: ya existe). Imagen sin usar en Cloudinary: $($imagen.Datos.publicId)" -ForegroundColor Yellow
+        # Alguien lo creó entre la consulta y el POST: se borra la imagen recién subida.
+        Write-Host "  OMITIDO $etiqueta (409: ya existe)" -ForegroundColor Yellow
+        Remove-Imagen $imagen.Datos.publicId
         $omitidos++
     }
     else {
         Write-Host "  FALLO   $etiqueta -> no se pudo crear el café (HTTP $($cafe.Codigo)): $($cafe.Error)" -ForegroundColor Red
+        Remove-Imagen $imagen.Datos.publicId
         $fallidos++
     }
 }

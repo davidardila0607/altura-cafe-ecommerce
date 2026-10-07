@@ -1,0 +1,173 @@
+/* Formularios del panel (Inventario y Variedades): panel lateral y confirmación de borrado. */
+
+/* ===== Panel lateral (crear / editar) ===== */
+.panel {
+  width: min(32rem, 100vw);
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: var(--papel);
+  color: var(--texto);
+  box-shadow: var(--sombra-2);
+}
+
+.panel::backdrop {
+  background: rgb(19 40 31 / 0.45);
+}
+
+.panel[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .panel[open] {
+    transition: transform var(--dur-panel) var(--ease-cajon);
+
+    @starting-style {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* El formulario no agrega caja propia: sus partes (cabecera, cuerpo, pie) son las filas del panel. */
+.formulario-panel {
+  display: contents;
+}
+
+.panel-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--esp-4) var(--esp-5);
+  border-bottom: 1px solid var(--linea);
+}
+
+.panel-titulo {
+  font-size: var(--fs-600);
+}
+
+.panel-cuerpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--esp-5);
+}
+
+.panel-pie {
+  display: flex;
+  gap: var(--esp-3);
+  justify-content: flex-end;
+  padding: var(--esp-4) var(--esp-5);
+  border-top: 1px solid var(--linea);
+}
+
+.grupo-campo {
+  margin-bottom: var(--esp-5);
+}
+
+.doble {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--esp-4);
+}
+
+.ayuda {
+  margin-top: var(--esp-2);
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+textarea.campo {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+/* Imagen: vista previa + botón de archivo. */
+.imagen-campo {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: var(--esp-4);
+  align-items: center;
+}
+
+.vista-previa {
+  width: 6rem;
+  height: 7.5rem;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--niebla-honda);
+}
+
+.vista-previa.vacia {
+  display: grid;
+  place-items: center;
+  color: var(--texto-suave);
+  font-size: 1.5rem;
+}
+
+.elegir-archivo {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--fs-200);
+  cursor: pointer;
+}
+
+/* El foco del input oculto se dibuja en su etiqueta-botón. */
+.archivo:focus-visible + .elegir-archivo {
+  outline: 2px solid var(--cereza);
+  outline-offset: 3px;
+}
+
+.error-general {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: var(--esp-4);
+  padding: 0.8rem 1rem;
+  border-radius: var(--radio-campo);
+  background: rgb(163 39 31 / 0.08);
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* ===== Confirmación de borrado ===== */
+.confirmacion {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: var(--esp-6);
+  border: 0;
+  border-radius: 20px;
+  background: var(--papel);
+  color: var(--texto);
+  box-shadow: var(--sombra-2);
+}
+
+.confirmacion::backdrop {
+  background: rgb(19 40 31 / 0.45);
+}
+
+.confirmacion h2 {
+  font-size: var(--fs-500);
+}
+
+.confirmacion p {
+  margin-top: var(--esp-3);
+  color: var(--texto-suave);
+}
+
+.confirmacion .botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-3);
+  margin-top: var(--esp-6);
+}
+
+.boton-peligro {
+  background: var(--error);
+  color: #fff;
+}
+
+.boton-peligro:hover:not(:disabled) {
+  background: #861f19;
+}

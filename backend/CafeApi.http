@@ -1,21 +1,108 @@
 # CafeApi - peticiones de prueba (perfil "http" de launchSettings.json)
-# Ejecuta primero el login: el token se reutiliza en las peticiones protegidas.
-# Reemplaza TU_CONTRASEÑA por la contraseña de la cuenta de prueba.
+# Guía 1: los usuarios se registran (Register) e inician sesión (Login); el token
+# de Login se guarda en una variable y se reutiliza en las peticiones protegidas.
+#
+# Antes de empezar:
+# 1. Pon tu correo en "Admin:Correos" de appsettings.Development.json para que la
+#    cuenta se registre como Administrador; cualquier otro correo queda como Cliente.
+# 2. Reemplaza TU_CONTRASEÑA (mínimo 6 caracteres) y ejecuta los dos Register.
+# Las escrituras usan [Authorize] + la política "GestionInventario" (rol Administrador):
+# con el Administrador funcionan, con el Cliente dan 403 y sin token, 401.
 
 @baseUrl = http://localhost:5031
-@adminEmail = admin@cafeapi.com
+@adminEmail = tu-correo@ejemplo.com
 @adminPassword = TU_CONTRASEÑA
 @token = {{login.response.body.$.token}}
+@clienteEmail = cliente@ejemplo.com
+@clientePassword = TU_CONTRASEÑA
+@tokenCliente = {{loginCliente.response.body.$.token}}
 
-### Login (Administrador) - devuelve el JWT
+### ===== Autenticación (Guía 1) =====
+
+### Registro (Administrador si su correo está en Admin:Correos) - 200 { mensaje }
+POST {{baseUrl}}/api/auth/Register
+Content-Type: application/json
+
+{
+  "nombre": "Administración Altura",
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Registro (Cliente) - 200 { mensaje }
+POST {{baseUrl}}/api/auth/Register
+Content-Type: application/json
+
+{
+  "nombre": "Cliente de prueba",
+  "email": "{{clienteEmail}}",
+  "password": "{{clientePassword}}"
+}
+
+### Registro repetido - 400 { "mensaje": "El usuario ya existe." }
+POST {{baseUrl}}/api/auth/Register
+Content-Type: application/json
+
+{
+  "nombre": "Cliente de prueba",
+  "email": "{{clienteEmail}}",
+  "password": "{{clientePassword}}"
+}
+
+### Registro con correo inválido y contraseña corta - 400 (validación)
+POST {{baseUrl}}/api/auth/Register
+Content-Type: application/json
+
+{
+  "nombre": "Sin datos válidos",
+  "email": "no-es-un-correo",
+  "password": "123"
+}
+
+### Login (Administrador) - 200 { token }
 # @name login
-POST {{baseUrl}}/api/auth/login
+POST {{baseUrl}}/api/auth/Login
 Content-Type: application/json
 
 {
   "email": "{{adminEmail}}",
   "password": "{{adminPassword}}"
 }
+
+### Login (Cliente) - para comprobar los 403
+# @name loginCliente
+POST {{baseUrl}}/api/auth/Login
+Content-Type: application/json
+
+{
+  "email": "{{clienteEmail}}",
+  "password": "{{clientePassword}}"
+}
+
+### Login con contraseña incorrecta - 401 { "mensaje": "Usuario o contraseña incorrectos." }
+POST {{baseUrl}}/api/auth/Login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "contraseña-incorrecta"
+}
+
+### Login con un correo que no existe - 401
+POST {{baseUrl}}/api/auth/Login
+Content-Type: application/json
+
+{
+  "email": "nadie@ejemplo.com",
+  "password": "cualquiera"
+}
+
+### Usuario actual (Administrador) - email, nombre y roles leídos de la base de datos
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Usuario actual sin token - 401
+GET {{baseUrl}}/api/auth/me
 
 ### ===== Variedades =====
 
@@ -50,6 +137,11 @@ Content-Type: application/json
 DELETE {{baseUrl}}/api/variedades/{{crearVariedad.response.body.$.id}}
 Authorization: Bearer {{token}}
 
+### ===== Procesos =====
+
+### Listar procesos (público) - Lavado, Honey y Fermentado
+GET {{baseUrl}}/api/procesos
+
 ### ===== Presentaciones =====
 
 ### Listar presentaciones (público)
@@ -73,7 +165,7 @@ Content-Type: application/json
 ### Listar cafés (público)
 GET {{baseUrl}}/api/cafes
 
-### Crear café (cualquier usuario autenticado)
+### Crear café (Administrador) - 201; usuarioId y usuarioNombre son los del token
 # @name crearCafe
 POST {{baseUrl}}/api/cafes
 Authorization: Bearer {{token}}
@@ -82,6 +174,7 @@ Content-Type: application/json
 {
   "nombre": "Café Castillo",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 500,
   "origen": "Huila, Colombia",
   "stock": 25,
@@ -93,6 +186,41 @@ Content-Type: application/json
 ### Obtener café por id (público)
 GET {{baseUrl}}/api/cafes/{{crearCafe.response.body.$.id}}
 
+### Crear café con un proceso que no existe - 400
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Castillo",
+  "variedadId": 1,
+  "procesoId": 99,
+  "presentacionGramos": 500,
+  "origen": "Huila",
+  "stock": 5,
+  "precio": 38000
+}
+
+### Mismo café con otro proceso (Honey) - 201 (el café único incluye el proceso)
+# @name crearCafeHoney
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Café Castillo",
+  "variedadId": 1,
+  "procesoId": 2,
+  "presentacionGramos": 500,
+  "origen": "Huila",
+  "stock": 5,
+  "precio": 40000
+}
+
+### Eliminar el café Honey de prueba (Administrador)
+DELETE {{baseUrl}}/api/cafes/{{crearCafeHoney.response.body.$.id}}
+Authorization: Bearer {{token}}
+
 ### Crear café duplicado con otras mayúsculas - 409
 POST {{baseUrl}}/api/cafes
 Authorization: Bearer {{token}}
@@ -101,6 +229,7 @@ Content-Type: application/json
 {
   "nombre": "CAFÉ CASTILLO",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 500,
   "origen": "Huila, Colombia",
   "stock": 5,
@@ -115,6 +244,7 @@ Content-Type: application/json
 {
   "nombre": "Café Pergamino",
   "variedadId": 2,
+  "procesoId": 1,
   "presentacionGramos": 250,
   "origen": "Nariño, Colombia",
   "stock": 10,
@@ -129,6 +259,7 @@ Content-Type: application/json
 {
   "nombre": "Café Castillo",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 340,
   "origen": "Huila, Colombia",
   "stock": 30,
@@ -148,8 +279,51 @@ Content-Type: application/json
 {
   "nombre": "Sin token",
   "variedadId": 1,
+  "procesoId": 1,
   "presentacionGramos": 340,
   "origen": "Colombia",
   "stock": 1,
   "precio": 1000
 }
+
+### Crear café con la cuenta Cliente - 403
+POST {{baseUrl}}/api/cafes
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "nombre": "Sin permiso",
+  "variedadId": 1,
+  "procesoId": 1,
+  "presentacionGramos": 340,
+  "origen": "Colombia",
+  "stock": 1,
+  "precio": 1000
+}
+
+### Crear variedad con la cuenta Cliente - 403
+POST {{baseUrl}}/api/variedades
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "nombre": "Sin permiso"
+}
+
+### Subir imagen con la cuenta Cliente - 403
+POST {{baseUrl}}/api/images
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "imagenBase64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+}
+
+### Borrar una imagen subida que no se usó (Administrador) - 204
+# Solo acepta publicId de la carpeta "cafes/"; si un café la usa responde 409.
+DELETE {{baseUrl}}/api/images?publicId={{subirImagen.response.body.$.publicId}}
+Authorization: Bearer {{token}}
+
+### Borrar imagen fuera de la carpeta de cafés - 400
+DELETE {{baseUrl}}/api/images?publicId=sitio/hero
+Authorization: Bearer {{token}}

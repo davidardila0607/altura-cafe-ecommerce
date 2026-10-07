@@ -5,44 +5,60 @@ import { Component, input, output } from '@angular/core';
   selector: 'app-estado-error',
   template: `
     <div class="error" role="alert">
-      <i class="bi bi-wifi-off icono" aria-hidden="true"></i>
-      <div>
+      <!-- Una cumbre tapada por la niebla: no se alcanza a ver lo que hay arriba. -->
+      <svg class="dibujo" viewBox="0 0 120 72" aria-hidden="true" focusable="false">
+        <path d="M4 66 L40 20 L56 38 L76 10 L116 66 Z" class="montana" />
+        <path d="M10 40 h44 M30 48 h64 M60 32 h40" class="niebla" />
+      </svg>
+      <div class="texto-error">
         <p class="titulo-error">{{ titulo() }}</p>
         <p class="texto">{{ texto() }}</p>
+        <button type="button" class="boton boton-primario" (click)="reintentar.emit()">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          Reintentar
+        </button>
       </div>
-      <button type="button" class="btn btn-primary" (click)="reintentar.emit()">Reintentar</button>
     </div>
   `,
   styles: `
     .error {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: var(--esp-3) var(--esp-4);
-      align-items: start;
-      max-width: 34rem;
-      padding: var(--esp-5) var(--esp-6);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--esp-5) var(--esp-6);
+      max-width: 40rem;
+      padding: var(--esp-6);
+      border: 1px solid var(--linea);
       border-radius: var(--radio-tarjeta);
-      background: var(--alt-papel);
-      box-shadow: var(--sombra-1);
+      background: var(--papel);
     }
-    .icono {
-      font-size: 1.5rem;
-      color: var(--alt-terracota-texto);
-      line-height: 1.2;
+    .dibujo {
+      width: 7.5rem;
+      flex: none;
+    }
+    .montana {
+      fill: var(--niebla-honda);
+      stroke: var(--bosque);
+      stroke-width: 2;
+      stroke-linejoin: round;
+    }
+    .niebla {
+      stroke: var(--papel);
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+    .texto-error {
+      flex: 1 1 16rem;
     }
     .titulo-error {
-      margin: 0 0 var(--esp-1);
-      font-family: var(--alt-fuente-titulos);
       font-size: var(--fs-500);
-      font-weight: 500;
+      font-weight: 750;
+      font-stretch: 85%;
+      letter-spacing: -0.02em;
     }
     .texto {
-      margin: 0;
-      color: var(--alt-texto-suave);
-    }
-    .btn {
-      grid-column: 2;
-      justify-self: start;
+      margin: var(--esp-1) 0 var(--esp-5);
+      color: var(--texto-suave);
     }
   `,
 })

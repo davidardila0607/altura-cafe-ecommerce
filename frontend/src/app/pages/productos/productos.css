@@ -1,37 +1,58 @@
-.catalogo {
-  padding-block: clamp(2.5rem, 5vw, 4.5rem) var(--seccion);
+:host {
+  display: block;
+  padding-bottom: calc(var(--seccion) + 4rem); /* deja sitio a la cresta del footer */
 }
 
+/* ===== Encabezado: título grande sobre curvas de nivel y una cresta lejana ===== */
 .encabezado {
-  max-width: 44rem;
-  margin-bottom: clamp(2rem, 4vw, 3.5rem);
+  position: relative;
+  padding: clamp(7.5rem, 14vw, 10rem) 0 clamp(5rem, 9vw, 8rem);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.encabezado::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url('/texturas/curvas-nivel.svg') 80% 30% / 70% auto no-repeat;
+  opacity: 0.1;
+}
+
+.cresta {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: -1;
+  width: 100%;
+  height: clamp(3rem, 8vw, 7rem);
 }
 
 .titulo-catalogo {
-  margin: 0 0 var(--esp-4);
-  font-size: var(--fs-800);
-  font-weight: 430;
-  line-height: var(--lh-ajustado);
-  letter-spacing: -0.03em;
+  margin-bottom: var(--esp-5);
 }
 
-.bajada {
-  margin: 0;
-  font-size: var(--fs-400);
-  color: var(--alt-texto-suave);
-}
-
+/* ===== Disposición: filtros a la izquierda, resultados a la derecha ===== */
 .disposicion {
   display: grid;
   grid-template-columns: 15.5rem minmax(0, 1fr);
   gap: clamp(2rem, 4vw, 3.5rem);
   align-items: start;
+  margin-top: var(--esp-6);
 }
 
+/* Fija al bajar; si es más alta que la pantalla, tiene su propio scroll. */
 .lateral {
   position: sticky;
-  top: 6rem;
-  padding-right: var(--esp-2);
+  top: 6.5rem;
+  max-height: calc(100dvh - 8rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Margen interno para que el anillo de foco (5 px) no se recorte; el negativo conserva la alineación. */
+  margin: -6px;
+  padding: 6px;
+  scrollbar-width: thin;
 }
 
 /* ===== Barra de herramientas ===== */
@@ -43,7 +64,7 @@
   gap: var(--esp-3) var(--esp-5);
   margin-bottom: var(--esp-5);
   padding-bottom: var(--esp-4);
-  border-bottom: 1px solid var(--alt-linea);
+  border-bottom: 1px solid var(--linea);
 }
 
 .estado-busqueda {
@@ -54,21 +75,13 @@
 }
 
 .resumen {
-  margin: 0;
   min-height: 1.5rem;
-  font-weight: 560;
+  font-family: var(--fuente-mono);
+  font-weight: 500;
 }
 
 .busqueda-activa {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.4rem 0.25rem 0.8rem;
-  border: 1px solid var(--alt-linea-fuerte);
-  border-radius: var(--radio-pildora);
-  background: var(--alt-papel);
-  color: var(--alt-espresso);
-  font-size: var(--fs-200);
+  background: var(--papel);
 }
 
 .controles {
@@ -81,57 +94,38 @@
   display: flex;
   align-items: center;
   gap: var(--esp-2);
-  margin: 0;
 }
 
 .etiqueta-orden {
+  color: var(--texto-suave);
   font-size: var(--fs-200);
-  color: var(--alt-texto-suave);
   white-space: nowrap;
 }
 
-.orden .form-select {
+.orden .campo {
   width: auto;
-  padding-block: 0.55rem;
+  border-radius: var(--radio-pildora);
 }
 
 .boton-filtrar {
   display: none;
-  align-items: center;
-  gap: var(--esp-2);
-  --bs-btn-padding-y: 0.55rem;
 }
 
-.contador {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.35rem;
-  height: 1.35rem;
-  padding-inline: 0.3rem;
-  border-radius: var(--radio-pildora);
-  background: var(--alt-terracota);
-  color: #fff;
-  font-size: var(--fs-100);
-  font-weight: 700;
+/* ===== Bloque de procesos y grilla uniforme ===== */
+.guia-procesos {
+  margin-bottom: var(--esp-6);
 }
 
-/* ===== Grilla con jerarquía ===== */
 .rejilla {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(1.25rem, 2.2vw, 2rem);
 }
 
-.rejilla.con-destacado > :first-child {
-  grid-column: span 2;
-  grid-row: span 2;
-}
-
 .esqueleto-tarjeta {
-  border-radius: var(--radio-tarjeta);
-  background: var(--alt-papel);
-  box-shadow: var(--sombra-1);
   overflow: hidden;
+  border-radius: var(--radio-tarjeta);
+  background: var(--papel);
 }
 
 .foto-esqueleto {
@@ -147,19 +141,41 @@
 }
 
 .vacio-dibujo {
-  width: 7rem;
-  color: var(--alt-cafe);
-  margin-bottom: var(--esp-4);
+  width: 9rem;
+  margin: 0 auto var(--esp-5);
+  overflow: visible;
+}
+
+.vacio-montana {
+  fill: var(--niebla-honda);
+  stroke: var(--bosque);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.vacio-mastil {
+  stroke: var(--bosque);
+  stroke-width: 2;
+}
+
+.vacio-bandera {
+  fill: var(--cereza);
+}
+
+.vacio-niebla {
+  stroke: var(--niebla);
+  stroke-width: 7;
+  stroke-linecap: round;
 }
 
 .vacio-titulo {
-  margin: 0 0 var(--esp-3);
+  margin-bottom: var(--esp-3);
   font-size: var(--fs-600);
 }
 
 .vacio-texto {
-  margin: 0 0 var(--esp-5);
-  color: var(--alt-texto-suave);
+  margin-bottom: var(--esp-5);
+  color: var(--texto-suave);
 }
 
 /* ===== Hoja de filtros (móvil) ===== */
@@ -177,7 +193,7 @@
 }
 
 .hoja::backdrop {
-  background: rgb(43 29 20 / 0.46);
+  background: rgb(19 40 31 / 0.5);
 }
 
 .hoja-panel {
@@ -188,8 +204,8 @@
   display: flex;
   flex-direction: column;
   max-height: 88dvh;
-  border-radius: var(--radio-tarjeta) var(--radio-tarjeta) 0 0;
-  background: var(--alt-papel);
+  border-radius: 24px 24px 0 0;
+  background: var(--papel);
   transition: transform var(--dur-panel) var(--ease-cajon);
 }
 
@@ -206,23 +222,11 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--esp-4) var(--margen-lateral);
-  border-bottom: 1px solid var(--alt-linea);
+  border-bottom: 1px solid var(--linea);
 }
 
 .hoja-titulo {
-  margin: 0;
   font-size: var(--fs-600);
-}
-
-.hoja-cerrar {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 0;
-  border-radius: var(--radio-pildora);
-  background: transparent;
-  color: var(--alt-espresso);
 }
 
 .hoja-cuerpo {
@@ -233,7 +237,7 @@
 
 .hoja-pie {
   padding: var(--esp-4) var(--margen-lateral);
-  border-top: 1px solid var(--alt-linea);
+  border-top: 1px solid var(--linea);
 }
 
 /* ===== Responsive ===== */
@@ -262,10 +266,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .barra-herramientas {
-    align-items: stretch;
-  }
-
   .controles {
     width: 100%;
   }
@@ -274,7 +274,7 @@
     flex: 1;
   }
 
-  .orden .form-select {
+  .orden .campo {
     width: 100%;
   }
 

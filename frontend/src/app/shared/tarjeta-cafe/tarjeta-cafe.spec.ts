@@ -13,8 +13,9 @@ describe('TarjetaCafe', () => {
     fixture = TestBed.createComponent(TarjetaCafe);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('cafe', {
-      id: 1, nombre: 'Café de prueba', variedadId: 1, variedadNombre: 'Castillo', presentacionGramos: 340,
-      origen: 'Huila', stock: 3, precio: 42000, imagenUrl: null, imagenPublicId: null,
+      id: 1, nombre: 'Café de prueba', variedadId: 1, variedadNombre: 'Castillo',
+      procesoId: 2, procesoNombre: 'Honey', presentacionGramos: 340,
+      origen: 'Huila', stock: 3, precio: 42000, imagenUrl: null, imagenPublicId: null, usuarioId: 1, usuarioNombre: 'Administración',
       disponible: true, estadoStock: 'Pocas unidades',
     });
     await fixture.whenStable();
@@ -22,5 +23,16 @@ describe('TarjetaCafe', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('muestra el stock bajo y emite el café completo al pulsar "Ver producto"', () => {
+    const elemento: HTMLElement = fixture.nativeElement;
+    expect(elemento.querySelector('.disponibilidad')?.textContent).toContain('Quedan 3');
+    expect(elemento.querySelector('app-etiqueta-cafe.proceso')?.textContent).toContain('Honey');
+
+    let emitido: unknown = null;
+    component.ver.subscribe((cafe) => (emitido = cafe));
+    elemento.querySelector<HTMLButtonElement>('button.ver')!.click();
+    expect(emitido).toEqual(expect.objectContaining({ id: 1, nombre: 'Café de prueba' }));
   });
 });

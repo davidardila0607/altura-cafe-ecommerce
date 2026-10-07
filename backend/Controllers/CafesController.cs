@@ -3,9 +3,11 @@ using CafeApi.Data.Configurations;
 using CafeApi.DTOs;
 using CafeApi.Interfaces;
 using CafeApi.Models;
+using CafeApi.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace CafeApi.Controllers
 {
@@ -14,14 +16,19 @@ namespace CafeApi.Controllers
     public class CafesController : ControllerBase
     {
         private const string MensajeCafeDuplicado =
-            "Ya existe un café con ese nombre, variedad y presentación.";
+            "Ya existe un café con ese nombre, variedad, proceso y presentación.";
 
         private const string MensajeVariedadInexistente =
             "La variedad indicada no existe.";
 
+        private const string MensajeProcesoInexistente =
+            "El proceso indicado no existe.";
+
         private readonly ICafeRepository _cafeRepository;
 
         private readonly IVariedadRepository _variedadRepository;
+
+        private readonly IProcesoRepository _procesoRepository;
 
         private readonly ICloudinaryService _cloudinaryService;
 
@@ -31,12 +38,15 @@ namespace CafeApi.Controllers
         public CafesController(
             ICafeRepository cafeRepository,
             IVariedadRepository variedadRepository,
+            IProcesoRepository procesoRepository,
             ICloudinaryService cloudinaryService,
             ILogger<CafesController> logger)
         {
             _cafeRepository = cafeRepository;
 
             _variedadRepository = variedadRepository;
+
+            _procesoRepository = procesoRepository;
 
             _cloudinaryService = cloudinaryService;
 
@@ -91,10 +101,10 @@ namespace CafeApi.Controllers
             return Ok(cafe);
         }
 
-        // ✅ AUTENTICADO
-        // Cualquier usuario con JWT válido puede crear cafés.
+        // ✅ GESTIÓN DE INVENTARIO
+        // Requiere JWT válido ([Authorize], Guía 1 paso 15) + la política GestionInventario (rol Administrador).
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<ActionResult<CafeResponseDto>> Post(
             [FromBody] CreateCafeDto dto,
             CancellationToken cancellationToken)
@@ -107,11 +117,20 @@ namespace CafeApi.Controllers
                 return ValidationProblem(ModelState);
             }
 
+            // ✅ El proceso debe existir.
+            if (!await _procesoRepository.ExistsAsync(dto.ProcesoId, cancellationToken))
+            {
+                ModelState.AddModelError(nameof(dto.ProcesoId), MensajeProcesoInexistente);
+
+                return ValidationProblem(ModelState);
+            }
+
             // ✅ Creamos una entidad Cafe a partir del DTO.
             var cafe = new Cafe
             {
                 Nombre = dto.Nombre.Trim(),
                 VariedadId = dto.VariedadId,
+                ProcesoId = dto.ProcesoId,
                 Presentacion = dto.PresentacionGramos,
                 Origen = dto.Origen.Trim(),
                 Stock = dto.Stock,
@@ -120,12 +139,15 @@ namespace CafeApi.Controllers
                 ImagenPublicId = dto.ImagenPublicId
             };
 
+            // ✅ Guía 1, paso 14: el dueño del café es el usuario del token.
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
             int id;
 
             try
             {
                 // ✅ Guardamos la entidad en la base de datos.
-                id = await _cafeRepository.CreateAsync(cafe, cancellationToken);
+                id = await _cafeRepository.CreateAsync(cafe, userId, cancellationToken);
             }
             catch (DbUpdateException ex)
                 when (ex.EsViolacionDeUnicidad(CafeConfiguration.IndiceCafeUnico))
@@ -157,10 +179,9 @@ namespace CafeApi.Controllers
             );
         }
 
-        // ✅ SOLO ADMINISTRADOR
-        // Requiere JWT válido + Role = Administrador.
+        // ✅ GESTIÓN DE INVENTARIO
         [HttpPut("{id:int}")]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<ActionResult<CafeResponseDto>> Put(
             int id,
             [FromBody] UpdateCafeDto dto,
@@ -192,17 +213,27 @@ namespace CafeApi.Controllers
                 return ValidationProblem(ModelState);
             }
 
+            // ✅ El proceso debe existir.
+            if (!await _procesoRepository.ExistsAsync(dto.ProcesoId, cancellationToken))
+            {
+                ModelState.AddModelError(nameof(dto.ProcesoId), MensajeProcesoInexistente);
+
+                return ValidationProblem(ModelState);
+            }
+
             // ✅ Se guarda para borrar la imagen anterior si cambia.
             var publicIdAnterior = cafe.ImagenPublicId;
 
             cafe.Nombre = dto.Nombre.Trim();
             cafe.VariedadId = dto.VariedadId;
+            cafe.ProcesoId = dto.ProcesoId;
             cafe.Presentacion = dto.PresentacionGramos;
             cafe.Origen = dto.Origen.Trim();
             cafe.Stock = dto.Stock;
             cafe.Precio = dto.Precio;
             cafe.ImagenUrl = dto.ImagenUrl;
             cafe.ImagenPublicId = dto.ImagenPublicId;
+            // ✅ El PUT no cambia el dueño (UsuarioId): sigue siendo quien lo creó.
 
             try
             {
@@ -241,10 +272,9 @@ namespace CafeApi.Controllers
             return Ok(response);
         }
 
-        // ✅ SOLO ADMINISTRADOR
-        // Requiere JWT válido + Role = Administrador.
+        // ✅ GESTIÓN DE INVENTARIO
         [HttpDelete("{id:int}")]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<IActionResult> Delete(
             int id,
             CancellationToken cancellationToken)

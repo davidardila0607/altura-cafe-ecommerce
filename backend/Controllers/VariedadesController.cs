@@ -3,6 +3,7 @@ using CafeApi.Data.Configurations;
 using CafeApi.DTOs;
 using CafeApi.Interfaces;
 using CafeApi.Models;
+using CafeApi.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -55,9 +56,9 @@ namespace CafeApi.Controllers
             return Ok(variedad);
         }
 
-        // ✅ SOLO ADMINISTRADOR
+        // ✅ GESTIÓN DE INVENTARIO
         [HttpPost]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<ActionResult<VariedadResponseDto>> Post(
             [FromBody] CreateVariedadDto dto,
             CancellationToken cancellationToken)
@@ -96,9 +97,9 @@ namespace CafeApi.Controllers
             );
         }
 
-        // ✅ SOLO ADMINISTRADOR
+        // ✅ GESTIÓN DE INVENTARIO
         [HttpPut("{id:int}")]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<IActionResult> Put(
             int id,
             [FromBody] UpdateVariedadDto dto,
@@ -131,9 +132,9 @@ namespace CafeApi.Controllers
             return NoContent();
         }
 
-        // ✅ SOLO ADMINISTRADOR
+        // ✅ GESTIÓN DE INVENTARIO
         [HttpDelete("{id:int}")]
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Policy = Politicas.GestionInventario)]
         public async Task<IActionResult> Delete(
             int id,
             CancellationToken cancellationToken)

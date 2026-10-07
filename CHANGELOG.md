@@ -586,3 +586,153 @@ permanece reservada para autenticación interna de Supabase.
 ### 🗑️ Eliminado
 
 - Página `home` (reemplazada por `inicio`), ilustración SVG de bolsas del banner y servicio `Busqueda` (la búsqueda vive en la URL).
+
+---
+
+## [1.14.0] - 2026-10-01
+
+Rediseño inmersivo "Ascenso" y panel de administración de inventario (rama `feature/rediseno-inmersivo`).
+
+### 🎨 Rediseño "Ascenso"
+
+- **Concepto**: hacer scroll es subir la montaña, del valle (1.200 msnm) a la cumbre (2.100 msnm), con un altímetro fijo. Elegido entre tres conceptos con maqueta; incorpora el vuelo de la bolsa y el color por variedad.
+- **Sistema de diseño propio** (sin Bootstrap): paleta niebla, bosque y cereza; Bricolage Grotesque (display condensado) y Geist Mono; tokens de espaciado, forma, profundidad y movimiento; logo con la cereza en la cumbre.
+- **Inicio**: hero con la palabra "Altura" entre crestas de montaña (entrada en cascada y parallax con GSAP ScrollTrigger), selección de la casa, galería horizontal anclada "De la montaña a tu taza", cinta de notas de cata con datos de la API, mapa de orígenes, variedades y cierre "Llegaste a la cumbre".
+- **Productos**: encabezado con curvas de nivel, cards con inclinación 3D y brillo (solo con mouse), toda la card abre el producto; estados de carga, error y vacío nuevos.
+- **Vista rápida**: la bolsa vuela desde la card (View Transitions) y el panel toma el color de la variedad; notas de cata.
+- **Login y Registro**: amanecer con niebla en movimiento, línea de foco, visto de campo válido y medidor de seguridad de la contraseña. Siguen siendo solo visuales.
+- Navbar transparente que se vuelve sólido, footer con cresta y enlace discreto "Acceso administrador".
+- Versión completa con "reducir movimiento" y efectos adaptados a pantallas táctiles.
+
+### 🔐 API: autorización por políticas
+
+- `Seguridad/Roles` y `Seguridad/Politicas` con la política `GestionInventario` (hoy: rol Administrador) en todas las escrituras de cafés, variedades e imágenes. **`POST /api/cafes` ya no acepta cualquier JWT** (la cuenta Cliente recibe 403).
+- `GET /api/auth/me`: correo, nombre y roles del token. Las cuentas de prueba tienen nombre visible.
+- `DELETE /api/images?publicId=cafes/...`: borra imágenes subidas que no se usaron (solo carpeta `cafes/`, 409 si un café la usa).
+- `CafeApi.http` con casos 401, 403, `/me` y borrado de imágenes.
+
+### 🛠️ Panel de administración (`/admin`)
+
+- Acceso real en `/admin/ingresar` (las cuentas sin permiso no entran), guard `canMatch` por permiso, interceptor con el token solo para la API (401 cierra la sesión, 403 avisa), sesión en `sessionStorage` con cierre automático al expirar y mapa de permisos centralizado.
+- **Inventario**: búsqueda, crear y editar en panel lateral con imagen (validación de tipo y tamaño, vista previa y limpieza si el guardado falla), eliminar con confirmación y avisos en español.
+- **Variedades**: crear, editar y eliminar (409 si tiene cafés).
+
+### ✅ Calidad
+
+- `ng build` sin advertencias; CSS inicial de ~330 kB a ~99 kB; GSAP en un chunk diferido.
+- axe-core: 0 violaciones en todas las vistas (tienda y panel), a 1440 y 375 px, con y sin movimiento reducido.
+- LCP del Inicio ~0,4 s y CLS ~0 en local.
+- 27 pruebas unitarias y 56 e2e (dos proyectos: con movimiento y con movimiento reducido), capturas y grabación del hero y de la vista rápida.
+
+### 🗑️ Eliminado
+
+- Bootstrap (CSS), Fraunces, Inter, `PanelMarca` y el grano de papel.
+
+---
+
+## [1.15.0] - 2026-10-01
+
+Ampliación del módulo de productos: procesos, 9 variedades, catálogo de 25 cafés e imágenes nuevas (rama `feature/rediseno-inmersivo`).
+
+### 🗄️ API y base de datos
+
+- Nueva tabla **`procesos`** (nombre único de hasta 50 caracteres y descripción) con Lavado, Honey y Fermentado.
+- **9 variedades** con descripción: Castillo, Caturra, Colombia, Típica, Tabi, Bourbon Rojo, Bourbon Amarillo, Bourbon Rosado y Geisha (se retiró Moka).
+- `cafes.proceso_id`: obligatorio, FK con `ON DELETE RESTRICT`.
+- Índice único nuevo `ux_cafes_nombre_variedad_proceso_presentacion` (nombre sin mayúsculas + variedad + proceso + presentación). Mensaje de 409: "Ya existe un café con ese nombre, variedad, proceso y presentación."
+- Una sola migración: `AgregarProcesosYVariedades`.
+- `GET /api/procesos` (público). Los cafés devuelven `procesoId` y `procesoNombre`; `procesoId` es obligatorio al crear y editar, y uno inexistente responde 400.
+- `CafeApi.http`: el proceso en todos los cuerpos, `GET /api/procesos`, proceso inexistente (400) y el mismo café con otro proceso (201).
+
+### ☕ Catálogo e imágenes
+
+- Se borraron los 6 cafés anteriores (y sus imágenes en Cloudinary).
+- Catálogo de **25 cafés** de cinco regiones (Santander, Huila, Nariño, Magdalena y Cauca), en `backend/seed/catalogo.json`.
+- `seed-productos.ps1` lee el catálogo y envía el proceso. Si un guardado falla, borra la imagen recién subida. Es idempotente: la segunda ejecución omite los 25.
+- **Set 3 de imágenes, "Herbario Kraft"**:
+  - Bolsa kraft de frente sobre gris neutro, con una rama de café ilustrada sobre una banda de granos tostados.
+  - Cerezas del color de la variedad, emblema hexagonal "Café Altura" y sello circular del proceso con su color.
+  - La bolsa de 500 g es más grande. PNG de 378 a 530 kB.
+  - Las genera `frontend/herramientas/generar-bolsas.mjs` con Playwright y `sharp`.
+
+### 🎨 Frontend
+
+- **Etiquetas de café** de variedad (muestra de color) y de proceso (píldora con ícono y color propio), en las cards y en la vista rápida. La ficha de la vista rápida incluye el proceso y cómo se nota en la taza.
+- **Filtros**:
+  - Por proceso, con chips cargados desde `/api/procesos`, guardado en la URL (`?proceso=`) y combinable con los demás.
+  - Cada chip muestra cuántos cafés tiene.
+  - "Ver las 9 variedades" despliega la lista completa y la variedad elegida nunca se esconde.
+  - El buscador también encuentra por proceso.
+- **Ficha "Tres procesos, tres tazas"** dentro de la grilla del catálogo. Explica cada proceso, filtra al elegir uno y ocupa justo las columnas que faltan para que ninguna fila quede incompleta.
+- **9 colores de variedad y 3 de proceso** con contraste AA verificado. Textos de marca de cada variedad y cada proceso.
+- **Inicio**: las variedades pasan a una cuadrícula de 9 fichas con el número de cafés de cada una. El mapa muestra los 5 orígenes y los destacados salen del catálogo nuevo.
+- **Panel de administración**: select de proceso al crear y editar, con el proceso en la tabla y en la búsqueda.
+- Las fotos de producto se recortan en Cloudinary, así que la bolsa llena más la card y mide lo mismo durante el vuelo a la vista rápida.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` sin advertencias.
+- 32 pruebas unitarias, con pruebas nuevas de la lógica del catálogo y del servicio de procesos.
+- 62 pruebas e2e, entre ellas:
+  - 25 cafés y filtro por proceso.
+  - Variedad + proceso + presentación en la URL y conservados al recargar.
+  - Búsquedas "honey" y "rosado".
+  - Vista rápida con el proceso y mapa con 5 orígenes.
+  - Ficha de procesos y alta y edición con proceso en el panel.
+- axe-core: 0 violaciones, también con filtros aplicados.
+- Al terminar, la base tiene exactamente los 25 cafés y Cloudinary tiene 25 imágenes, sin restos de pruebas.
+
+---
+
+## [1.15.1] - 2026-10-02
+
+Ajustes de diseño en Productos.
+
+### 🎨 Cambiado
+
+- **Grilla uniforme**: ya no hay card gigante; todas las cards miden lo mismo (3 columnas en escritorio, 2 en tableta, 1 en móvil) y sus textos quedan alineados (cada fila de la card ocupa una línea).
+- **Bloque "Tres procesos, tres tazas"** arriba de la grilla, a todo el ancho y compacto (~200 px): "Ver N cafés" aplica el filtro del proceso, que se marca en el bloque; en móvil, los procesos se desplazan en horizontal.
+- **Filtros ordenados**: Variedad, Proceso y Origen como listas verticales con su color o ícono y el número de cafés a la derecha; Presentación con tres botones iguales. Mismo estilo en la hoja móvil.
+
+### 🐛 Corregido
+
+- Al filtrar, la página ya no salta arriba (`scroll: 'manual'` al escribir la URL).
+- Desbordamiento horizontal a 375 px causado por el texto oculto de los botones del bloque de procesos.
+- Anillo de foco recortado en la barra lateral con scroll.
+
+### ✅ Calidad
+
+- `ng build` sin advertencias; 32 pruebas unitarias y 64 e2e en verde (nuevas: alineación de las cards, bloque de procesos sin salto de scroll, sin desplazamiento horizontal en móvil).
+
+---
+
+## [1.16.0] - 2026-10-06
+
+Guía 1 del profesor: usuarios, registro, login y JWT (`docs/guias/guia-1-usuarios-login-jwt.md`).
+
+### 🚀 Añadido
+
+- **Tabla `usuario`** (nombre, email único en minúsculas, contraseña con hash de `PasswordHasher` y rol) y **dueño de cada café** (`cafes.usuario_id`, FK `RESTRICT`), con la migración `AddUsuario`.
+- **`POST /api/auth/Register`** (200 o 400 "El usuario ya existe.") y **`POST /api/auth/Login`** (200 `{ token }` o 401 "Usuario o contraseña incorrectos."), con `UsuarioDto`, `LoginDto`, `IUsuarioRepository` y `UsuarioRepository` como la guía.
+- JWT firmado por la API con la sección **`JwtSettings`** (emisor `EcommerceApi`, audiencia `EcommerceAngular`, 60 minutos) y una clave nueva de 64 bytes; el token lleva id, nombre, correo y rol.
+- **`Admin:Correos`**: los correos de esa lista se registran como Administrador.
+- `POST /api/cafes` guarda como dueño al usuario del token; `CafeResponseDto` incluye `usuarioId` y `usuarioNombre`.
+- **Frontend**: `/registro` y `/login` conectados a la API; el nombre, el correo y el rol se leen del token; la sesión dura lo que el token (`localStorage`). Menú de cuenta en el navbar (inicial, nombre, correo, "Panel de administración" solo para Administrador y "Cerrar sesión"). Columna "Creado por" en el inventario.
+
+### 🔄 Cambiado
+
+- El panel usa la misma sesión de `/login`: sin sesión lleva a `/login` y con una cuenta Cliente muestra "No tienes permiso". Un 401 de la API cierra la sesión y lleva a `/login`.
+- `GET /api/auth/me` lee el usuario de la base de datos con el id del token.
+- `seed-productos.ps1` inicia sesión con `POST /api/auth/Login` y comprueba el rol con `GET /api/auth/me`.
+- Los 25 cafés del catálogo se borraron (con sus imágenes) y se volvieron a cargar con dueño.
+
+### 🗑️ Eliminado
+
+- Las dos cuentas fijas escritas en `AuthController`, el login con Google (`/api/auth/google` y el paquete `Google.Apis.Auth`), la sección `"Jwt"`, el `UserRepository` ADO.NET y la pantalla `/admin/ingresar`.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` sin advertencias.
+- 37 pruebas unitarias (nuevas: lectura de los claims del token y servicio `Auth`).
+- 64 pruebas e2e, entre ellas: registro desde `/registro`, login correcto e incorrecto, menú de cuenta del Cliente sin panel, `/admin` sin permiso, café creado por el Administrador con "Creado por" y axe-core del login y del menú.
+- Verificado por la API: Register 200/400, Login 200/401, `POST /api/cafes` 401 sin token, 403 con un Cliente y 201 con un Administrador; GET públicos 200; contraseñas guardadas como hash (`AQAAAA…`).

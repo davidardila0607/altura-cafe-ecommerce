@@ -1,0 +1,84 @@
+/* Cuenta del usuario en el navbar: botón con la inicial y menú desplegable. */
+:host {
+  position: relative;
+  display: inline-block;
+}
+
+/* Misma medida que los botones de ícono (44 px), en bosque con la inicial en blanco. */
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: var(--radio-pildora);
+  background: var(--bosque);
+  color: var(--papel);
+  font-weight: 700;
+  font-size: var(--fs-200);
+  transition: transform var(--dur-presion) var(--ease-salida);
+}
+
+.avatar:active {
+  transform: scale(0.92);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + var(--esp-2));
+  right: 0;
+  width: max-content;
+  min-width: 15rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: var(--esp-4);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-tarjeta);
+  background: var(--papel);
+  box-shadow: var(--sombra-2);
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.nombre {
+  margin: 0;
+  font-weight: 700;
+}
+
+.email {
+  margin: 0 0 var(--esp-3);
+  overflow-wrap: anywhere;
+  color: var(--texto-suave);
+  font-size: var(--fs-100);
+}
+
+.opciones {
+  margin: 0;
+  padding: var(--esp-2) 0 0;
+  border-top: 1px solid var(--linea);
+  list-style: none;
+}
+
+.opciones a,
+.opciones button {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 var(--esp-2);
+  border: 0;
+  border-radius: var(--radio-campo);
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+}
+
+.opciones a:hover,
+.opciones button:hover {
+  background: var(--tinte-hover);
+}

@@ -23,6 +23,14 @@ namespace CafeApi.DTOs
         )]
         public int VariedadId { get; set; }
 
+        // ✅ Proceso obligatorio. Si no existe, el controlador responde 400.
+        [Range(
+            1,
+            int.MaxValue,
+            ErrorMessage = "El proceso es obligatorio."
+        )]
+        public int ProcesoId { get; set; }
+
         // ✅ Solo 340 o 500 gramos.
         [EnumDataType(
             typeof(Presentacion),

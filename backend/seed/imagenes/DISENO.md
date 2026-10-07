@@ -1,21 +1,15 @@
-# Grabado y kraft: filosofía visual de las imágenes de producto (set 2)
+# Herbario Kraft: filosofía visual de las imágenes de producto (set 3)
 
-**Grabado y kraft** es el principio de este set: el empaque se trata como un objeto real fotografiado en estudio, y la etiqueta como una pequeña lámina de grabado que cuenta de dónde viene el café.
+**Herbario Kraft** trata cada empaque como un objeto de estudio: una bolsa de papel fotografiada con la calma de una lámina botánica. El papel es materia cruda y la ilustración es precisa; la belleza nace del contraste entre la fibra mate del kraft y una rama de café dibujada con paciencia de herbario, hoja por hoja y cereza por cereza. Cada lámina debe parecer el resultado de muchas horas de trabajo minucioso, hecho por alguien en la cima de su oficio.
 
-**Objeto y luz.** Una bolsa stand-up de papel kraft en vista de tres cuartos: cara frontal y fuelle lateral en sombra, sello superior engarzado, cierre, válvula de desgasificación y pliegues suaves. La luz de estudio entra desde la izquierda; la sombra se proyecta hacia la derecha sobre una mesa cálida y una sombra de contacto ancla la bolsa al suelo. Unos granos tostados en primer plano dan escala y materia.
+**Espacio y forma.** Un solo objeto, centrado, de frente, a la altura de los ojos, sobre un gris neutro y silencioso (#ECECEA). No hay mesa ni accesorios: el vacío alrededor es parte de la composición y obliga a mirar la superficie. La bolsa stand-up se sostiene sola; el sello superior engarzado, la muesca de apertura, el cierre y la válvula son detalles de ingeniería tratados con respeto casi documental.
 
-**Material.** El kraft se construye con ruido fractal y fibras alargadas (`feTurbulence`), acabado mate; la etiqueta es papel crema con grano propio. Nada brilla: todo es papel.
+**Luz y materia.** Luz de estudio suave y difusa que cae desde arriba: la parte superior de la bolsa se aclara, los costados se curvan hacia la sombra y debajo se forma una sombra blanda, apenas desplazada, que ancla el objeto al suelo. El kraft se construye con ruido fractal y fibras, pliegues sutiles y acabado mate; la tinta se imprime sobre esa fibra y hereda su grano. Nada brilla salvo la piel de las cerezas.
 
-**Etiqueta.** Logo Altura, un grabado de la región de origen en líneas finas y tramas (cañón, laderas cafeteras, volcán, sierra nevada, terrazas), nombre del café en Fraunces con eje óptico, variedad y origen en Inter, y el peso neto. El grabado y los filetes usan el color de la variedad: Castillo café `#6B4226`, Geisha verde hoja `#3F5A40`, Moka terracota `#B5562F`.
+**Ilustración.** Una banda oscura de granos tostados atraviesa la bolsa como un estrato geológico; sobre ella crece una rama de café con hojas de nervaduras finas, flores blancas de cinco pétalos y racimos de cerezas cuyo color sigue a la variedad: rojas en general, amarillas en el Bourbon Amarillo, rosadas en el Bourbon Rosado. Cada bolsa recibe una rama ligeramente distinta, como dos ejemplares de la misma especie: la serie se reconoce como familia sin repetirse. La ejecución debe ser meticulosa, del nivel de un maestro ilustrador.
 
-**Escala y serie.** Todas las láminas comparten encuadre, luz y suelo. La bolsa de 500 g es un 17 % más grande que la de 340 g y apoya en la misma línea, de modo que la diferencia se lee al recorrer la grilla. Solo cambian el grabado, el color y el texto: la serie se reconoce como una sola familia.
+**Tipografía y señales.** El emblema hexagonal de Altura corona la bolsa. El nombre del café, en una grotesca condensada y firme, es la única voz alta; variedad, origen y presentación se dicen en susurros ordenados, con etiquetas monoespaciadas. El proceso se marca con un sello circular de color propio (Lavado azul de agua, Honey ámbar de miel, Fermentado vino), y un filete del color de la variedad ata la información. Abajo, una línea discreta: "100% café colombiano premium". Todo el texto en español, con tildes impecables y márgenes generosos: nada roza un borde, nada se superpone.
 
-**Técnica.** Cada producto tiene su SVG fuente (las fuentes se nombran por familia: Fraunces e Inter) y su PNG de 1600×1600 exportado con Chromium cargando las fuentes variables de @fontsource.
+**Escala y serie.** La bolsa de 500 g es un 17 % más grande que la de 340 g y apoya en la misma línea de suelo; el resto de la composición no cambia. Veinticinco láminas, una sola luz, un solo encuadre: el cuidado está en la constancia.
 
-| Café | Grabado |
-|---|---|
-| Mesa de los Santos (Santander) | Cañón del Chicamocha |
-| Pitalito Reserva (Huila) | Laderas cafeteras con surcos y cafetos |
-| Volcán Galeras (Nariño) | Volcán con fumarola |
-| Sierra Nevada (Magdalena) | Picos nevados |
-| Tierradentro (Cauca) | Lomas en terrazas |
+**Técnica.** `frontend/herramientas/generar-bolsas.mjs` lee `backend/seed/catalogo.json`, dibuja cada SVG (fuentes por familia: Bricolage Grotesque y Geist Mono), lo exporta a PNG de 1600×1600 con Chromium (fuentes variables de @fontsource) y lo comprime con `sharp` (paleta de colores) por debajo de 600 kB.

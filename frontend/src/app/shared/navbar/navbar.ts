@@ -1,19 +1,23 @@
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { Logo } from '../logo/logo';
+import { MenuUsuario } from '../menu-usuario/menu-usuario';
 
 /** Espera tras la última tecla antes de actualizar la búsqueda en /productos. */
 const ESPERA_BUSQUEDA_MS = 250;
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive, Logo],
+  imports: [RouterLink, RouterLinkActive, Logo, MenuUsuario],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })
 export class Navbar {
+  /** Fondo sólido (el usuario ya bajó por la página). Lo decide el layout Sitio. */
+  readonly solido = input(false);
+
   private readonly router = inject(Router);
   protected readonly menuAbierto = signal(false);
   private espera: ReturnType<typeof setTimeout> | undefined;

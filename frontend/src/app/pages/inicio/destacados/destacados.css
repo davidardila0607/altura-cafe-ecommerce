@@ -1,32 +1,25 @@
+:host {
+  display: block;
+}
+
 .seccion {
   padding-block: var(--seccion);
-  background: var(--alt-papel);
 }
 
 .encabezado {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--esp-4) var(--esp-6);
+  display: grid;
+  gap: var(--esp-4);
   margin-bottom: var(--esp-7);
 }
 
-.titulo-seccion {
-  margin: 0 0 var(--esp-3);
-  font-size: var(--fs-700);
-}
-
-.bajada {
-  max-width: 34rem;
-  margin: 0;
-  color: var(--alt-texto-suave);
+.encabezado .enlace-texto {
+  justify-self: start;
 }
 
 /* Jerarquía: el primero ocupa dos filas; los otros dos se apilan a su lado. */
 .rejilla {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: clamp(1.25rem, 2.2vw, 2rem);
 }
 
@@ -39,10 +32,9 @@
 }
 
 .esqueleto-tarjeta {
-  border-radius: var(--radio-tarjeta);
-  background: var(--alt-papel);
-  box-shadow: var(--sombra-1);
   overflow: hidden;
+  border-radius: var(--radio-tarjeta);
+  background: var(--papel);
 }
 
 .foto-esqueleto {

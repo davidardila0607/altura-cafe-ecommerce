@@ -1,0 +1,114 @@
+<header class="encabezado">
+  <div>
+    <h1 class="titulo">Variedades</h1>
+    @if (variedades.hasValue()) {
+      <p class="resumen">{{ filas().length }} variedades</p>
+    }
+  </div>
+  <button type="button" class="boton boton-primario" (click)="abrir(null)">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+    Nueva variedad
+  </button>
+</header>
+
+@if (variedades.isLoading()) {
+  <div class="tabla-envoltorio" aria-busy="true">
+    <p class="visually-hidden" role="status">Cargando variedades…</p>
+    @for (n of [1, 2, 3]; track n) {
+      <span class="esqueleto fila-esqueleto" aria-hidden="true"></span>
+    }
+  </div>
+} @else if (variedades.error()) {
+  <app-estado-error titulo="No pudimos cargar las variedades" (reintentar)="variedades.reload()" />
+} @else {
+  <div class="tabla-envoltorio">
+    <table class="tabla">
+      <caption class="visually-hidden">Variedades de café</caption>
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Descripción</th>
+          <th scope="col" class="numero">Cafés</th>
+          <th scope="col"><span class="visually-hidden">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (fila of filas(); track fila.id) {
+          <tr data-testid="fila-variedad">
+            <td><span class="nombre-fila">{{ fila.nombre }}</span></td>
+            <td class="detalle-fila" data-titulo="Descripción">{{ fila.descripcion || 'Sin descripción' }}</td>
+            <td class="numero" data-titulo="Cafés">{{ fila.conteo }}</td>
+            <td>
+              <div class="acciones-fila">
+                <button type="button" class="accion" [attr.aria-label]="'Editar variedad ' + fila.nombre" (click)="abrir(fila)">
+                  <i class="bi bi-pencil" aria-hidden="true"></i> Editar
+                </button>
+                <button type="button" class="accion peligro" [attr.aria-label]="'Eliminar variedad ' + fila.nombre" (click)="pedirEliminacion(fila)">
+                  <i class="bi bi-trash3" aria-hidden="true"></i> Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="vacio">Todavía no hay variedades. Crea la primera con «Nueva variedad».</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<dialog #panel appAtraparFoco class="panel" aria-labelledby="panel-variedad-titulo">
+  <form class="formulario-panel" [formGroup]="formulario" (ngSubmit)="guardar()" novalidate>
+    <div class="panel-cabecera">
+      <h2 id="panel-variedad-titulo" class="panel-titulo">{{ editando() ? 'Editar variedad' : 'Nueva variedad' }}</h2>
+      <button type="button" class="boton-icono" aria-label="Cerrar panel" (click)="cerrarPanel()">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="panel-cuerpo">
+      @if (errorPanel(); as mensaje) {
+        <p class="error-general" role="alert">
+          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+          {{ mensaje }}
+        </p>
+      }
+
+      <div class="grupo-campo">
+        <label for="variedad-nombre" class="etiqueta">Nombre</label>
+        <input id="variedad-nombre" class="campo" formControlName="nombre" maxlength="100" [attr.aria-invalid]="mostrarErrorNombre()" aria-describedby="variedad-nombre-error" />
+        <p id="variedad-nombre-error" class="mensaje-error">
+          @if (mostrarErrorNombre()) {
+            Escribe el nombre de la variedad (máximo 100 caracteres).
+          }
+        </p>
+      </div>
+
+      <div class="grupo-campo">
+        <label for="variedad-descripcion" class="etiqueta">Descripción</label>
+        <textarea id="variedad-descripcion" class="campo" formControlName="descripcion" aria-describedby="variedad-descripcion-ayuda"></textarea>
+        <p id="variedad-descripcion-ayuda" class="ayuda">Opcional. Se muestra en la tienda si la variedad no tiene texto de marca.</p>
+      </div>
+    </div>
+
+    <div class="panel-pie">
+      <button type="button" class="boton boton-contorno" (click)="cerrarPanel()">Cancelar</button>
+      <button type="submit" class="boton boton-primario" [disabled]="guardando()">
+        {{ guardando() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<dialog #confirmacion appAtraparFoco class="confirmacion" aria-labelledby="confirmacion-variedad-titulo" aria-describedby="confirmacion-variedad-texto">
+  <h2 id="confirmacion-variedad-titulo">¿Eliminar la variedad «{{ aEliminar()?.nombre }}»?</h2>
+  <p id="confirmacion-variedad-texto">Esta acción es irreversible. Si la variedad tiene cafés, no se podrá eliminar.</p>
+  <div class="botones">
+    <button type="button" class="boton boton-contorno" (click)="cancelarEliminacion()">Cancelar</button>
+    <button type="button" class="boton boton-peligro" [disabled]="eliminando()" (click)="confirmarEliminacion()">
+      {{ eliminando() ? 'Eliminando…' : 'Eliminar' }}
+    </button>
+  </div>
+</dialog>

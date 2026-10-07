@@ -1,89 +1,101 @@
+:host {
+  display: block;
+}
+
 .seccion {
   padding-block: var(--seccion);
-  background: var(--alt-crema);
+  background: var(--papel);
 }
 
-.titulo-seccion {
-  max-width: 22ch;
-  margin: 0 0 var(--esp-7);
-  font-size: var(--fs-700);
+.bajada {
+  margin-top: var(--esp-4);
 }
 
-.filas {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--alt-linea-fuerte);
-}
-
-/* Bandas tipográficas: muestra de trama, nombre grande, texto editorial y acción. */
-.fila {
+/* Cuadrícula de 9 fichas: 3 columnas en escritorio, 2 en tableta y 1 en móvil. */
+.rejilla {
   display: grid;
-  grid-template-columns: 4rem minmax(0, 3fr) minmax(0, 5fr) minmax(0, 2.4fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: var(--esp-7);
+  border-top: 1px solid var(--linea-fuerte);
+  border-left: 1px solid var(--linea);
+}
+
+.ficha {
+  padding: var(--esp-6) var(--esp-5);
+  border-right: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea);
+}
+
+.cabecera {
+  display: flex;
   align-items: center;
-  gap: var(--esp-4) clamp(1.25rem, 3vw, 3rem);
-  padding-block: clamp(1.75rem, 3vw, 2.75rem);
-  border-bottom: 1px solid var(--alt-linea-fuerte);
+  gap: var(--esp-4);
 }
 
 .muestra {
-  width: 4rem;
-  height: 4rem;
+  position: relative;
+  flex: none;
+  width: 3.25rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--color-variedad);
+}
+
+.muestra::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(255 255 255 / 0.45);
+  mask: url('/texturas/curvas-nivel.svg') center / 300%;
 }
 
 .nombre {
-  margin: 0;
-  font-size: clamp(2.2rem, 1.6rem + 2.4vw, 3.4rem);
-  font-weight: 440;
-  font-style: italic;
-  line-height: 1;
+  color: var(--color-variedad);
+  font-size: var(--fs-600);
+  font-weight: 800;
+  font-stretch: 75%;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
 }
 
 .texto {
-  max-width: 48ch;
-  margin: 0;
-  color: var(--alt-texto-suave);
+  margin-top: var(--esp-4);
+  color: var(--texto-suave);
 }
 
 .accion {
-  display: grid;
-  justify-items: end;
-  gap: var(--esp-2);
-  text-align: right;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2) var(--esp-4);
+  margin-top: var(--esp-3);
 }
 
 .conteo {
+  color: var(--texto-suave);
+  font-family: var(--fuente-mono);
   font-size: var(--fs-200);
-  color: var(--alt-texto-suave);
 }
 
-.fila-esqueleto {
-  height: 7rem;
-  margin-bottom: var(--esp-3);
+.ficha-esqueleto {
+  height: 13rem;
+  margin: var(--esp-3);
 }
 
-@media (max-width: 991.98px) {
-  .fila {
-    grid-template-columns: 3.25rem minmax(0, 1fr);
-    align-items: start;
+@media (max-width: 1099.98px) {
+  .rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639.98px) {
+  .rejilla {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .muestra {
-    width: 3.25rem;
-    height: 3.25rem;
-  }
-
-  .nombre {
-    align-self: center;
-  }
-
-  .texto,
-  .accion {
-    grid-column: 2;
-  }
-
-  .accion {
-    justify-items: start;
-    text-align: left;
+  .ficha {
+    padding-inline: var(--esp-4);
   }
 }

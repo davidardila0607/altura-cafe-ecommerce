@@ -4,8 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Cafe } from '../../core/models/cafe';
 import { Cafes } from '../../core/services/cafes';
 import { Presentaciones } from '../../core/services/presentaciones';
+import { Procesos } from '../../core/services/procesos';
 import { Variedades } from '../../core/services/variedades';
-import { cambiosDeMedia, coincideMedia } from '../../core/utils/medios';
 import { conTransicion } from '../../core/utils/transicion';
 import { contarCafes } from '../../core/utils/texto';
 import { EstadoError } from '../../shared/estado-error/estado-error';
@@ -15,6 +15,8 @@ import { AtraparFoco } from '../../shared/atrapar-foco/atrapar-foco';
 import {
   aplicarFiltros,
   contarFiltrosActivos,
+  claveOrigen,
+  contarPor,
   FILTROS_VACIOS,
   Filtros as EstadoFiltros,
   filtrosAUrl,
@@ -25,16 +27,14 @@ import {
   ORDENES,
 } from './catalogo';
 import { Filtros } from './filtros/filtros';
+import { GuiaProcesos } from './guia-procesos/guia-procesos';
 
 /** Espera antes de escribir la búsqueda en la URL mientras se teclea. */
 const ESPERA_URL_MS = 300;
 
-/** La card destacada (bloque 2x2) solo se usa con la grilla de 3 columnas. */
-const CONSULTA_ANCHO_AMPLIO = '(min-width: 1200px)';
-
 @Component({
   selector: 'app-productos',
-  imports: [Filtros, TarjetaCafe, VistaRapida, EstadoError, AtraparFoco],
+  imports: [Filtros, GuiaProcesos, TarjetaCafe, VistaRapida, EstadoError, AtraparFoco],
   templateUrl: './productos.html',
   styleUrl: './productos.css',
 })
@@ -42,6 +42,7 @@ export class Productos {
   private readonly cafesApi = inject(Cafes);
   private readonly variedadesApi = inject(Variedades);
   private readonly presentacionesApi = inject(Presentaciones);
+  private readonly procesosApi = inject(Procesos);
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
   private readonly appRef = inject(ApplicationRef);
@@ -49,6 +50,7 @@ export class Productos {
   protected readonly cafes = rxResource({ stream: () => this.cafesApi.listar() });
   protected readonly variedades = rxResource({ stream: () => this.variedadesApi.listar() });
   protected readonly presentaciones = rxResource({ stream: () => this.presentacionesApi.listar() });
+  protected readonly procesos = rxResource({ stream: () => this.procesosApi.listar() });
 
   protected readonly ordenes = ORDENES;
 
@@ -65,25 +67,16 @@ export class Productos {
     this.presentaciones.hasValue() ? this.presentaciones.value() : [],
   );
   protected readonly origenes = computed(() => opcionesDeOrigen(this.todos()));
-
-  private readonly anchoAmplio = toSignal(cambiosDeMedia(CONSULTA_ANCHO_AMPLIO), {
-    initialValue: coincideMedia(CONSULTA_ANCHO_AMPLIO),
-  });
-
-  /**
-   * Jerarquía: con el orden "Destacados", sin filtros y en la grilla de 3 columnas, el primer
-   * café ocupa un bloque de 2x2. Solo si las filas quedan completas (resultados múltiplo de 3).
-   */
-  protected readonly conDestacado = computed(() => {
-    const n = this.resultados().length;
-    return (
-      this.anchoAmplio() &&
-      this.filtros().orden === 'destacados' &&
-      this.activos() === 0 &&
-      !this.filtros().q &&
-      n >= 6 &&
-      n % 3 === 0
-    );
+  protected readonly listaProcesos = computed(() => (this.procesos.hasValue() ? this.procesos.value() : []));
+  /** Cafés por variedad, proceso y origen (sobre todo el catálogo): el número de cada fila del filtro. */
+  protected readonly conteoVariedades = computed(() => contarPor(this.todos(), 'variedadNombre'));
+  protected readonly conteoProcesos = computed(() => contarPor(this.todos(), 'procesoNombre'));
+  protected readonly conteoOrigenes = computed(() => {
+    const conteo: Record<string, number> = {};
+    for (const cafe of this.todos()) {
+      conteo[claveOrigen(cafe)] = (conteo[claveOrigen(cafe)] ?? 0) + 1;
+    }
+    return conteo;
   });
 
   protected readonly resumen = computed(() => {
@@ -92,7 +85,7 @@ export class Productos {
     return visibles === total ? contarCafes(total) : `${visibles} de ${contarCafes(total)}`;
   });
 
-  protected readonly idVistaRapida = signal<number | null>(null);
+  protected readonly cafeSeleccionado = signal<Cafe | null>(null);
   protected readonly panelAbierto = signal(false);
   private readonly panel = viewChild<ElementRef<HTMLDialogElement>>('panelFiltros');
 
@@ -145,6 +138,9 @@ export class Productos {
     if (this.presentaciones.error()) {
       this.presentaciones.reload();
     }
+    if (this.procesos.error()) {
+      this.procesos.reload();
+    }
   }
 
   // ===== Panel de filtros en móvil =====
@@ -171,6 +167,7 @@ export class Productos {
     if (mismosFiltros(f, filtrosDesdeUrl(this.ruta.snapshot.queryParamMap))) {
       return;
     }
-    void this.router.navigate([], { relativeTo: this.ruta, queryParams: filtrosAUrl(f), replaceUrl: true });
+    // scroll: 'manual': al filtrar, el router no lleva la página arriba (sí lo hace al cambiar de ruta).
+    void this.router.navigate([], { relativeTo: this.ruta, queryParams: filtrosAUrl(f), replaceUrl: true, scroll: 'manual' });
   }
 }

@@ -7,6 +7,9 @@ export interface Cafe {
   nombre: string;
   variedadId: number;
   variedadNombre: string;
+  /** Proceso de beneficio: Lavado, Honey o Fermentado. */
+  procesoId: number;
+  procesoNombre: string;
   /** 340 o 500. */
   presentacionGramos: number;
   origen: string;
@@ -15,7 +18,23 @@ export interface Cafe {
   precio: number;
   imagenUrl: string | null;
   imagenPublicId: string | null;
+  /** Usuario que creó el café (lo asigna la API con el token; Guía 1). */
+  usuarioId: number;
+  usuarioNombre: string;
   disponible: boolean;
   /** "Agotado" | "Pocas unidades" | "Disponible" | "Alta disponibilidad". */
   estadoStock: string;
+}
+
+/** Datos para crear o actualizar un café (`CreateCafeDto` / `UpdateCafeDto`). */
+export interface CafeGuardar {
+  nombre: string;
+  variedadId: number;
+  procesoId: number;
+  presentacionGramos: number;
+  origen: string;
+  stock: number;
+  precio: number;
+  imagenUrl: string | null;
+  imagenPublicId: string | null;
 }

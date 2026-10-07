@@ -4,101 +4,122 @@
 }
 
 .tarjeta {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--alt-papel);
   border-radius: var(--radio-tarjeta);
+  background: var(--papel);
   box-shadow: var(--sombra-1);
-  overflow: hidden;
-  transition: transform 260ms var(--ease-salida), box-shadow 260ms var(--ease-salida);
+  /* Sin overflow: hidden para que la sombra y la inclinación 3D no se recorten. */
+  transition:
+    transform 500ms var(--ease-salida),
+    box-shadow 300ms ease;
 }
 
-/* La foto ya trae fondo cálido: se funde con su contenedor. */
-.tarjeta-imagen {
-  position: relative;
-  aspect-ratio: 4 / 5;
-  background: var(--alt-crema-hondo);
-  overflow: hidden;
+/* Brillo que sigue al mouse (la directiva appInclinar mueve --luz-x/--luz-y). */
+.tarjeta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: radial-gradient(420px circle at var(--luz-x, 50%) var(--luz-y, 0%), rgb(255 255 255 / 0.32), transparent 55%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+.tarjeta[data-inclinado] {
+  box-shadow: var(--sombra-2);
+}
+
+.tarjeta[data-inclinado]::before {
+  opacity: 1;
+}
+
+.imagen {
   display: grid;
   place-items: center;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radio-tarjeta) var(--radio-tarjeta) 0 0;
+  background: var(--niebla-honda);
 }
 
-.tarjeta-imagen img {
+.imagen img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 62%;
-  transition: transform 520ms var(--ease-salida);
+  object-position: 50% 55%;
+  transition: scale 700ms var(--ease-salida);
 }
 
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .tarjeta:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--sombra-2);
-  }
-
-  .tarjeta:hover .tarjeta-imagen img {
-    transform: scale(1.04);
-  }
-}
-
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
-  .tarjeta:hover {
-    box-shadow: var(--sombra-2);
-  }
-}
-
-.agotada .tarjeta-imagen img {
-  filter: saturate(0.45) brightness(1.03);
+.tarjeta[data-inclinado] .imagen img {
+  scale: 1.04;
 }
 
 .sin-imagen {
   font-size: 3rem;
-  color: var(--alt-cafe);
+  color: var(--helecho);
 }
 
-.tarjeta-cuerpo {
+.agotada .imagen img {
+  filter: grayscale(0.7);
+  opacity: 0.8;
+}
+
+/* Sin position: relative a propósito: así el ::after del botón "Ver producto" se extiende
+   sobre toda la .tarjeta (imagen incluida) y no solo sobre el cuerpo. */
+.cuerpo {
   display: flex;
-  flex-direction: column;
   flex: 1;
-  padding: var(--esp-5) var(--esp-5) var(--esp-5);
+  flex-direction: column;
+  padding: var(--esp-5);
 }
 
-.variedad {
+/* Filas de una sola línea (variedad + gramos; origen + proceso). */
+.fila {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  margin: 0 0 var(--esp-2);
-  font-size: var(--fs-200);
-  font-weight: 600;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  min-height: 1.75rem;
 }
 
-.muestra {
-  width: 0.7rem;
-  height: 0.7rem;
-  border-radius: 2px;
-}
-
-.separador,
 .gramos {
-  color: var(--alt-texto-suave);
+  flex: none;
+  color: var(--bosque);
+  font-family: var(--fuente-mono);
   font-weight: 500;
+  font-size: var(--fs-100);
 }
 
+/* Un nombre muy largo se corta con "…" (el completo está en el title y en la vista rápida). */
 .nombre {
-  margin: 0 0 var(--esp-2);
+  overflow: hidden;
+  margin-block: var(--esp-2) var(--esp-1);
   font-size: var(--fs-500);
-  font-weight: 480;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 750;
+  font-stretch: 80%;
+  letter-spacing: -0.03em;
 }
 
 .origen {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  margin: 0;
-  color: var(--alt-texto-suave);
+  min-width: 0;
+  color: var(--texto-suave);
   font-size: var(--fs-200);
+}
+
+.recorte {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pie {
@@ -107,91 +128,123 @@
   justify-content: space-between;
   gap: var(--esp-3);
   margin-top: auto;
-  padding-block: var(--esp-5) var(--esp-4);
+  padding-top: var(--esp-5);
 }
 
 .precio {
-  margin: 0;
-  font-family: var(--alt-fuente-titulos);
-  font-size: var(--fs-500);
-  font-weight: 560;
-  font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
+  font-size: var(--fs-500);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .disponibilidad {
-  margin: 0;
-  font-size: var(--fs-200);
-  font-weight: 560;
-  color: var(--alt-verde);
   white-space: nowrap;
+  font-size: var(--fs-200);
+  font-weight: 600;
+  color: var(--musgo);
 }
 
 .disponibilidad[data-tipo='bajo'] {
-  color: var(--alt-terracota-texto);
+  color: var(--cereza);
 }
 
 .disponibilidad[data-tipo='agotado'] {
-  padding: 0.2rem 0.65rem;
+  padding: 0.15rem 0.6rem;
   border-radius: var(--radio-pildora);
-  background: var(--alt-espresso);
-  color: var(--alt-crema);
-  font-size: var(--fs-100);
+  background: var(--bosque);
+  color: var(--texto-claro);
 }
 
 .ver {
-  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.75rem;
+  margin-top: var(--esp-4);
+  padding: 0 0 0 0.05rem;
+  border: 0;
+  border-top: 1px solid var(--linea);
+  background: none;
+  font-weight: 700;
+  text-align: left;
 }
 
-/* ===== Variante destacada ===== */
-:host(.destacada) .tarjeta-imagen {
+.ver i {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--bosque);
+  color: var(--texto-claro);
+  font-size: 0.85rem;
+  transition:
+    rotate 400ms var(--ease-salida),
+    background-color var(--dur-rapida) ease;
+}
+
+/* Toda la card es el área del botón. */
+.ver::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: var(--radio-tarjeta);
+}
+
+.ver:focus-visible {
+  outline: none;
+}
+
+.ver:focus-visible::after {
+  outline: 2px solid var(--cereza);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta:hover .ver i {
+    background: var(--cereza);
+    rotate: 45deg;
+  }
+}
+
+.tarjeta:active {
+  scale: 0.99;
+}
+
+/* ===== Destacada: más grande (primera de la selección del Inicio) ===== */
+:host(.destacada) .imagen {
   aspect-ratio: 5 / 4;
 }
 
-:host(.destacada) .tarjeta-imagen img {
-  object-position: 50% 66%;
-}
-
 :host(.destacada) .nombre {
-  font-size: var(--fs-700);
-  line-height: var(--lh-ajustado);
-}
-
-:host(.destacada) .precio {
   font-size: var(--fs-600);
 }
 
+/* ===== Horizontal: imagen al lado del texto en escritorio ===== */
 @media (min-width: 768px) {
-  :host(.destacada) .tarjeta-cuerpo {
-    padding: var(--esp-6);
-  }
-}
-
-/* En escritorio la destacada ocupa dos filas: la imagen crece para llenar el alto. */
-@media (min-width: 992px) {
-  :host(.destacada) .tarjeta-imagen {
-    flex: 1 1 auto;
-    aspect-ratio: auto;
-    min-height: 22rem;
-  }
-}
-
-/* ===== Variante horizontal (solo escritorio) ===== */
-@media (min-width: 992px) {
   :host(.horizontal) .tarjeta {
     flex-direction: row;
   }
 
-  :host(.horizontal) .tarjeta-imagen {
-    flex: 0 0 42%;
+  :host(.horizontal) .imagen {
+    flex: 0 0 44%;
     aspect-ratio: auto;
+    border-radius: var(--radio-tarjeta) 0 0 var(--radio-tarjeta);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta,
+  .tarjeta:active {
+    transform: none !important;
+    scale: none;
   }
 
-  :host(.horizontal) .tarjeta-cuerpo {
-    padding: var(--esp-5) var(--esp-6);
-  }
-
-  :host(.horizontal) .nombre {
-    font-size: var(--fs-600);
+  .imagen img,
+  .tarjeta[data-inclinado] .imagen img {
+    scale: none;
   }
 }

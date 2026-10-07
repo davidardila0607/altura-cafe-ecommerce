@@ -23,8 +23,11 @@ namespace CafeApi.Interfaces
         );
 
         // ✅ Inserta el café y devuelve su Id.
+        // Guía 1, paso 14: recibe el userId (sale del JWT) para guardarlo como dueño.
+        // Va antes del CancellationToken, que por convención siempre es el último.
         Task<int> CreateAsync(
             Cafe cafe,
+            int userId,
             CancellationToken cancellationToken
         );
 
@@ -37,6 +40,12 @@ namespace CafeApi.Interfaces
         // ✅ Borrado físico.
         Task DeleteAsync(
             Cafe cafe,
+            CancellationToken cancellationToken
+        );
+
+        // ✅ true si algún café usa esa imagen de Cloudinary.
+        Task<bool> ImagenEnUsoAsync(
+            string publicId,
             CancellationToken cancellationToken
         );
     }
