@@ -54,6 +54,12 @@ export const routes: Routes = [
         title: 'Variedades | Altura',
         loadComponent: () => import('./pages/admin/variedades/variedades-admin').then((m) => m.VariedadesAdmin),
       },
+      {
+        path: 'usuarios',
+        title: 'Usuarios | Altura',
+        canMatch: [requierePermiso('usuarios.gestionar')],
+        loadComponent: () => import('./pages/admin/usuarios/usuarios-admin').then((m) => m.UsuariosAdmin),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

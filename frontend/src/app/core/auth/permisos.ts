@@ -7,6 +7,8 @@
  */
 export const PERMISOS = {
   'inventario.gestionar': ['Administrador'],
+  // Ver usuarios y cambiar su rol (política GestionUsuarios).
+  'usuarios.gestionar': ['Administrador'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type Permiso = keyof typeof PERMISOS;
