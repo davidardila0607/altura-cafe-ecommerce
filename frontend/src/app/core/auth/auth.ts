@@ -3,21 +3,22 @@ import { computed, inject, Service, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { RespuestaLogin, Sesion, UsuarioActual } from '../models/sesion';
+import { RespuestaLogin, RespuestaRegistro, Sesion } from '../models/sesion';
 import { Permiso, PERMISOS } from './permisos';
+import { leerToken } from './token';
 
-/** Clave de la sesión en sessionStorage (se borra al cerrar la pestaña). */
+/** Clave de la sesión en localStorage (sobrevive a cerrar la pestaña hasta que el token expira). */
 const CLAVE_SESION = 'altura.sesion';
 
 /**
- * Sesión del panel de administración.
+ * Sesión del usuario (Guía 1).
  *
- * - iniciarSesion(): POST /api/auth/login → token; GET /api/auth/me → nombre y roles.
- * - La sesión vive en un signal y se copia en sessionStorage para sobrevivir a una recarga.
+ * - registrar(): POST /api/auth/Register → { mensaje }.
+ * - iniciarSesion(): POST /api/auth/Login → { token }; el nombre, el correo y el rol
+ *   se leen de los claims del token (token.ts), sin otra petición.
+ * - La sesión vive en un signal y se copia en localStorage para sobrevivir a una recarga.
  * - Cuando el token expira, la sesión se cierra sola (un temporizador hasta la hora de "exp").
  * - tienePermiso(): consulta el mapa de permisos (permisos.ts) con los roles del usuario.
- *
- * El Login y el Registro públicos (/login, /registro) NO usan este servicio: son solo visuales.
  */
 @Service()
 export class Auth {
@@ -28,41 +29,44 @@ export class Auth {
   private readonly _sesion = signal<Sesion | null>(null);
   readonly sesion = this._sesion.asReadonly();
   readonly autenticado = computed(() => this._sesion() !== null);
-  /** Por qué se cerró la sesión la última vez (para mostrarlo en la pantalla de ingreso). */
+  /** Por qué se cerró la sesión la última vez (para mostrarlo en /login). */
   readonly motivoCierre = signal<'expirada' | null>(null);
 
   constructor() {
     this.restaurar();
   }
 
-  /** Devuelve la sesión si el usuario puede gestionar el inventario; si no, lanza un error. */
+  /** Crea la cuenta. Si el correo ya existe, la API responde 400 con { mensaje }. */
+  async registrar(nombre: string, email: string, password: string): Promise<string> {
+    const { mensaje } = await firstValueFrom(
+      this.http.post<RespuestaRegistro>(`${environment.apiBaseUrl}/auth/Register`, { nombre, email, password }),
+    );
+    return mensaje;
+  }
+
+  /** Inicia sesión. Con un correo o una contraseña incorrectos la API responde 401. */
   async iniciarSesion(email: string, password: string): Promise<Sesion> {
     const { token } = await firstValueFrom(
-      this.http.post<RespuestaLogin>(`${environment.apiBaseUrl}/auth/login`, { email, password }),
+      this.http.post<RespuestaLogin>(`${environment.apiBaseUrl}/auth/Login`, { email, password }),
     );
-    // Todavía no hay sesión guardada: el token se envía a mano en esta petición.
-    const usuario = await firstValueFrom(
-      this.http.get<UsuarioActual>(`${environment.apiBaseUrl}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-    );
-    const sesion: Sesion = { ...usuario, token, expira: expiracionDelToken(token) };
+    const sesion: Sesion = { ...leerToken(token), token };
     this.guardar(sesion);
     this.motivoCierre.set(null);
     return sesion;
   }
 
+  /** Borra la sesión. Si el usuario estaba en el panel, lo lleva a /login. */
   cerrarSesion(motivo: 'expirada' | null = null): void {
     clearTimeout(this.temporizador);
     this._sesion.set(null);
     this.motivoCierre.set(motivo);
     try {
-      sessionStorage.removeItem(CLAVE_SESION);
+      localStorage.removeItem(CLAVE_SESION);
     } catch {
       // Almacenamiento bloqueado: no hay nada que borrar.
     }
-    if (this.router.url.startsWith('/admin') && !this.router.url.startsWith('/admin/ingresar')) {
-      void this.router.navigate(['/admin/ingresar']);
+    if (motivo === 'expirada' || this.router.url.startsWith('/admin')) {
+      void this.router.navigate(['/login']);
     }
   }
 
@@ -76,7 +80,7 @@ export class Auth {
   private guardar(sesion: Sesion): void {
     this._sesion.set(sesion);
     try {
-      sessionStorage.setItem(CLAVE_SESION, JSON.stringify(sesion));
+      localStorage.setItem(CLAVE_SESION, JSON.stringify(sesion));
     } catch {
       // Sin almacenamiento la sesión dura hasta recargar la página.
     }
@@ -86,13 +90,13 @@ export class Auth {
   /** Recupera la sesión guardada (si no expiró) al recargar la página. */
   private restaurar(): void {
     try {
-      const guardada = sessionStorage.getItem(CLAVE_SESION);
+      const guardada = localStorage.getItem(CLAVE_SESION);
       const sesion = guardada ? (JSON.parse(guardada) as Sesion) : null;
       if (sesion && sesion.expira > Date.now()) {
         this._sesion.set(sesion);
         this.programarCierre(sesion.expira);
       } else if (sesion) {
-        sessionStorage.removeItem(CLAVE_SESION);
+        localStorage.removeItem(CLAVE_SESION);
       }
     } catch {
       // Datos dañados o almacenamiento bloqueado: se empieza sin sesión.
@@ -103,14 +107,4 @@ export class Auth {
     clearTimeout(this.temporizador);
     this.temporizador = setTimeout(() => this.cerrarSesion('expirada'), Math.max(0, expira - Date.now()));
   }
-}
-
-/**
- * Lee la fecha de expiración ("exp", en segundos) de la parte central del JWT.
- * Un JWT son tres textos en Base64URL separados por puntos: cabecera.datos.firma.
- */
-function expiracionDelToken(token: string): number {
-  const datos = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-  const { exp } = JSON.parse(atob(datos)) as { exp: number };
-  return exp * 1000;
 }

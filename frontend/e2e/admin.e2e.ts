@@ -1,41 +1,59 @@
 import AxeBuilder from '@axe-core/playwright';
 import { APIRequestContext, Page } from '@playwright/test';
+import { randomBytes } from 'node:crypto';
 import { API, expect, test } from './fixtures';
 
 /*
- * Panel de administración (/admin).
- * Las credenciales NO están en el código: se leen de variables de entorno.
- *   ALTURA_ADMIN_EMAIL, ALTURA_ADMIN_PASSWORD     (cuenta con rol Administrador)
- *   ALTURA_CLIENTE_EMAIL, ALTURA_CLIENTE_PASSWORD (cuenta con rol Cliente)
- * Sin ellas, estas pruebas se omiten. Todo lo que crean lleva "e2e" en el nombre y se borra al final.
+ * Usuarios (Guía 1: registro, login y JWT) y panel de administración (/admin).
+ *
+ * La cuenta Administrador NO está en el código: se lee de variables de entorno.
+ *   ALTURA_ADMIN_EMAIL, ALTURA_ADMIN_PASSWORD
+ * Ese correo debe estar en "Admin:Correos" de appsettings.Development.json (por ejemplo
+ * e2e-admin@altura.test) para que se registre como Administrador. Si la cuenta no existe,
+ * las pruebas la registran por la API. Sin las variables, estas pruebas se omiten.
+ *
+ * El Cliente se registra desde /registro en cada ejecución, con un correo nuevo
+ * (e2e-cliente-<número>@altura.test) y una contraseña aleatoria.
+ *
+ * Los cafés y variedades que se crean llevan "e2e" en el nombre y se borran al final.
+ * Los usuarios e2e no se pueden borrar por la API: se borran en PostgreSQL (ver CLAUDE.md).
  */
 const admin = { email: process.env['ALTURA_ADMIN_EMAIL'] ?? '', password: process.env['ALTURA_ADMIN_PASSWORD'] ?? '' };
-const cliente = { email: process.env['ALTURA_CLIENTE_EMAIL'] ?? '', password: process.env['ALTURA_CLIENTE_PASSWORD'] ?? '' };
+const cliente = {
+  nombre: 'Cliente e2e',
+  email: `e2e-cliente-${Date.now()}@altura.test`,
+  password: randomBytes(9).toString('base64url'),
+};
 
 const NOMBRE_CAFE = 'Prueba e2e Altura';
 const NOMBRE_VARIEDAD = 'Variedad e2e';
 const IMAGEN = '../backend/seed/imagenes/08-pitalito-reserva-340g.png';
 const IMAGEN_SVG = '../backend/seed/imagenes/08-pitalito-reserva-340g.svg';
 
-test.describe('Panel de administración @una-vez', () => {
+test.describe('Usuarios y panel de administración @una-vez', () => {
   test.describe.configure({ mode: 'serial' });
-  // Las respuestas 401/403/409 que se provocan a propósito aparecen en la consola como
+  // Las respuestas 400/401/403/409 que se provocan a propósito aparecen en la consola como
   // "Failed to load resource": son esperadas. Cualquier otro error de consola sigue fallando.
   test.use({ permitirErroresDeRed: true });
-  test.skip(!admin.email || !cliente.email, 'Define ALTURA_ADMIN_* y ALTURA_CLIENTE_* para probar el panel.');
+  test.skip(!admin.email || !admin.password, 'Define ALTURA_ADMIN_EMAIL y ALTURA_ADMIN_PASSWORD para probar el panel.');
 
-  async function ingresar(page: Page, cuenta: { email: string; password: string }): Promise<void> {
-    await page.goto('/admin/ingresar');
+  /** Inicia sesión desde /login; `volver` es la página a la que regresa al entrar. */
+  async function iniciarSesion(page: Page, cuenta: { email: string; password: string }, volver = '/admin'): Promise<void> {
+    await page.goto(`/login?volver=${encodeURIComponent(volver)}`);
     await page.getByLabel('Correo electrónico').fill(cuenta.email);
     await page.getByLabel('Contraseña', { exact: true }).fill(cuenta.password);
-    await page.getByRole('button', { name: 'Ingresar' }).click();
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
+  }
+
+  async function tokenAdmin(request: APIRequestContext): Promise<string> {
+    const login = await request.post(`${API}/auth/Login`, { data: admin });
+    expect(login.status(), 'La cuenta ALTURA_ADMIN_* debe poder iniciar sesión').toBe(200);
+    return ((await login.json()) as { token: string }).token;
   }
 
   /** Borra por la API cualquier café o variedad de prueba que haya quedado (también si una prueba falla). */
   async function limpiar(request: APIRequestContext): Promise<void> {
-    const login = await request.post(`${API}/auth/login`, { data: admin });
-    const { token } = (await login.json()) as { token: string };
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = { Authorization: `Bearer ${await tokenAdmin(request)}` };
     const cafes = (await (await request.get(`${API}/cafes`)).json()) as { id: number; nombre: string }[];
     for (const cafe of cafes.filter((c) => c.nombre.includes('e2e'))) {
       await request.delete(`${API}/cafes/${cafe.id}`, { headers });
@@ -46,39 +64,102 @@ test.describe('Panel de administración @una-vez', () => {
     }
   }
 
-  test.beforeAll(async ({ request }) => limpiar(request));
+  test.beforeAll(async ({ request }) => {
+    // Registra la cuenta Administrador si todavía no existe (400 = ya existía).
+    const registro = await request.post(`${API}/auth/Register`, {
+      data: { nombre: 'Administración e2e', email: admin.email, password: admin.password },
+    });
+    expect([200, 400]).toContain(registro.status());
+    await limpiar(request);
+  });
   test.afterAll(async ({ request }) => limpiar(request));
 
-  test('sin sesión, /admin lleva a /admin/ingresar', async ({ page }) => {
+  test('sin sesión, /admin lleva a /login y el footer tiene un acceso discreto', async ({ page }) => {
     await page.goto('/admin/inventario');
-    await expect(page).toHaveURL(/\/admin\/ingresar$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Panel de administración' })).toBeVisible();
-  });
+    await expect(page).toHaveURL(/\/login\?volver=%2Fadmin%2Finventario$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Iniciar sesión' })).toBeVisible();
 
-  test('el footer tiene un acceso discreto y el navbar público no', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByText('Acceso administrador')).toHaveCount(0);
     await page.getByRole('contentinfo').getByRole('link', { name: 'Acceso administrador' }).click();
-    await expect(page).toHaveURL(/\/admin\/ingresar$/);
+    await expect(page).toHaveURL(/\/login\?volver=%2Fadmin$/);
   });
 
-  test('credenciales incorrectas muestran un error claro', async ({ page }) => {
-    await ingresar(page, { email: admin.email, password: 'contrasena-incorrecta' });
-    await expect(page.getByRole('alert')).toHaveText(/Correo o contraseña incorrectos\./);
-    await expect(page).toHaveURL(/\/admin\/ingresar$/);
+  test('registrar un Cliente desde /registro; repetir el correo muestra el mensaje del backend', async ({ page, request }) => {
+    const llenar = async () => {
+      await page.goto('/registro');
+      await page.getByLabel('Nombre completo').fill(cliente.nombre);
+      await page.getByLabel('Correo electrónico').fill(cliente.email);
+      await page.getByLabel('Contraseña', { exact: true }).fill(cliente.password);
+      await page.getByLabel('Confirmar contraseña').fill(cliente.password);
+      await page.getByRole('button', { name: 'Registrarse' }).click();
+    };
+
+    await llenar();
+    await expect(page).toHaveURL(/\/login\?cuenta=creada$/);
+    await expect(page.getByRole('status')).toHaveText('Cuenta creada. Ahora inicia sesión.');
+
+    // La API guardó el usuario: puede iniciar sesión.
+    expect((await request.post(`${API}/auth/Login`, { data: cliente })).status()).toBe(200);
+
+    await llenar();
+    await expect(page.getByRole('alert')).toHaveText(/El usuario ya existe\./);
+    await expect(page).toHaveURL(/\/registro$/);
   });
 
-  test('una cuenta Cliente no entra al panel', async ({ page }) => {
-    await ingresar(page, cliente);
-    await expect(page.getByRole('alert')).toHaveText(/Esta cuenta no tiene permiso para administrar el inventario\./);
+  test('una contraseña incorrecta muestra "Usuario o contraseña incorrectos."', async ({ page }) => {
+    await iniciarSesion(page, { email: cliente.email, password: 'contrasena-incorrecta' });
+    await expect(page.getByRole('alert')).toHaveText(/Usuario o contraseña incorrectos\./);
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('el Cliente inicia sesión: el menú muestra su nombre, no muestra el panel y no puede entrar a /admin', async ({ page }) => {
+    const navbar = page.getByRole('navigation', { name: 'Navegación principal' });
+    await page.goto('/productos');
+    await navbar.getByRole('link', { name: 'Iniciar sesión' }).click();
+    await expect(page).toHaveURL(/\/login\?volver=%2Fproductos$/);
+    await page.getByLabel('Correo electrónico').fill(cliente.email);
+    await page.getByLabel('Contraseña', { exact: true }).fill(cliente.password);
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
+
+    // Vuelve a la página anterior, con la inicial del nombre en el navbar.
+    await expect(page).toHaveURL(/\/productos$/);
+    const cuenta = page.getByRole('button', { name: `Cuenta de ${cliente.nombre}` });
+    await expect(cuenta).toHaveText('C');
+    await cuenta.click();
+    await expect(cuenta).toHaveAttribute('aria-expanded', 'true');
+    const menu = page.getByTestId('menu-cuenta');
+    await expect(menu).toContainText(cliente.nombre);
+    await expect(menu).toContainText(cliente.email);
+    await expect(menu.getByRole('link', { name: 'Panel de administración' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(cuenta).toBeFocused();
+
+    // La sesión sobrevive a una recarga (localStorage).
+    await page.reload();
+    await expect(cuenta).toBeVisible();
+
     await page.goto('/admin/inventario');
-    await expect(page).toHaveURL(/\/admin\/ingresar$/);
+    await expect(page).toHaveURL(/\/login\?permiso=denegado$/);
+    await expect(page.getByRole('status')).toContainText('No tienes permiso para entrar al panel de administración.');
+
+    // Cerrar sesión desde el menú del navbar.
+    await page.goto('/productos');
+    await cuenta.click();
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await expect(navbar.getByRole('link', { name: 'Iniciar sesión' })).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('altura.sesion'))).toBeNull();
   });
 
-  test('crear café con imagen, verlo en la tienda, editarlo y eliminarlo (también su imagen)', async ({ page, request }) => {
-    await ingresar(page, admin);
+  test('el Administrador entra al panel desde el menú, crea un café ("Creado por" con su nombre), lo edita y lo elimina', async ({ page, request }) => {
+    await iniciarSesion(page, admin, '/');
+    await expect(page).toHaveURL(/localhost:4200\/$/);
+    const nombreAdmin = (await page.evaluate(() => JSON.parse(localStorage.getItem('altura.sesion') ?? '{}').nombre)) as string;
+    await page.getByRole('button', { name: `Cuenta de ${nombreAdmin}` }).click();
+    await page.getByTestId('menu-cuenta').getByRole('link', { name: 'Panel de administración' }).click();
     await expect(page).toHaveURL(/\/admin\/inventario$/);
-    await expect(page.getByTestId('usuario-admin')).not.toBeEmpty();
+    await expect(page.getByTestId('usuario-admin')).toHaveText(nombreAdmin);
 
     // ----- Crear -----
     await page.getByRole('button', { name: 'Nuevo café' }).click();
@@ -113,14 +194,23 @@ test.describe('Panel de administración @una-vez', () => {
     const fila = page.getByTestId('fila-cafe').filter({ hasText: NOMBRE_CAFE });
     await expect(fila).toContainText(/\$\s45\.000/);
     await expect(fila).toContainText('Geisha · Honey · 340 g');
+    // Guía 1: el dueño del café es quien inició sesión.
+    await expect(fila.getByTestId('creado-por')).toHaveText(nombreAdmin);
 
-    // La API guardó la imagen de Cloudinary.
+    // La API guardó la imagen de Cloudinary y el dueño.
     const creado = (
-      (await (await request.get(`${API}/cafes`)).json()) as { nombre: string; procesoNombre: string; imagenUrl: string; imagenPublicId: string }[]
+      (await (await request.get(`${API}/cafes`)).json()) as {
+        nombre: string;
+        procesoNombre: string;
+        imagenUrl: string;
+        imagenPublicId: string;
+        usuarioNombre: string;
+      }[]
     ).find((c) => c.nombre === NOMBRE_CAFE)!;
     expect(creado.imagenUrl).toMatch(/^https:\/\/res\.cloudinary\.com\//);
     expect(creado.imagenPublicId).toMatch(/^cafes\//);
     expect(creado.procesoNombre).toBe('Honey');
+    expect(creado.usuarioNombre).toBe(nombreAdmin);
 
     // ----- Se ve en la tienda al recargar -----
     await page.goto('/productos?q=e2e');
@@ -141,6 +231,8 @@ test.describe('Panel de administración @una-vez', () => {
     await edicion.getByLabel('Precio (COP)').fill('47000');
     await edicion.getByRole('button', { name: 'Guardar' }).click();
     await expect(page.getByText(`Café «${NOMBRE_CAFE}» actualizado.`)).toBeVisible();
+    // Editar no cambia el dueño.
+    await expect(fila.getByTestId('creado-por')).toHaveText(nombreAdmin);
 
     await page.goto('/productos?q=e2e');
     await expect(tarjeta.locator('.precio')).toHaveText(/\$\s47\.000/);
@@ -158,15 +250,16 @@ test.describe('Panel de administración @una-vez', () => {
 
     // La imagen ya no existe en Cloudinary: una versión transformada nueva (nunca pedida,
     // así que no está en caché) responde 404.
-    const urlNueva = creado.imagenUrl.replace('/upload/', `/upload/w_${Date.now() % 900 + 50},e_grayscale/`);
+    const urlNueva = creado.imagenUrl.replace('/upload/', `/upload/w_${(Date.now() % 900) + 50},e_grayscale/`);
     await expect.poll(async () => (await request.get(urlNueva)).status(), { timeout: 30_000 }).toBe(404);
 
     await page.goto('/productos?q=e2e');
     await expect(page.getByRole('heading', { name: 'No hay cafés que coincidan con tu búsqueda' })).toBeVisible();
   });
 
-  test('crear, editar y eliminar una variedad; no se elimina una con cafés', async ({ page }) => {
-    await ingresar(page, admin);
+  test('crear, editar y eliminar una variedad; no se elimina una con cafés', async ({ page, request }) => {
+    await iniciarSesion(page, admin);
+    await expect(page).toHaveURL(/\/admin\/inventario$/);
     await page.getByRole('navigation', { name: 'Administración' }).getByRole('link', { name: 'Variedades' }).click();
     await expect(page).toHaveURL(/\/admin\/variedades$/);
 
@@ -191,12 +284,24 @@ test.describe('Panel de administración @una-vez', () => {
     await expect(page.getByText(`Variedad «${NOMBRE_VARIEDAD}» actualizada.`)).toBeVisible();
     await expect(page.getByTestId('fila-variedad').filter({ hasText: NOMBRE_VARIEDAD })).toContainText('Descripción editada');
 
-    // Castillo tiene cafés: la API responde 409 y el aviso lo explica.
-    await page.getByRole('button', { name: 'Eliminar variedad Castillo' }).click();
-    await page.getByRole('dialog', { name: '¿Eliminar la variedad «Castillo»?' }).getByRole('button', { name: 'Eliminar' }).click();
-    await expect(page.getByText('No se puede eliminar una variedad que tiene cafés asociados.')).toBeVisible();
-    await expect(page.getByTestId('fila-variedad').filter({ hasText: 'Castillo' })).toHaveCount(1);
+    // Con un café de la variedad (creado por la API), la API responde 409 y el aviso lo explica.
+    const headers = { Authorization: `Bearer ${await tokenAdmin(request)}` };
+    const variedades = (await (await request.get(`${API}/variedades`)).json()) as { id: number; nombre: string }[];
+    const variedadId = variedades.find((v) => v.nombre === NOMBRE_VARIEDAD)!.id;
+    const cafe = await request.post(`${API}/cafes`, {
+      headers,
+      data: { nombre: 'Café e2e de la variedad', variedadId, procesoId: 1, presentacionGramos: 340, origen: 'Huila', stock: 1, precio: 40000 },
+    });
+    expect(cafe.status()).toBe(201);
+    const { id: cafeId } = (await cafe.json()) as { id: number };
 
+    await page.getByRole('button', { name: `Eliminar variedad ${NOMBRE_VARIEDAD}` }).click();
+    await page.getByRole('dialog', { name: `¿Eliminar la variedad «${NOMBRE_VARIEDAD}»?` }).getByRole('button', { name: 'Eliminar' }).click();
+    await expect(page.getByText('No se puede eliminar una variedad que tiene cafés asociados.')).toBeVisible();
+    await expect(page.getByTestId('fila-variedad').filter({ hasText: NOMBRE_VARIEDAD })).toHaveCount(1);
+
+    // Sin cafés ya se puede eliminar.
+    expect((await request.delete(`${API}/cafes/${cafeId}`, { headers })).status()).toBe(204);
     await page.getByRole('button', { name: `Eliminar variedad ${NOMBRE_VARIEDAD}` }).click();
     await page.getByRole('dialog', { name: `¿Eliminar la variedad «${NOMBRE_VARIEDAD}»?` }).getByRole('button', { name: 'Eliminar' }).click();
     await expect(page.getByText(`Variedad «${NOMBRE_VARIEDAD}» eliminada.`)).toBeVisible();
@@ -205,9 +310,8 @@ test.describe('Panel de administración @una-vez', () => {
 
   test.describe('respuestas 403 y 401', () => {
     test('un 403 muestra "No tienes permiso para esta acción"', async ({ page }) => {
-      await ingresar(page, admin);
-      await expect(page).toHaveURL(/\/admin\/inventario$/);
-      await page.goto('/admin/variedades');
+      await iniciarSesion(page, admin, '/admin/variedades');
+      await expect(page).toHaveURL(/\/admin\/variedades$/);
       await page.route(`${API}/variedades`, (ruta) =>
         ruta.request().method() === 'POST' ? ruta.fulfill({ status: 403 }) : ruta.continue(),
       );
@@ -218,10 +322,9 @@ test.describe('Panel de administración @una-vez', () => {
       await expect(panel.getByRole('alert')).toHaveText(/No tienes permiso para esta acción\./);
     });
 
-    test('un 401 cierra la sesión y lleva a /admin/ingresar', async ({ page }) => {
-      await ingresar(page, admin);
-      await expect(page).toHaveURL(/\/admin\/inventario$/);
-      await page.goto('/admin/variedades');
+    test('un 401 cierra la sesión y lleva a /login', async ({ page }) => {
+      await iniciarSesion(page, admin, '/admin/variedades');
+      await expect(page).toHaveURL(/\/admin\/variedades$/);
       await page.route(`${API}/variedades`, (ruta) =>
         ruta.request().method() === 'POST' ? ruta.fulfill({ status: 401 }) : ruta.continue(),
       );
@@ -229,21 +332,29 @@ test.describe('Panel de administración @una-vez', () => {
       const panel = page.getByRole('dialog', { name: 'Nueva variedad' });
       await panel.getByLabel('Nombre').fill(NOMBRE_VARIEDAD);
       await panel.getByRole('button', { name: 'Guardar' }).click();
-      await expect(page).toHaveURL(/\/admin\/ingresar$/);
-      await expect(page.getByText('Tu sesión terminó. Vuelve a ingresar para continuar.')).toBeVisible();
+      await expect(page).toHaveURL(/\/login$/);
+      await expect(page.getByRole('status')).toHaveText('Tu sesión terminó. Vuelve a iniciar sesión.');
+      expect(await page.evaluate(() => localStorage.getItem('altura.sesion'))).toBeNull();
     });
   });
 
-  test('axe-core sin violaciones en el panel (ingreso, inventario, formulario y variedades)', async ({ page }) => {
+  test('axe-core sin violaciones (login con aviso, menú de cuenta, inventario, formulario y variedades)', async ({ page }) => {
     const revisar = async (nombre: string) => {
       const resultado = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'best-practice']).analyze();
       expect(resultado.violations.map((v) => `${nombre}: ${v.id}`)).toEqual([]);
     };
-    await page.goto('/admin/ingresar');
-    await revisar('ingresar');
-    await ingresar(page, admin);
-    await expect(page).toHaveURL(/\/admin\/inventario$/);
-    await expect(page.getByTestId('fila-cafe').first()).toBeVisible();
+    await page.goto('/login?cuenta=creada');
+    await expect(page.getByRole('status')).toBeVisible();
+    await revisar('login');
+
+    await iniciarSesion(page, admin, '/productos');
+    await expect(page).toHaveURL(/\/productos$/);
+    await page.getByRole('button', { name: /^Cuenta de / }).click();
+    await expect(page.getByTestId('menu-cuenta')).toBeVisible();
+    await revisar('menú de cuenta');
+
+    await page.goto('/admin/inventario');
+    await expect(page.getByRole('table')).toBeVisible();
     await revisar('inventario');
     await page.getByRole('button', { name: 'Nuevo café' }).click();
     await expect(page.getByRole('dialog', { name: 'Nuevo café' })).toBeVisible();
@@ -254,13 +365,13 @@ test.describe('Panel de administración @una-vez', () => {
     await revisar('variedades');
   });
 
-  test('cerrar sesión vuelve al ingreso y protege el panel', async ({ page }) => {
-    await ingresar(page, admin);
+  test('cerrar sesión en el panel lleva a /login y protege el panel', async ({ page }) => {
+    await iniciarSesion(page, admin);
     await expect(page).toHaveURL(/\/admin\/inventario$/);
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-    await expect(page).toHaveURL(/\/admin\/ingresar$/);
-    expect(await page.evaluate(() => sessionStorage.getItem('altura.sesion'))).toBeNull();
+    await expect(page).toHaveURL(/\/login$/);
+    expect(await page.evaluate(() => localStorage.getItem('altura.sesion'))).toBeNull();
     await page.goto('/admin/inventario');
-    await expect(page).toHaveURL(/\/admin\/ingresar$/);
+    await expect(page).toHaveURL(/\/login\?volver=%2Fadmin%2Finventario$/);
   });
 });

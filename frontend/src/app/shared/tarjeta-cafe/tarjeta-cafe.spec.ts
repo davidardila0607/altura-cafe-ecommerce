@@ -15,7 +15,7 @@ describe('TarjetaCafe', () => {
     fixture.componentRef.setInput('cafe', {
       id: 1, nombre: 'Café de prueba', variedadId: 1, variedadNombre: 'Castillo',
       procesoId: 2, procesoNombre: 'Honey', presentacionGramos: 340,
-      origen: 'Huila', stock: 3, precio: 42000, imagenUrl: null, imagenPublicId: null,
+      origen: 'Huila', stock: 3, precio: 42000, imagenUrl: null, imagenPublicId: null, usuarioId: 1, usuarioNombre: 'Administración',
       disponible: true, estadoStock: 'Pocas unidades',
     });
     await fixture.whenStable();

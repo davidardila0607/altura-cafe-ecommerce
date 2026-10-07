@@ -4,7 +4,7 @@ import { CintaNotas } from './cinta-notas';
 
 const cafe = (id: number, variedadNombre: string, origen: string): Cafe => ({
   id, nombre: `Café ${id}`, variedadId: 1, variedadNombre, procesoId: 1, procesoNombre: 'Lavado', presentacionGramos: 340, origen, stock: 5,
-  precio: 40000, imagenUrl: null, imagenPublicId: null, disponible: true, estadoStock: 'Pocas unidades',
+  precio: 40000, imagenUrl: null, imagenPublicId: null, usuarioId: 1, usuarioNombre: 'Administración', disponible: true, estadoStock: 'Pocas unidades',
 });
 
 describe('CintaNotas', () => {

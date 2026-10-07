@@ -1,20 +1,16 @@
-/** Respuesta de POST /api/auth/login (`LoginResponseDto`). */
+import { DatosToken } from '../auth/token';
+
+/** Respuesta de POST /api/auth/Login cuando el correo y la contraseña son correctos. */
 export interface RespuestaLogin {
   token: string;
-  email: string;
-  role: string;
 }
 
-/** Respuesta de GET /api/auth/me (`UsuarioActualDto`). */
-export interface UsuarioActual {
-  email: string;
-  nombre: string;
-  roles: string[];
+/** Respuesta de POST /api/auth/Register (y del 400 "El usuario ya existe."). */
+export interface RespuestaRegistro {
+  mensaje: string;
 }
 
-/** Sesión del panel de administración (se guarda en sessionStorage). */
-export interface Sesion extends UsuarioActual {
+/** Sesión iniciada: los datos del token más el propio token (se guarda en localStorage). */
+export interface Sesion extends DatosToken {
   token: string;
-  /** Momento de expiración del token, en milisegundos (Date.now()). */
-  expira: number;
 }

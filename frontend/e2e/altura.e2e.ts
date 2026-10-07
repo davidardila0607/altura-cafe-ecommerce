@@ -519,8 +519,9 @@ test.describe('API caída', () => {
   });
 });
 
-test.describe('Formularios (solo visuales)', () => {
-  test('Login: validaciones visibles y sin peticiones a la API al enviar', async ({ page }) => {
+// El envío real (Register y Login contra la API) se prueba en admin.e2e.ts.
+test.describe('Formularios de acceso: validaciones', () => {
+  test('Login: validaciones visibles y sin peticiones a la API mientras el formulario es inválido', async ({ page }) => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
     const peticiones = vigilarPeticionesApi(page);
@@ -545,15 +546,11 @@ test.describe('Formularios (solo visuales)', () => {
     // Visto de campo válido.
     await page.getByLabel('Correo electrónico').fill('cliente@ejemplo.com');
     await expect(page.locator('.campo-acceso').first()).toHaveClass(/valido/);
-    await enviar.click();
-    await expect(page.getByRole('status').filter({ hasText: 'próximamente' })).toHaveText(
-      'El inicio de sesión estará disponible próximamente.',
-    );
     await page.waitForTimeout(500);
-    expect(peticiones, 'El formulario no debe llamar a la API').toEqual([]);
+    expect(peticiones, 'Un formulario inválido no debe llamar a la API').toEqual([]);
   });
 
-  test('Registro: validaciones, medidor de seguridad y sin peticiones a la API', async ({ page }) => {
+  test('Registro: validaciones, medidor de seguridad y sin peticiones a la API mientras es inválido', async ({ page }) => {
     await page.goto('/registro');
     await page.waitForLoadState('networkidle');
     const peticiones = vigilarPeticionesApi(page);
@@ -577,14 +574,12 @@ test.describe('Formularios (solo visuales)', () => {
     await confirmacion.blur();
     await expect(page.getByText('Las contraseñas no coinciden.')).toBeVisible();
 
+    await enviar.click();
+    await page.waitForTimeout(500);
+    expect(peticiones, 'Un formulario inválido no debe llamar a la API').toEqual([]);
+
     await confirmacion.fill('cafe2026');
     await expect(page.getByText('Las contraseñas no coinciden.')).toHaveCount(0);
-    await enviar.click();
-    await expect(page.getByRole('status').filter({ hasText: 'próximamente' })).toHaveText(
-      'El registro estará disponible próximamente.',
-    );
-    await page.waitForTimeout(500);
-    expect(peticiones, 'El formulario no debe llamar a la API').toEqual([]);
   });
 });
 

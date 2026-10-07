@@ -30,12 +30,7 @@ export const routes: Routes = [
     title: 'Crear cuenta | Altura',
     loadComponent: () => import('./pages/registro/registro').then((m) => m.Registro),
   },
-  // ===== Administración (zona separada; el Login y el Registro públicos siguen siendo visuales) =====
-  {
-    path: 'admin/ingresar',
-    title: 'Ingresar al panel | Altura',
-    loadComponent: () => import('./pages/admin/ingresar/ingresar').then((m) => m.Ingresar),
-  },
+  // ===== Administración: misma sesión de /login; solo entra el rol Administrador =====
   {
     path: 'admin',
     canMatch: [requierePermiso('inventario.gestionar')],

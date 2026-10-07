@@ -45,6 +45,7 @@
           <th scope="col">Origen</th>
           <th scope="col" class="numero">Stock</th>
           <th scope="col" class="numero">Precio</th>
+          <th scope="col">Creado por</th>
           <th scope="col"><span class="visually-hidden">Acciones</span></th>
         </tr>
       </thead>
@@ -65,6 +66,7 @@
             <td data-titulo="Origen">{{ cafe.origen }}</td>
             <td class="numero" data-titulo="Stock" [class.agotado]="cafe.stock === 0">{{ cafe.stock }}</td>
             <td class="numero" data-titulo="Precio">{{ cafe.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</td>
+            <td data-titulo="Creado por" data-testid="creado-por">{{ cafe.usuarioNombre }}</td>
             <td>
               <div class="acciones-fila">
                 <button type="button" class="accion" [attr.aria-label]="'Editar ' + cafe.nombre + ' ' + cafe.presentacionGramos + ' g'" (click)="abrirEdicion(cafe)">
@@ -78,7 +80,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="vacio">
+            <td colspan="7" class="vacio">
               {{ todos().length ? 'Ningún café coincide con la búsqueda.' : 'Todavía no hay cafés. Crea el primero con «Nuevo café».' }}
             </td>
           </tr>

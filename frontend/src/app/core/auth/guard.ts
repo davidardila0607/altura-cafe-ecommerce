@@ -5,12 +5,23 @@ import { Permiso } from './permisos';
 
 /**
  * Guard funcional (canMatch) por permiso: la ruta solo "existe" para quien tiene el permiso.
- * Sin permiso (o sin sesión) redirige a /admin/ingresar. Como es canMatch, el código de la
- * zona protegida ni siquiera se descarga si no se puede entrar.
+ * - Sin sesión: lleva a /login?volver=<ruta pedida> para regresar después de iniciar sesión.
+ * - Con sesión pero sin permiso (rol Cliente): lleva a /login?permiso=denegado, que muestra
+ *   "No tienes permiso…".
+ * Como es canMatch, el código de la zona protegida ni siquiera se descarga si no se puede entrar.
  */
 export function requierePermiso(permiso: Permiso): CanMatchFn {
-  return () => {
+  return (_ruta, segmentos) => {
     const auth = inject(Auth);
-    return auth.tienePermiso(permiso) ? true : inject(Router).parseUrl('/admin/ingresar');
+    const router = inject(Router);
+
+    if (auth.tienePermiso(permiso)) {
+      return true;
+    }
+    if (!auth.autenticado()) {
+      const volver = '/' + segmentos.map((s) => s.path).join('/');
+      return router.createUrlTree(['/login'], { queryParams: { volver } });
+    }
+    return router.createUrlTree(['/login'], { queryParams: { permiso: 'denegado' } });
   };
 }

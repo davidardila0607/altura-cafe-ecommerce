@@ -4,7 +4,7 @@ import { aplicarFiltros, contarFiltrosActivos, contarPor, FILTROS_VACIOS, filtro
 
 const cafe = (id: number, variedadNombre: string, procesoNombre: string, presentacionGramos: number): Cafe => ({
   id, nombre: `Café ${id}`, variedadId: 1, variedadNombre, procesoId: 1, procesoNombre, presentacionGramos,
-  origen: 'Huila', stock: 10, precio: 40000 + id, imagenUrl: null, imagenPublicId: null, disponible: true,
+  origen: 'Huila', stock: 10, precio: 40000 + id, imagenUrl: null, imagenPublicId: null, usuarioId: 1, usuarioNombre: 'Administración', disponible: true,
   estadoStock: 'Disponible',
 });
 

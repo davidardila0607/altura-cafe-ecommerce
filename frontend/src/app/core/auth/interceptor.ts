@@ -10,7 +10,8 @@ import { Auth } from './auth';
  * 1. Si hay sesión, agrega "Authorization: Bearer <token>" SOLO a las peticiones de la API
  *    (nunca a Cloudinary ni a otros dominios) y solo si la petición no trae ya ese encabezado.
  * 2. Si la API responde 401 a una petición que llevaba la sesión: el token ya no sirve,
- *    se cierra la sesión y Auth lleva a /admin/ingresar.
+ *    se cierra la sesión y Auth lleva a /login. (El 401 del propio Login no lleva sesión:
+ *    lo atiende la pantalla de inicio de sesión.)
  * 3. Si responde 403: el usuario no tiene permiso; se muestra un aviso.
  * El error se vuelve a lanzar para que cada pantalla pueda reaccionar (por ejemplo, el formulario).
  */

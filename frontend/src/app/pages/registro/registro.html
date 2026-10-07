@@ -27,7 +27,7 @@
             @if (formulario.controls.nombre.hasError('required')) {
               Escribe tu nombre completo.
             } @else {
-              El nombre debe tener al menos 3 caracteres.
+              El nombre no puede superar los 100 caracteres.
             }
           }
         </div>
@@ -146,14 +146,16 @@
         </div>
       </div>
 
-      <button type="submit" class="boton boton-primario enviar">Registrarse</button>
+      <div class="mensaje-error" role="alert">
+        @if (error(); as mensaje) {
+          <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+          {{ mensaje }}
+        }
+      </div>
 
-      @if (aviso(); as mensaje) {
-        <div class="aviso" role="status">
-          <i class="bi bi-info-circle" aria-hidden="true"></i>
-          <span>{{ mensaje }}</span>
-        </div>
-      }
+      <button type="submit" class="boton boton-primario enviar" [disabled]="enviando()">
+        {{ enviando() ? 'Creando cuenta…' : 'Registrarse' }}
+      </button>
 
       <p class="alterno">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
     </form>

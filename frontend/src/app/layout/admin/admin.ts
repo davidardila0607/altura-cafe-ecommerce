@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
 import { Avisos } from '../../core/services/avisos';
 import { Logo } from '../../shared/logo/logo';
@@ -59,10 +59,9 @@ import { Logo } from '../../shared/logo/logo';
 export class Admin {
   protected readonly auth = inject(Auth);
   protected readonly avisos = inject(Avisos);
-  private readonly router = inject(Router);
 
   protected salir(): void {
+    // Desde el panel, cerrarSesion() ya lleva a /login.
     this.auth.cerrarSesion();
-    void this.router.navigate(['/admin/ingresar']);
   }
 }

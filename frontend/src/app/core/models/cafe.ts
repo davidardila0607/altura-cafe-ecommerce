@@ -18,6 +18,9 @@ export interface Cafe {
   precio: number;
   imagenUrl: string | null;
   imagenPublicId: string | null;
+  /** Usuario que creó el café (lo asigna la API con el token; Guía 1). */
+  usuarioId: number;
+  usuarioNombre: string;
   disponible: boolean;
   /** "Agotado" | "Pocas unidades" | "Disponible" | "Alta disponibilidad". */
   estadoStock: string;
