@@ -82,7 +82,8 @@ builder.Services.AddScoped<IProcesoRepository, ProcesoRepository>();
 // ✅ Guía 1, paso 9: registro, login y JWT.
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
-// ⏳ ICartRepository/CartRepository no se registra: el carrito está pendiente.
+// ✅ Guía 2, paso 7: carrito de compras.
+builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 
 // ✅ Registro del servicio Cloudinary.
 builder.Services.AddScoped<
