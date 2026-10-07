@@ -16,6 +16,9 @@ namespace CafeApi.Repositories
     // ✅ Guía 1, pasos 9 a 12: registro, login y generación del JWT.
     public class UsuarioRepository : IUsuarioRepository
     {
+        // ✅ Público para que UsuariosController responda 404 con este texto.
+        public const string MensajeUsuarioNoExiste = "El usuario no existe.";
+
         private readonly AppDbContext _context;
         private readonly JwtSettings _jwtSettings;
 
@@ -128,6 +131,41 @@ namespace CafeApi.Repositories
                     Roles = new List<string> { u.Rol }
                 })
                 .FirstOrDefaultAsync();
+        }
+
+        // ✅ Administración de usuarios: proyección con solo las columnas que se muestran
+        // (nunca Password). El número de cafés se cuenta en la misma consulta (subconsulta COUNT).
+        public async Task<List<UsuarioAdminDto>> ObtenerUsuarios()
+        {
+            return await _context.Usuario
+                .AsNoTracking()
+                .OrderBy(u => u.Nombre)
+                .Select(u => new UsuarioAdminDto
+                {
+                    Id = u.Id,
+                    Nombre = u.Nombre,
+                    Email = u.Email,
+                    Rol = u.Rol,
+                    CafesCreados = u.Cafes.Count
+                })
+                .ToListAsync();
+        }
+
+        // ✅ Cambia el rol guardado. El token que ya tiene el usuario conserva el rol
+        // anterior: el cambio se nota cuando vuelve a iniciar sesión.
+        public async Task<string> CambiarRol(int id, string rol)
+        {
+            var usuario = await _context.Usuario.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (usuario == null)
+            {
+                return MensajeUsuarioNoExiste;
+            }
+
+            usuario.Rol = rol;
+            await _context.SaveChangesAsync();
+
+            return "Rol actualizado.";
         }
 
         // ✅ Adaptación 4: "Ana@Correo.com " y "ana@correo.com" son la misma cuenta.

@@ -736,3 +736,36 @@ Guía 1 del profesor: usuarios, registro, login y JWT (`docs/guias/guia-1-usuari
 - 37 pruebas unitarias (nuevas: lectura de los claims del token y servicio `Auth`).
 - 64 pruebas e2e, entre ellas: registro desde `/registro`, login correcto e incorrecto, menú de cuenta del Cliente sin panel, `/admin` sin permiso, café creado por el Administrador con "Creado por" y axe-core del login y del menú.
 - Verificado por la API: Register 200/400, Login 200/401, `POST /api/cafes` 401 sin token, 403 con un Cliente y 201 con un Administrador; GET públicos 200; contraseñas guardadas como hash (`AQAAAA…`).
+
+---
+
+## [1.17.0] - 2026-10-06
+
+Guía 2 del profesor: carrito de compras (`docs/guias/guia-2-carrito-de-compras.md`), administración de usuarios y preparación para producción (sin desplegar).
+
+### 🚀 Añadido
+
+- **Tablas `carrito`** (un carrito por usuario) y **`carrito_producto`** (tabla intermedia con la cantidad), con la migración `AddCarrito`: FKs en cascada (si se borra un café, sale de los carritos), índice único por carrito y café y `CHECK (cantidad >= 1)`.
+- **`/api/Carrito`** como la guía: `GetCarrito`, `AgregarProducto`, `ActualizarCarrito`, `EliminarProducto/{productId}` y `VaciarCarrito`, con `ICarritoRepository`/`CarritoRepository` y el usuario tomado del token. Adaptaciones: variedad, proceso, gramos, stock y total de unidades en los DTOs (A); validación de `AddProductDto` (B); control de stock: "El producto está agotado." y "Solo hay N unidades disponibles de este café." (C); 404/409/200 con `{ mensaje }` (D).
+- **Administración de usuarios**: política `GestionUsuarios`, `GET /api/usuarios` (sin contraseñas, con cafés creados) y `PUT /api/usuarios/{id}/rol` (404 si no existe; 409 "No puedes quitarte tu propio rol de administrador.").
+- **Frontend del carrito**: ícono con contador en el navbar, panel lateral, página `/carrito` (con sesión), "Agregar al carrito" con selector de cantidad en las cards y en la vista rápida, avisos "Agregado al carrito · Ver carrito", estados "Este café es tuyo", "Agotado" y "Ya tienes todas las unidades disponibles", "Vaciar carrito" con confirmación y "Finalizar compra" deshabilitado ("Próximamente").
+- **`/admin/usuarios`**: tabla con rol y cafés creados, buscador y cambio de rol con confirmación (la propia fila deshabilitada).
+- **Producción**: `GET /api/health`, puerto `PORT`, CORS desde `Cors:AllowedOrigins`, mensajes claros si faltan la cadena de conexión o `JwtSettings:Key`, `environment.ts` con la URL de marcador de la API y `DEPLOY.md`.
+- Documentación de la **cuenta administradora compartida** (`desarrollo.testing@gmail.com`) y de cómo probar el carrito con una cuenta Cliente.
+
+### 🔄 Cambiado
+
+- El diagnóstico de arranque ya no dice "Supabase" para cualquier PostgreSQL en el puerto 5432.
+- `mensajeDeError` usa el `{ mensaje }` de la API también en 404 y 409.
+- `dotnet publish` ya no copia `appsettings.Development.json` ni `appsettings.example.json`.
+
+### 🗑️ Eliminado
+
+- El carrito anterior en inglés (`Cart`, `CartItem`, `ICartRepository`, `CartRepository` ADO.NET y 4 DTOs), que nunca se usó.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` (desarrollo y producción) sin advertencias.
+- 43 pruebas unitarias (nuevas: servicio `Carrito` y componente `AgregarCarrito`).
+- 69 pruebas e2e (nuevas en `carrito.e2e.ts`: carrito sin sesión, flujo completo del Cliente, "Este café es tuyo" y `/admin/usuarios`; axe del panel, `/carrito` y usuarios). Las revisiones de axe esperan a que terminen las animaciones de entrada.
+- Verificado por la API (36 comprobaciones): 401 sin token, carrito creado al primer uso, suma de cantidades, 409 por stock, agotado y café propio, 404, 400 con cantidad 0, totales correctos, café eliminado que sale del carrito, usuarios sin contraseña, 403 para el Cliente y 409 al quitarse el propio rol.

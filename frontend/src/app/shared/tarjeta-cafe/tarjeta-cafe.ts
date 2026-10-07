@@ -3,6 +3,7 @@ import localeEsCo from '@angular/common/locales/es-CO';
 import { Component, computed, input, output } from '@angular/core';
 import { Cafe } from '../../core/models/cafe';
 import { optimizarImagenCloudinary, srcsetCloudinary } from '../../core/utils/imagenes';
+import { AgregarCarrito } from '../agregar-carrito/agregar-carrito';
 import { EtiquetaCafe } from '../etiqueta-cafe/etiqueta-cafe';
 import { Inclinar } from '../movimiento/inclinar';
 
@@ -14,7 +15,7 @@ const STOCK_BAJO = 5;
 
 @Component({
   selector: 'app-tarjeta-cafe',
-  imports: [CurrencyPipe, Inclinar, EtiquetaCafe],
+  imports: [CurrencyPipe, Inclinar, EtiquetaCafe, AgregarCarrito],
   templateUrl: './tarjeta-cafe.html',
   styleUrl: './tarjeta-cafe.css',
   host: {

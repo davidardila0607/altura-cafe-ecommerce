@@ -2,16 +2,18 @@ import { afterNextRender, Component, DestroyRef, ElementRef, inject, signal, vie
 import { RouterOutlet } from '@angular/router';
 import { Footer } from '../../shared/footer/footer';
 import { Navbar } from '../../shared/navbar/navbar';
+import { ZonaAvisos } from '../../shared/zona-avisos/zona-avisos';
 
 /**
- * Marco común de Inicio y Productos: navbar fijo, contenido y footer.
+ * Marco común de Inicio, Productos y Carrito: navbar fijo, contenido, footer y avisos
+ * ("Agregado al carrito").
  * Un "sensor" invisible al principio de la página avisa si el usuario ya bajó: entonces el
  * navbar pasa de transparente a sólido. Se usa IntersectionObserver (no un listener de scroll),
  * así el navegador solo avisa cuando el sensor entra o sale de la pantalla.
  */
 @Component({
   selector: 'app-sitio',
-  imports: [RouterOutlet, Navbar, Footer],
+  imports: [RouterOutlet, Navbar, Footer, ZonaAvisos],
   template: `
     <a class="saltar" href="#contenido">Saltar al contenido</a>
     <span #sensor class="sensor" aria-hidden="true"></span>
@@ -20,6 +22,7 @@ import { Navbar } from '../../shared/navbar/navbar';
       <router-outlet />
     </main>
     <app-footer />
+    <app-zona-avisos />
   `,
   styles: `
     :host {

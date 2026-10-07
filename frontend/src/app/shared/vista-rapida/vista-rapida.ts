@@ -18,12 +18,10 @@ import { Cafe } from '../../core/models/cafe';
 import { Cafes } from '../../core/services/cafes';
 import { optimizarImagenCloudinary, srcsetCloudinary } from '../../core/utils/imagenes';
 import { movimientoReducido } from '../../core/utils/medios';
+import { AgregarCarrito } from '../agregar-carrito/agregar-carrito';
 import { AtraparFoco } from '../atrapar-foco/atrapar-foco';
 import { EtiquetaCafe } from '../etiqueta-cafe/etiqueta-cafe';
-import { SelectorCantidad } from '../selector-cantidad/selector-cantidad';
 
-/** Cantidad máxima que se puede elegir en la vista rápida. */
-const CANTIDAD_MAXIMA = 10;
 /** Duración de la animación de salida sin vuelo (debe coincidir con el CSS). */
 const DURACION_CIERRE_MS = 220;
 
@@ -42,7 +40,7 @@ const DURACION_CIERRE_MS = 220;
  */
 @Component({
   selector: 'app-vista-rapida',
-  imports: [CurrencyPipe, SelectorCantidad, AtraparFoco, EtiquetaCafe],
+  imports: [CurrencyPipe, AgregarCarrito, AtraparFoco, EtiquetaCafe],
   templateUrl: './vista-rapida.html',
   styleUrl: './vista-rapida.css',
 })
@@ -62,7 +60,6 @@ export class VistaRapida {
     stream: ({ params }) => this.cafesApi.obtener(params),
   });
 
-  protected readonly cantidad = signal(1);
   protected readonly cerrando = signal(false);
   /** Mientras vuela la bolsa se usa la misma imagen de la card (ya descargada). */
   protected readonly imagenDeVuelo = signal<string | null>(null);
@@ -76,7 +73,6 @@ export class VistaRapida {
   protected readonly proceso = computed(() => marcaProceso(this.datos()?.procesoNombre));
   protected readonly imagen = computed(() => optimizarImagenCloudinary(this.datos()?.imagenUrl, 'f_auto,q_auto,w_900'));
   protected readonly srcset = computed(() => srcsetCloudinary(this.datos()?.imagenUrl, [600, 900, 1200]));
-  protected readonly maximo = computed(() => Math.max(0, Math.min(this.datos()?.stock ?? 0, CANTIDAD_MAXIMA)));
   protected readonly agotado = computed(() => (this.datos()?.stock ?? 0) <= 0);
 
   constructor() {
@@ -93,7 +89,6 @@ export class VistaRapida {
 
   private abrir(id: number): void {
     const dialogo = this.dialogo().nativeElement;
-    this.cantidad.set(1);
     this.cerrando.set(false);
 
     const origen = this.bolsaDeLaCard(id);

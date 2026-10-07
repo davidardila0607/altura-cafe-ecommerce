@@ -192,24 +192,10 @@
   background: none;
 }
 
+/* Selector de cantidad y "Agregar al carrito" (componente AgregarCarrito). */
 .compra {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--esp-4);
   margin-top: auto;
   padding-top: var(--esp-6);
-}
-
-.agregar {
-  flex: 1;
-  min-width: 12rem;
-}
-
-.nota {
-  margin-top: var(--esp-3);
-  color: var(--texto-suave);
-  font-size: var(--fs-200);
 }
 
 /* ===== Móvil: hoja inferior ===== */

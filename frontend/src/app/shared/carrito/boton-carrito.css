@@ -1,0 +1,89 @@
+:host {
+  display: inline-block;
+}
+
+.icono {
+  position: relative;
+}
+
+/* Píldora con el número de unidades, sobre la esquina del ícono. */
+.contador-carrito {
+  position: absolute;
+  top: 0.1rem;
+  right: 0;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: var(--radio-pildora);
+  background: var(--cereza);
+  color: #fff;
+  font-family: var(--fuente-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+/* ===== Panel lateral: el <dialog> ocupa la ventana y el panel entra desde la derecha ===== */
+.hoja {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.hoja::backdrop {
+  background: rgb(19 40 31 / 0.5);
+}
+
+.hoja-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(28rem, 100%);
+  background: var(--papel);
+  box-shadow: var(--sombra-2);
+  transition: transform var(--dur-panel) var(--ease-cajon);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style {
+    .hoja[open] .hoja-panel {
+      transform: translateX(100%);
+    }
+  }
+}
+
+.hoja-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--esp-4) var(--esp-5);
+  border-bottom: 1px solid var(--linea);
+}
+
+.hoja-titulo {
+  font-size: var(--fs-600);
+}
+
+.hoja-cuerpo {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--esp-5) var(--esp-5);
+}
+
+.hoja-pie {
+  padding: var(--esp-2) var(--esp-5);
+  border-top: 1px solid var(--linea);
+  text-align: center;
+}

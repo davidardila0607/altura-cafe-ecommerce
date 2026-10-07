@@ -10,6 +10,19 @@ import { Permiso } from './permisos';
  *   "No tienes permiso…".
  * Como es canMatch, el código de la zona protegida ni siquiera se descarga si no se puede entrar.
  */
+/**
+ * Guard (canMatch) para rutas que solo piden haber iniciado sesión, como /carrito.
+ * Sin sesión lleva a /login?volver=<ruta pedida>.
+ */
+export const requiereSesion: CanMatchFn = (_ruta, segmentos) => {
+  const auth = inject(Auth);
+  if (auth.autenticado()) {
+    return true;
+  }
+  const volver = '/' + segmentos.map((s) => s.path).join('/');
+  return inject(Router).createUrlTree(['/login'], { queryParams: { volver } });
+};
+
 export function requierePermiso(permiso: Permiso): CanMatchFn {
   return (_ruta, segmentos) => {
     const auth = inject(Auth);

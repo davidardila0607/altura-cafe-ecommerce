@@ -41,6 +41,9 @@
       <p class="disponibilidad" [attr.data-tipo]="disponibilidad().tipo">{{ disponibilidad().texto }}</p>
     </div>
 
+    <!-- Agregar al carrito: queda por encima de la capa clicable de "Ver producto". -->
+    <app-agregar-carrito class="compra" [cafe]="cafe()" variante="compacta" />
+
     <!-- El botón se extiende sobre toda la card (::after): cualquier clic en ella abre el producto. -->
     <button
       type="button"

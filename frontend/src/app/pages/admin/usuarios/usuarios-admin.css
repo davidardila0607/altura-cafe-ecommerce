@@ -1,0 +1,41 @@
+/* Lo propio de /admin/usuarios (lo común está en lista-admin.css y formulario-admin.css). */
+.informacion {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  border-radius: var(--radio-campo);
+  background: var(--tinte-activo);
+  font-weight: 600;
+}
+
+.tu {
+  margin-left: var(--esp-1);
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+/* Etiqueta del rol: Administrador en bosque (relleno), Cliente con borde. */
+.rol {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.65rem;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio-pildora);
+  font-size: var(--fs-200);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.rol.admin {
+  border-color: var(--bosque);
+  background: var(--bosque);
+  color: var(--texto-claro);
+}
+
+.accion:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

@@ -327,3 +327,170 @@ Authorization: Bearer {{token}}
 ### Borrar imagen fuera de la carpeta de cafés - 400
 DELETE {{baseUrl}}/api/images?publicId=sitio/hero
 Authorization: Bearer {{token}}
+
+
+### ===== Carrito (Guía 2) =====
+# Todas las rutas exigen un token. Se prueba con la cuenta Cliente: el Administrador
+# es dueño de los cafés del catálogo y no puede comprarlos (409).
+# Cambia 51 y 52 por ids reales de GET /api/cafes.
+
+### Ver el carrito (Cliente) - 200 CarritoDto; si no tenía carrito, se crea vacío
+GET {{baseUrl}}/api/Carrito/GetCarrito
+Authorization: Bearer {{tokenCliente}}
+
+### Ver el carrito sin token - 401
+GET {{baseUrl}}/api/Carrito/GetCarrito
+
+### Agregar 2 unidades (Cliente) - 200 { mensaje: "Producto agregado al carrito." }
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 2
+}
+
+### Agregar el mismo café otra vez - 200 (se suman las cantidades: ahora 3)
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 1
+}
+
+### Superar el stock - 409 { mensaje: "Solo hay N unidades disponibles de este café." }
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 1000
+}
+
+### Café que no existe - 404 { mensaje: "El producto no existe." }
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 999999,
+  "cantidad": 1
+}
+
+### Cantidad 0 - 400 (validación: "La cantidad debe ser al menos 1.")
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 0
+}
+
+### Administrador agregando un café suyo - 409 { mensaje: "No puedes comprar tu propio producto." }
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 1
+}
+
+### Cambiar la cantidad - 200 { mensaje: "Cantidad actualizada." }
+PUT {{baseUrl}}/api/Carrito/ActualizarCarrito
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 5
+}
+
+### Cambiar la cantidad por encima del stock - 409
+PUT {{baseUrl}}/api/Carrito/ActualizarCarrito
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 1000
+}
+
+### Cambiar la cantidad de un café que no está en el carrito - 404
+PUT {{baseUrl}}/api/Carrito/ActualizarCarrito
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 52,
+  "cantidad": 1
+}
+
+### Quitar un café - 200 { mensaje: "Producto eliminado del carrito." }
+DELETE {{baseUrl}}/api/Carrito/EliminarProducto/51
+Authorization: Bearer {{tokenCliente}}
+
+### Quitar un café que no está - 404 { mensaje: "El producto no está en el carrito." }
+DELETE {{baseUrl}}/api/Carrito/EliminarProducto/51
+Authorization: Bearer {{tokenCliente}}
+
+### Vaciar el carrito - 200 { mensaje: "Carrito vaciado." }
+DELETE {{baseUrl}}/api/Carrito/VaciarCarrito
+Authorization: Bearer {{tokenCliente}}
+
+
+### ===== Usuarios (administración) =====
+# Política GestionUsuarios (rol Administrador). El rol nuevo se aplica cuando
+# el usuario vuelve a iniciar sesión (el token viejo conserva el rol anterior).
+
+### Listar usuarios (Administrador) - 200 [{ id, nombre, email, rol, cafesCreados }], sin password
+# @name usuarios
+GET {{baseUrl}}/api/usuarios
+Authorization: Bearer {{token}}
+
+### Listar usuarios con la cuenta Cliente - 403
+GET {{baseUrl}}/api/usuarios
+Authorization: Bearer {{tokenCliente}}
+
+### Cambiar el rol de un usuario (Administrador) - 200 { mensaje: "Rol actualizado." }
+# Cambia 0 por el id del Cliente (sale de la lista anterior).
+PUT {{baseUrl}}/api/usuarios/0/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Cliente"
+}
+
+### Rol que no existe - 400
+PUT {{baseUrl}}/api/usuarios/0/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Editor"
+}
+
+### Usuario que no existe - 404 { mensaje: "El usuario no existe." }
+PUT {{baseUrl}}/api/usuarios/999999/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Cliente"
+}
+
+### Quitarse el propio rol - 409 { mensaje: "No puedes quitarte tu propio rol de administrador." }
+# Cambia 0 por el id del Administrador que inició sesión.
+PUT {{baseUrl}}/api/usuarios/0/rol
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rol": "Cliente"
+}

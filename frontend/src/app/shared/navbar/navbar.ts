@@ -3,6 +3,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { Logo } from '../logo/logo';
+import { BotonCarrito } from '../carrito/boton-carrito';
 import { MenuUsuario } from '../menu-usuario/menu-usuario';
 
 /** Espera tras la última tecla antes de actualizar la búsqueda en /productos. */
@@ -10,7 +11,7 @@ const ESPERA_BUSQUEDA_MS = 250;
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive, Logo, MenuUsuario],
+  imports: [RouterLink, RouterLinkActive, Logo, MenuUsuario, BotonCarrito],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })

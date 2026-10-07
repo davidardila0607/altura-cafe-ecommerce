@@ -1,0 +1,129 @@
+@if (!carrito.datos() && carrito.cargando()) {
+  <div aria-busy="true">
+    <p class="visually-hidden" role="status">Cargando tu carrito…</p>
+    @for (n of [1, 2]; track n) {
+      <span class="esqueleto fila-esqueleto" aria-hidden="true"></span>
+    }
+  </div>
+} @else if (!carrito.datos() && carrito.error()) {
+  <app-estado-error titulo="No pudimos cargar tu carrito" (reintentar)="carrito.cargar()" />
+} @else if (carrito.productos().length === 0) {
+  <div class="vacio" data-testid="carrito-vacio">
+    <i class="bi bi-bag" aria-hidden="true"></i>
+    <p class="vacio-titulo">Tu carrito está vacío</p>
+    <p class="vacio-texto">Elige un café del catálogo y aparecerá aquí.</p>
+    <a class="boton boton-primario" routerLink="/productos">Ver cafés</a>
+  </div>
+} @else {
+  <!-- Mantiene el orden de títulos (h1/h2 → h2 → h3 de cada café) en la página y en el panel. -->
+  <h2 class="visually-hidden">Cafés en el carrito</h2>
+  <ul class="lineas">
+    @for (p of carrito.productos(); track p.productoId) {
+      <li class="linea" data-testid="linea-carrito">
+        <div class="foto">
+          @if (imagen(p.imagenUrl); as url) {
+            <img [src]="url" alt="" width="160" height="200" loading="lazy" decoding="async" />
+          } @else {
+            <i class="bi bi-cup-hot" aria-hidden="true"></i>
+          }
+        </div>
+
+        <div class="info">
+          <h3 class="nombre">{{ p.nombre }}</h3>
+          <p class="detalle">{{ p.variedad }} · {{ p.proceso }} · {{ p.presentacionGramos }} g</p>
+          <p class="unitario">
+            {{ p.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+            <span>c/u</span>
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="boton-icono quitar"
+          [attr.aria-label]="'Quitar ' + p.nombre + ' del carrito'"
+          title="Quitar del carrito"
+          (click)="quitar(p)"
+        >
+          <i class="bi bi-trash3" aria-hidden="true"></i>
+        </button>
+
+        <div class="pie-linea">
+          <app-selector-cantidad
+            [compacto]="true"
+            [etiqueta]="'Cantidad de ' + p.nombre"
+            [valor]="p.cantidad"
+            [maximo]="p.stock"
+            (valorChange)="cambiarCantidad(p, $event)"
+          />
+
+          <p class="subtotal" data-testid="subtotal">
+            <span class="visually-hidden">Subtotal: </span>
+            {{ p.subtotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+          </p>
+        </div>
+      </li>
+    }
+  </ul>
+
+  @if (error(); as mensaje) {
+    <p class="error" role="alert">
+      <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+      {{ mensaje }}
+    </p>
+  }
+
+  <div class="resumen">
+    <dl>
+      <div>
+        <dt>Unidades</dt>
+        <dd data-testid="total-unidades">{{ carrito.totalUnidades() }}</dd>
+      </div>
+      <div class="total">
+        <dt>Total</dt>
+        <dd data-testid="total-carrito">
+          {{ carrito.total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+        </dd>
+      </div>
+    </dl>
+
+    <button
+      type="button"
+      class="boton boton-primario boton-ancho"
+      disabled
+      [attr.aria-describedby]="id + '-nota'"
+    >
+      Finalizar compra
+      <span class="proximamente">Próximamente</span>
+    </button>
+    <p [id]="id + '-nota'" class="nota">El pago y los pedidos llegarán en una próxima versión.</p>
+
+    <button type="button" class="enlace-texto vaciar" (click)="pedirVaciar()">
+      Vaciar carrito
+    </button>
+  </div>
+}
+
+<dialog
+  #confirmacion
+  appAtraparFoco
+  class="confirmacion"
+  [attr.aria-labelledby]="id + '-titulo'"
+  [attr.aria-describedby]="id + '-texto'"
+>
+  <h2 [id]="id + '-titulo'">¿Vaciar el carrito?</h2>
+  <p [id]="id + '-texto'">
+    Se quitarán todos los cafés ({{ carrito.totalUnidades() }} unidades). Puedes volver a agregarlos
+    cuando quieras.
+  </p>
+  <div class="botones">
+    <button type="button" class="boton boton-contorno" (click)="cancelarVaciar()">Cancelar</button>
+    <button
+      type="button"
+      class="boton boton-primario"
+      [disabled]="vaciando()"
+      (click)="confirmarVaciar()"
+    >
+      {{ vaciando() ? 'Vaciando…' : 'Vaciar carrito' }}
+    </button>
+  </div>
+</dialog>

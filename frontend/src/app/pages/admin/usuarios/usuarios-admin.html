@@ -1,0 +1,114 @@
+<header class="encabezado">
+  <div>
+    <h1 class="titulo">Usuarios</h1>
+    @if (usuarios.hasValue()) {
+      <p class="resumen">{{ usuarios.value().length }} usuarios</p>
+    }
+  </div>
+</header>
+
+<p class="informacion" role="note">
+  <i class="bi bi-info-circle" aria-hidden="true"></i>
+  El nuevo rol se aplica la próxima vez que el usuario inicie sesión.
+</p>
+
+<div class="herramientas">
+  <label for="buscar-usuarios" class="etiqueta">Buscar usuarios</label>
+  <i class="bi bi-search" aria-hidden="true"></i>
+  <input
+    id="buscar-usuarios"
+    type="search"
+    class="campo"
+    placeholder="Nombre o correo"
+    autocomplete="off"
+    [value]="busqueda()"
+    (input)="busqueda.set($any($event.target).value)"
+  />
+</div>
+
+@if (usuarios.isLoading()) {
+  <div class="tabla-envoltorio" aria-busy="true">
+    <p class="visually-hidden" role="status">Cargando usuarios…</p>
+    @for (n of [1, 2, 3]; track n) {
+      <span class="esqueleto fila-esqueleto" aria-hidden="true"></span>
+    }
+  </div>
+} @else if (usuarios.error()) {
+  <app-estado-error titulo="No pudimos cargar los usuarios" (reintentar)="usuarios.reload()" />
+} @else {
+  <div class="tabla-envoltorio">
+    <table class="tabla">
+      <caption class="visually-hidden">Usuarios registrados</caption>
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Correo</th>
+          <th scope="col">Rol</th>
+          <th scope="col" class="numero">Cafés creados</th>
+          <th scope="col"><span class="visually-hidden">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of filas(); track u.id) {
+          <tr data-testid="fila-usuario">
+            <td>
+              <span class="nombre-fila">{{ u.nombre }}</span>
+              @if (u.id === miId()) {
+                <span class="tu">(tú)</span>
+              }
+            </td>
+            <td class="detalle-fila" data-titulo="Correo">{{ u.email }}</td>
+            <td data-titulo="Rol">
+              <span class="rol" [class.admin]="u.rol === 'Administrador'">
+                <i class="bi" [class.bi-shield-check]="u.rol === 'Administrador'" [class.bi-person]="u.rol === 'Cliente'" aria-hidden="true"></i>
+                {{ u.rol }}
+              </span>
+            </td>
+            <td class="numero" data-titulo="Cafés creados">{{ contarCafes(u.cafesCreados) }}</td>
+            <td>
+              <div class="acciones-fila">
+                <button
+                  type="button"
+                  class="accion"
+                  [disabled]="u.id === miId()"
+                  [attr.aria-label]="'Hacer ' + rolContrario(u) + ' a ' + u.nombre"
+                  [attr.title]="u.id === miId() ? 'No puedes quitarte tu propio rol de administrador' : null"
+                  (click)="pedirCambio(u)"
+                >
+                  <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                  {{ u.rol === 'Administrador' ? 'Hacer Cliente' : 'Hacer Administrador' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="vacio">
+              {{ busqueda() ? 'Ningún usuario coincide con «' + busqueda() + '».' : 'Todavía no hay usuarios registrados.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<dialog #confirmacion appAtraparFoco class="confirmacion" aria-labelledby="confirmacion-rol-titulo" aria-describedby="confirmacion-rol-texto">
+  @if (aCambiar(); as u) {
+    <h2 id="confirmacion-rol-titulo">¿Cambiar el rol de {{ u.nombre }} a {{ rolContrario(u) }}?</h2>
+    <p id="confirmacion-rol-texto">
+      @if (rolContrario(u) === 'Administrador') {
+        Podrá gestionar el inventario, las variedades y los usuarios.
+      } @else {
+        Ya no podrá entrar al panel de administración.
+      }
+      El cambio se aplica la próxima vez que inicie sesión.
+    </p>
+  }
+  <div class="botones">
+    <button type="button" class="boton boton-contorno" (click)="cancelarCambio()">Cancelar</button>
+    <button type="button" class="boton boton-primario" [disabled]="cambiando()" (click)="confirmarCambio()">
+      {{ cambiando() ? 'Cambiando…' : 'Cambiar rol' }}
+    </button>
+  </div>
+</dialog>

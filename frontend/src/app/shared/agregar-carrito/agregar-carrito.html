@@ -1,0 +1,40 @@
+@if (estado() === 'disponible') {
+  <div class="fila">
+    <app-selector-cantidad
+      [(valor)]="cantidad"
+      [maximo]="disponibles()"
+      [compacto]="variante() === 'compacta'"
+      [etiqueta]="variante() === 'compacta' ? 'Cantidad de ' + cafe().nombre : 'Cantidad'"
+    />
+    <button
+      type="button"
+      class="boton boton-primario agregar"
+      data-testid="agregar-carrito"
+      [disabled]="enviando()"
+      [attr.aria-label]="variante() === 'compacta' ? 'Agregar ' + cafe().nombre + ' ' + cafe().presentacionGramos + ' g al carrito' : null"
+      (click)="agregar()"
+    >
+      <i class="bi bi-bag-plus" aria-hidden="true"></i>
+      @if (enviando()) {
+        Agregando…
+      } @else {
+        {{ variante() === 'compacta' ? 'Agregar' : 'Agregar al carrito' }}
+      }
+    </button>
+  </div>
+} @else {
+  <button type="button" class="boton boton-contorno bloqueado" data-testid="agregar-carrito" disabled>
+    {{ textoBloqueado() }}
+  </button>
+}
+
+<!-- Siempre en el DOM: así el lector de pantalla anuncia el cambio de texto. -->
+<p class="mensaje" [class.error]="mensaje()?.tipo === 'error'" role="status">
+  @if (mensaje(); as m) {
+    <i class="bi" [class.bi-bag-check]="m.tipo === 'exito'" [class.bi-exclamation-triangle]="m.tipo === 'error'" aria-hidden="true"></i>
+    {{ m.texto }}
+    @if (m.tipo === 'exito') {
+      <a class="enlace-texto" routerLink="/carrito">Ver carrito</a>
+    }
+  }
+</p>

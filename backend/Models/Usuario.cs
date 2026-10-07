@@ -19,5 +19,8 @@ namespace CafeApi.Models
 
         // ✅ Cafés que creó este usuario (en la guía: Productos).
         public ICollection<Cafe> Cafes { get; set; } = new List<Cafe>();
+
+        // ✅ Guía 2, paso 4: el carrito del usuario (se crea la primera vez que lo usa).
+        public Carrito? Carrito { get; set; }
     }
 }

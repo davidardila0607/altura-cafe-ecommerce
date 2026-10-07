@@ -108,6 +108,66 @@ namespace CafeApi.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CafeApi.Models.Carrito", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_carrito");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_carrito_usuario_id");
+
+                    b.ToTable("carrito", (string)null);
+                });
+
+            modelBuilder.Entity("CafeApi.Models.CarritoProducto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("integer")
+                        .HasColumnName("cantidad");
+
+                    b.Property<int>("CarritoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("carrito_id");
+
+                    b.Property<int>("ProductoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("producto_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_carrito_producto");
+
+                    b.HasIndex("ProductoId")
+                        .HasDatabaseName("ix_carrito_producto_producto_id");
+
+                    b.HasIndex("CarritoId", "ProductoId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_carrito_producto_carrito_producto");
+
+                    b.ToTable("carrito_producto", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_carrito_producto_cantidad", "cantidad >= 1");
+                        });
+                });
+
             modelBuilder.Entity("CafeApi.Models.Proceso", b =>
                 {
                     b.Property<int>("Id")
@@ -317,6 +377,44 @@ namespace CafeApi.Data.Migrations
                     b.Navigation("Variedad");
                 });
 
+            modelBuilder.Entity("CafeApi.Models.Carrito", b =>
+                {
+                    b.HasOne("CafeApi.Models.Usuario", "Usuario")
+                        .WithOne("Carrito")
+                        .HasForeignKey("CafeApi.Models.Carrito", "UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_carrito_usuario_usuario_id");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("CafeApi.Models.CarritoProducto", b =>
+                {
+                    b.HasOne("CafeApi.Models.Carrito", "Carrito")
+                        .WithMany("Productos")
+                        .HasForeignKey("CarritoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_carrito_producto_carrito_carrito_id");
+
+                    b.HasOne("CafeApi.Models.Cafe", "Producto")
+                        .WithMany()
+                        .HasForeignKey("ProductoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_carrito_producto_cafes_producto_id");
+
+                    b.Navigation("Carrito");
+
+                    b.Navigation("Producto");
+                });
+
+            modelBuilder.Entity("CafeApi.Models.Carrito", b =>
+                {
+                    b.Navigation("Productos");
+                });
+
             modelBuilder.Entity("CafeApi.Models.Proceso", b =>
                 {
                     b.Navigation("Cafes");
@@ -325,6 +423,8 @@ namespace CafeApi.Data.Migrations
             modelBuilder.Entity("CafeApi.Models.Usuario", b =>
                 {
                     b.Navigation("Cafes");
+
+                    b.Navigation("Carrito");
                 });
 
             modelBuilder.Entity("CafeApi.Models.Variedad", b =>

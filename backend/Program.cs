@@ -14,11 +14,28 @@ using CafeApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ✅ Producción (Railway y similares): el hosting indica el puerto en la variable PORT.
+// Si existe, la API escucha en todas las interfaces de ese puerto; si no, se usa
+// launchSettings.json (http://localhost:5031 en desarrollo).
+var puerto = Environment.GetEnvironmentVariable("PORT");
+
+if (!string.IsNullOrWhiteSpace(puerto))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{puerto}");
+}
+
+// ✅ Orígenes que pueden llamar a la API desde el navegador (CORS).
+// En desarrollo: http://localhost:4200 (appsettings.json). En producción se agrega
+// la URL del frontend con la variable de entorno Cors__AllowedOrigins__0.
+var origenesPermitidos = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? ["http://localhost:4200"];
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngularLocalhost", policy =>
+    options.AddPolicy("PermitirFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins(origenesPermitidos)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -30,7 +47,21 @@ var connectionString =
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException(
-        "Configura la cadena de conexión en ConnectionStrings:CafeDatabase.");
+        "Falta la cadena de conexión. Configura ConnectionStrings:CafeDatabase " +
+        "(en local, appsettings.Development.json; en producción, la variable ConnectionStrings__CafeDatabase).");
+}
+
+// ✅ Sin una clave propia la API firmaría tokens con el marcador de appsettings.json.
+// Se exige que exista y que no sea el marcador (HMAC-SHA256 necesita al menos 32 bytes).
+var claveJwt = builder.Configuration["JwtSettings:Key"];
+
+if (string.IsNullOrWhiteSpace(claveJwt) ||
+    claveJwt == "CLAVE_SECRETA_DEL_PROYECTO" ||
+    Encoding.UTF8.GetByteCount(claveJwt) < 32)
+{
+    throw new InvalidOperationException(
+        "Falta la clave de los JWT o es demasiado corta. Configura JwtSettings:Key con 64 bytes aleatorios en Base64 " +
+        "(en local, appsettings.Development.json; en producción, la variable JwtSettings__Key).");
 }
 builder.Services.Configure<CloudinarySettings>(
  builder.Configuration.GetSection("CloudinarySettings"));
@@ -41,10 +72,14 @@ builder.Services.Configure<CloudinarySettings>(
 string databaseProvider;
 string databasePort;
 
-if (connectionString.Contains("supabase", StringComparison.OrdinalIgnoreCase) ||
-    connectionString.Contains("5432"))
+if (connectionString.Contains("supabase", StringComparison.OrdinalIgnoreCase))
 {
     databaseProvider = "PostgreSQL (Supabase)";
+    databasePort = "5432";
+}
+else if (connectionString.Contains("5432"))
+{
+    databaseProvider = "PostgreSQL";
     databasePort = "5432";
 }
 else if (connectionString.Contains("3306"))
@@ -82,7 +117,8 @@ builder.Services.AddScoped<IProcesoRepository, ProcesoRepository>();
 // ✅ Guía 1, paso 9: registro, login y JWT.
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
-// ⏳ ICartRepository/CartRepository no se registra: el carrito está pendiente.
+// ✅ Guía 2, paso 7: carrito de compras.
+builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 
 // ✅ Registro del servicio Cloudinary.
 builder.Services.AddScoped<
@@ -169,6 +205,9 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// ✅ Swagger y OpenAPI solo en Development: en producción no se publica la documentación.
+// No hay UseHttpsRedirection: en producción el hosting (Railway) recibe el HTTPS y
+// reenvía la petición a la API por HTTP dentro de su red.
 if (app.Environment.IsDevelopment())
 {
     // ✅ Mantiene disponible el JSON OpenAPI.
@@ -185,12 +224,15 @@ if (app.Environment.IsDevelopment())
 // Captura errores no controlados en toda la aplicación.
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseCors("AllowAngularLocalhost");
+app.UseCors("PermitirFrontend");
 
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ✅ Salud: público, para que el hosting compruebe que la API está viva.
+app.MapGet("/api/health", () => Results.Ok(new { estado = "ok" }));
 
 app.Run();

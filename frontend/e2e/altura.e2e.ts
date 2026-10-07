@@ -411,8 +411,8 @@ test.describe('Productos', () => {
     await expect(vista.locator('.notas')).toContainText('Caramelo');
     // El fondo de la escena toma el color de la variedad (Caturra).
     await expect(vista.locator('.escena')).toHaveCSS('background-color', 'rgb(59, 107, 52)');
-    await expect(vista.getByRole('button', { name: 'Agregar al carrito' })).toBeDisabled();
-    await expect(vista).toContainText('El carrito estará disponible próximamente.');
+    // Guía 2: sin sesión el botón está activo y lleva a /login (ver carrito.e2e.ts).
+    await expect(vista.getByRole('button', { name: 'Agregar al carrito' })).toBeEnabled();
 
     // Selector de cantidad.
     await vista.getByRole('button', { name: 'Aumentar cantidad' }).click();

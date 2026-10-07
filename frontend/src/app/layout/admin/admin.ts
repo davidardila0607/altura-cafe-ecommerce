@@ -6,7 +6,7 @@ import { Logo } from '../../shared/logo/logo';
 
 /**
  * Marco del panel de administración: encabezado con el nombre del usuario, "Ver tienda" y
- * "Cerrar sesión", navegación (Inventario / Variedades) y la zona de avisos.
+ * "Cerrar sesión", navegación (Inventario / Variedades / Usuarios) y la zona de avisos.
  * Prioriza la claridad: sin animaciones decorativas.
  */
 @Component({
@@ -24,6 +24,9 @@ import { Logo } from '../../shared/logo/logo';
           <ul class="secciones">
             <li><a routerLink="/admin/inventario" routerLinkActive="activo" ariaCurrentWhenActive="page">Inventario</a></li>
             <li><a routerLink="/admin/variedades" routerLinkActive="activo" ariaCurrentWhenActive="page">Variedades</a></li>
+            @if (auth.tienePermiso('usuarios.gestionar')) {
+              <li><a routerLink="/admin/usuarios" routerLinkActive="activo" ariaCurrentWhenActive="page">Usuarios</a></li>
+            }
           </ul>
         </nav>
         <div class="usuario">

@@ -1,0 +1,228 @@
+:host {
+  display: block;
+}
+
+/* ===== Filas: foto | datos | quitar  /  foto | cantidad y subtotal ===== */
+.lineas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linea {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'foto info quitar'
+    'foto pie pie';
+  align-items: center;
+  gap: var(--esp-2) var(--esp-4);
+  padding-block: var(--esp-4);
+  border-bottom: 1px solid var(--linea);
+}
+
+.foto {
+  grid-area: foto;
+  display: grid;
+  place-items: center;
+  align-self: start;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radio-campo);
+  background: var(--niebla-honda);
+  color: var(--helecho);
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info {
+  grid-area: info;
+  min-width: 0;
+}
+
+.nombre {
+  font-size: var(--fs-400);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.detalle,
+.unitario span {
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+.unitario {
+  font-size: var(--fs-200);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.quitar {
+  grid-area: quitar;
+  align-self: start;
+  color: var(--texto-suave);
+}
+
+.quitar:hover {
+  color: var(--error);
+}
+
+.pie-linea {
+  grid-area: pie;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2) var(--esp-4);
+}
+
+.subtotal {
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.error {
+  display: flex;
+  gap: var(--esp-2);
+  margin-top: var(--esp-4);
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* ===== Resumen ===== */
+.resumen {
+  display: grid;
+  gap: var(--esp-3);
+  margin-top: var(--esp-5);
+}
+
+.resumen dl {
+  display: grid;
+  gap: var(--esp-2);
+  margin: 0 0 var(--esp-2);
+}
+
+.resumen dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-4);
+}
+
+.resumen dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--linea-fuerte);
+  font-size: var(--fs-500);
+  font-weight: 750;
+}
+
+.proximamente {
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--radio-pildora);
+  background: rgb(255 255 255 / 0.22);
+  font-size: var(--fs-100);
+}
+
+.nota {
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+  text-align: center;
+}
+
+.vaciar {
+  justify-self: center;
+  border: 0;
+  background: none;
+}
+
+/* ===== Vacío y carga ===== */
+.vacio {
+  display: grid;
+  justify-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-7) var(--esp-4);
+  text-align: center;
+}
+
+.vacio .bi {
+  font-size: 2.5rem;
+  color: var(--helecho);
+}
+
+.vacio-titulo {
+  font-size: var(--fs-500);
+  font-weight: 750;
+}
+
+.vacio-texto {
+  margin-bottom: var(--esp-4);
+  color: var(--texto-suave);
+}
+
+.fila-esqueleto {
+  display: block;
+  height: 6rem;
+  margin-block: var(--esp-3);
+  border-radius: var(--radio-campo);
+}
+
+/* ===== Confirmación de "Vaciar carrito" ===== */
+.confirmacion {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: var(--esp-6);
+  border: 0;
+  border-radius: 24px;
+  background: var(--papel);
+  color: var(--texto);
+  box-shadow: var(--sombra-2);
+}
+
+.confirmacion::backdrop {
+  background: rgb(19 40 31 / 0.45);
+}
+
+.confirmacion h2 {
+  font-size: var(--fs-500);
+}
+
+.confirmacion p {
+  margin-top: var(--esp-3);
+  color: var(--texto-suave);
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--esp-3);
+  margin-top: var(--esp-6);
+}
+
+/* ===== Página /carrito en pantallas anchas: una sola fila por café ===== */
+@media (min-width: 768px) {
+  :host(:not(.compacta)) .linea {
+    grid-template-columns: 6rem minmax(0, 1fr) auto auto;
+    grid-template-areas: 'foto info pie quitar';
+    gap: var(--esp-5);
+  }
+
+  :host(:not(.compacta)) .subtotal {
+    min-width: 7rem;
+  }
+
+  :host(:not(.compacta)) .quitar {
+    align-self: center;
+  }
+}
