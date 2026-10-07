@@ -16,7 +16,9 @@ El proyecto es universitario y quienes lo entregan deben poder explicar cada par
 E-commerce de café de especialidad **Altura** (proyecto universitario en grupo):
 
 - **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés (25 en el seed), sus variedades (9), procesos (3) y presentaciones, y las imágenes de producto en Cloudinary.
-- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, **Login y Registro reales** (Guía 1: usuarios en la base de datos, contraseñas con hash y JWT propio) y un **panel de administración** (`/admin`) solo para el rol Administrador.
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, **Login y Registro reales** (Guía 1: usuarios en la base de datos, contraseñas con hash y JWT propio), **carrito de compras** (Guía 2: ícono con contador, panel lateral y página `/carrito`) y un **panel de administración** (`/admin`: inventario, variedades y usuarios) solo para el rol Administrador.
+
+El proyecto está **preparado para producción pero no desplegado**: los pasos están en `DEPLOY.md`.
 
 Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El repositorio anterior (`pablorja/CafeApi`) ya no se usa. No se hace force push ni se reescribe el historial.
 
@@ -32,9 +34,11 @@ CafeApi/
 │                            y fotos del sitio (subir-imagenes-sitio.ps1 + sitio/fotos.json)
 ├── frontend/                Proyecto Angular altura-web (package.json, angular.json, src/, public/, e2e/,
 │                            playwright.config.ts, herramientas/generar-paisaje.mjs)
+├── docs/guias/              Guías del profesor (guía 1: usuarios y JWT; guía 2: carrito de compras)
 ├── .gitignore               Reglas de .NET, Node/Angular y Playwright
 ├── CLAUDE.md                Esta guía
 ├── README.md                Puesta en marcha paso a paso
+├── DEPLOY.md                Pasos para desplegar (variables de entorno, migraciones, CORS, frontend)
 └── CHANGELOG.md
 ```
 
@@ -128,6 +132,9 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 | Línea de foco de los campos, visto de válido, errores, medidor de contraseña | Foco / escribir | 200–360 ms | `--ease-salida` | `acceso.css` |
 | Esqueletos (franja de brillo con `transform`) | Carga de datos | 1,6 s | `ease-in-out` | `styles.css` |
 | Panel lateral del administrador | Abrir | 420 ms | `--ease-cajon` | `formulario-admin.css` |
+| Panel lateral del carrito (entra desde la derecha) | Abrir | 420 ms | `--ease-cajon` | `boton-carrito.css` (`@starting-style`; sin desplazamiento con movimiento reducido) |
+| Pulso del contador del carrito (`scale` 1 → 1,3 → 1) | Cambia el número de unidades | 320 ms | `--ease-salida` | `boton-carrito.ts` (Web Animations API; no con movimiento reducido) |
+| Avisos de la tienda ("Agregado al carrito", sube 8 px + fundido) | Aparecer | 260 ms | `--ease-salida` | `zona-avisos.ts` (`@starting-style`) |
 
 ## Librerías y por qué
 
@@ -180,16 +187,18 @@ Rutas relativas a `backend/`.
 Controller  →  Interfaces/IXRepository  →  Repositories/XRepository  →  Data/AppDbContext (EF Core)  →  PostgreSQL
 ImagesController / CafesController  →  Interfaces/ICloudinaryService  →  Services/CloudinaryService  →  Cloudinary
 AuthController  →  Interfaces/IUsuarioRepository  →  Repositories/UsuarioRepository  →  AppDbContext (tabla usuario) + JwtSettings
+UsuariosController  →  Interfaces/IUsuarioRepository  →  Repositories/UsuarioRepository  →  AppDbContext (lista y cambio de rol)
+CarritoController  →  Interfaces/ICarritoRepository  →  Repositories/CarritoRepository  →  AppDbContext (carrito, carrito_producto, cafes)
 ```
 
 - **Controllers/**: validan (DataAnnotations + reglas como "la variedad existe"), mapean DTO ↔ entidad y deciden el código HTTP. No hay capa de servicios de negocio (decisión del grupo: se mantiene Controller → Repository).
 - **Repositories/**: todos los métodos son `*Async` y reciben `CancellationToken`. Las lecturas usan `AsNoTracking()` y proyectan directamente a DTO con `Select` (un solo SELECT con JOIN, sin N+1). Para modificar o borrar: `FindAsync` (con seguimiento) → el controlador cambia la entidad → `UpdateAsync`/`DeleteAsync` (que llaman a `SaveChangesAsync`).
-- **Data/AppDbContext.cs**: `DbSet` de `Variedades`, `Procesos`, `Cafes` y `Usuario` (en singular, como la guía). Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
+- **Data/AppDbContext.cs**: `DbSet` de `Variedades`, `Procesos`, `Cafes`, `Usuario`, `Carrito` y `CarritoProducto` (los tres últimos en singular, como las guías). Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
 - **Data/Migrations/**: migraciones de EF Core. **Son la fuente de verdad del esquema** (ya no existe `database/schema.sql`).
 - **Data/DbUpdateExceptionExtensions.cs**: detecta violaciones de unicidad (23505) y de clave foránea (23503) de PostgreSQL para responder 409.
 - **Seguridad/**: `Roles` y `Politicas` (autorización por políticas; ver "Autorización").
 - **Middleware/ExceptionMiddleware.cs**: cualquier excepción no controlada → 500 con mensaje genérico en español. El detalle solo va al log.
-- Registro en `Program.cs`: `AddDbContext<AppDbContext>(UseNpgsql + UseSnakeCaseNamingConvention)`, repositorios y `CloudinaryService` como `Scoped`.
+- Registro en `Program.cs`: `AddDbContext<AppDbContext>(UseNpgsql + UseSnakeCaseNamingConvention)`, repositorios (incluido `ICarritoRepository`) y `CloudinaryService` como `Scoped`. También: puerto `PORT`, CORS desde `Cors:AllowedOrigins`, comprobación de la cadena de conexión y de `JwtSettings:Key` al arrancar y `GET /api/health` (ver "Preparación para producción").
 
 ## Modelo de datos
 
@@ -248,11 +257,29 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 
 **Migración `AddUsuario`**: crea `usuario` y agrega `cafes.usuario_id NOT NULL` **sin valor por defecto**. Por eso exige la tabla `cafes` vacía: los cafés anteriores no tenían dueño y se borraron antes (por la API, para borrar también sus imágenes). El modelo `Usuario` anterior (Email, Nombre, Role, EsGoogleUser, FechaCreacion) nunca estuvo en el DbContext ni en una migración, así que no hubo tabla que transformar.
 
-Entidades **fuera** del DbContext (pendientes): `Cart`, `CartItem`.
+**carrito** (Guía 2, migración `AddCarrito`)
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| id | integer identity | PK |
+| usuario_id | integer | FK → usuario, `ON DELETE CASCADE`; **único** (`ux_carrito_usuario_id`): un carrito por usuario |
+
+**carrito_producto** (tabla intermedia, Guía 2)
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| id | integer identity | PK |
+| carrito_id | integer | FK → carrito, `ON DELETE CASCADE` |
+| producto_id | integer | FK → cafes, `ON DELETE CASCADE` (índice `ix_carrito_producto_producto_id`): si se elimina un café, sale de todos los carritos |
+| cantidad | integer | `CHECK (cantidad >= 1)` (`ck_carrito_producto_cantidad`) |
+
+Índice único `ux_carrito_producto_carrito_producto` sobre `(carrito_id, producto_id)`: un café aparece una sola vez por carrito (agregarlo otra vez suma la cantidad). La columna se llama `producto_id` porque la guía llama `ProductoId` a la propiedad, aunque apunta a `cafes`.
+
+**Migración `AddCarrito`**: solo crea `carrito` y `carrito_producto` con sus índices y FKs; no toca otras tablas (revisado antes de aplicarla). El carrito anterior en inglés (`Cart`, `CartItem`, `ICartRepository`, `CartRepository` ADO.NET con `NotImplementedException` y 4 DTOs) nunca estuvo en el DbContext ni en DI y se eliminó.
 
 ## Endpoints y permisos
 
-"Inventario" = política `GestionInventario` (hoy exige el rol Administrador; ver "Autorización").
+"Inventario" = política `GestionInventario` y "Usuarios" = política `GestionUsuarios` (las dos exigen hoy el rol Administrador; ver "Autorización"). "JWT" = cualquier usuario con sesión (`[Authorize]`).
 
 | Método | Ruta | Permiso | Respuestas |
 |---|---|---|---|
@@ -273,6 +300,14 @@ Entidades **fuera** del DbContext (pendientes): `Cart`, `CartItem`.
 | GET | /api/procesos | Público | 200 `ProcesoResponseDto[]` (id, nombre, descripcion) |
 | POST | /api/images | Inventario | 200 `{ imageUrl, publicId }`, 400, 401, 403 |
 | DELETE | /api/images?publicId=cafes/… | Inventario | 204, 400 (fuera de la carpeta `cafes/`), 401, 403, 409 si un café la usa |
+| GET | /api/Carrito/GetCarrito | JWT | 200 `CarritoDto` (lo crea vacío la primera vez), 401 |
+| POST | /api/Carrito/AgregarProducto | JWT | 200 `{ mensaje }`; 400 validación; 401; 404 "El producto no existe."; 409 propio / agotado / sin unidades |
+| PUT | /api/Carrito/ActualizarCarrito | JWT | 200 `{ mensaje }`; 400; 401; 404 "El producto no está en el carrito."; 409 sin unidades |
+| DELETE | /api/Carrito/EliminarProducto/{productId} | JWT | 200 `{ mensaje }`; 401; 404 |
+| DELETE | /api/Carrito/VaciarCarrito | JWT | 200 `{ mensaje: "Carrito vaciado." }`, 401 |
+| GET | /api/usuarios | Usuarios | 200 `UsuarioAdminDto[]` (id, nombre, email, rol, cafesCreados; nunca el password), 401, 403 |
+| PUT | /api/usuarios/{id}/rol | Usuarios | 200 `{ mensaje: "Rol actualizado." }`; 400 rol distinto de Administrador/Cliente; 401; 403; 404 "El usuario no existe."; 409 "No puedes quitarte tu propio rol de administrador." |
+| GET | /api/health | Público | 200 `{ estado: "ok" }` (monitoreo del hosting) |
 
 Reglas relevantes:
 - Sin token → **401**; con token pero sin el permiso (por ejemplo, la cuenta Cliente) → **403**.
@@ -286,8 +321,9 @@ Reglas relevantes:
 ## Autorización (roles y políticas)
 
 - `backend/Seguridad/Roles.cs`: constantes `Administrador` y `Cliente` (los valores del claim `role`).
-- `backend/Seguridad/Politicas.cs`: la política `GestionInventario` (hoy `RequireRole(Roles.Administrador)`), registrada en `Program.cs` con `Politicas.Registrar(builder.Services.AddAuthorizationBuilder())`.
-- Los controladores piden la **política**, no un rol: `[Authorize(Policy = Politicas.GestionInventario)]`.
+- `backend/Seguridad/Politicas.cs`: las políticas `GestionInventario` y `GestionUsuarios` (las dos `RequireRole(Roles.Administrador)`), registradas en `Program.cs` con `Politicas.Registrar(builder.Services.AddAuthorizationBuilder())`.
+- Los controladores piden la **política**, no un rol: `[Authorize(Policy = Politicas.GestionInventario)]`, `[Authorize(Policy = Politicas.GestionUsuarios)]` (todo `UsuariosController`). El carrito solo pide `[Authorize]` (cualquier rol).
+- En el frontend, `core/auth/permisos.ts` tiene `inventario.gestionar` y `usuarios.gestionar`.
 
 **Agregar un rol nuevo (por ejemplo "Editor") que gestione el inventario**, sin tocar controladores:
 1. Agrega `public const string Editor = "Editor";` en `Roles.cs`.
@@ -299,9 +335,10 @@ Reglas relevantes:
 ## Panel de administración
 
 - **Entrar**: con la misma sesión de la tienda. Menú de cuenta del navbar → "Panel de administración" (solo aparece al rol Administrador), footer → "Acceso administrador" o `http://localhost:4200/admin`. Sin sesión, el guard lleva a `/login?volver=/admin…`; con una cuenta Cliente, a `/login?permiso=denegado`, que muestra "No tienes permiso para entrar al panel de administración.".
-- **Rutas**: `/admin/inventario` (cafés), `/admin/variedades`. Todo `/admin` está protegido con `canMatch` por permiso y se carga de forma diferida. La pantalla `/admin/ingresar` se eliminó.
+- **Rutas**: `/admin/inventario` (cafés), `/admin/variedades`, `/admin/usuarios`. Todo `/admin` está protegido con `canMatch` por permiso (`/admin/usuarios` además con `usuarios.gestionar`) y se carga de forma diferida. La pantalla `/admin/ingresar` se eliminó.
 - **Inventario**: lista con búsqueda (sin tildes), columna **"Creado por"** (`usuarioNombre`), crear y editar en un panel lateral (nombre, variedad, presentación, origen, stock, precio e imagen con vista previa; tipo jpg/png/webp y 5 MB se validan antes de subir), eliminar con confirmación "Esta acción es irreversible", avisos de éxito y mensajes en español para 400, 401, 403, 404 y 409.
 - **Variedades**: crear, editar y eliminar (409 si tiene cafés).
+- **Usuarios** (Guía 2): tabla con nombre, correo, rol (etiqueta: Administrador en bosque, Cliente con borde), "Cafés creados" y buscador por nombre o correo (sin tildes). "Hacer Administrador" / "Hacer Cliente" con confirmación; la fila propia dice "(tú)" y su botón está deshabilitado (si aun así llega un 409, se muestra el mensaje de la API). Aviso fijo: "El nuevo rol se aplica la próxima vez que el usuario inicie sesión." No se pueden borrar usuarios.
 - **Sesión**: token en `localStorage` (sobrevive a cerrar la pestaña); se cierra sola al expirar el JWT (`JwtSettings:DurationInMinutes`, 60). Un 401 de la API a una petición con sesión la cierra y lleva a `/login` ("Tu sesión terminó. Vuelve a iniciar sesión."); un 403 muestra "No tienes permiso para esta acción". "Cerrar sesión" en el panel lleva a `/login`.
 - Los cambios se ven en Inicio y Productos al recargar (leen la misma API).
 
@@ -364,7 +401,7 @@ Implementación de `docs/guias/guia-1-usuarios-login-jwt.md` (guía del profesor
 **Cómo dar rol de administrador**
 
 1. Antes de registrarse: agrega el correo a `Admin:Correos` en `backend/appsettings.Development.json` y regístrate (Swagger, `CafeApi.http` o `/registro`).
-2. Si la cuenta ya existe, cambia el rol en PostgreSQL (`psql` está en `C:\Program Files\PostgreSQL\17\bin\psql.exe`):
+2. Si la cuenta ya existe y ya hay un Administrador, cámbialo desde `/admin/usuarios` (Guía 2). Si no hay ninguno, en PostgreSQL (`psql` está en `C:\Program Files\PostgreSQL\17\bin\psql.exe`):
 
 ```sql
 UPDATE usuario SET rol = 'Administrador' WHERE email = 'correo@ejemplo.com';
@@ -373,6 +410,81 @@ UPDATE usuario SET rol = 'Administrador' WHERE email = 'correo@ejemplo.com';
 El rol viaja dentro del token: el usuario debe **cerrar sesión e iniciarla otra vez** para que el cambio se note.
 
 **Clave JWT**: la clave local anterior (sección `"Jwt"`, del compañero) quedó **reemplazada** por una nueva de 64 bytes en `JwtSettings:Key`. Los tokens emitidos con la clave anterior ya no sirven. Cada integrante genera la suya (ver "Configuración").
+
+## Guía 2: carrito de compras
+
+Implementación de `docs/guias/guia-2-carrito-de-compras.md` (guía del profesor). Se respetaron sus nombres de clases, interfaz, métodos, DTOs, DbSets, rutas y migración. Equivalencias: el "Producto" de la guía es nuestro `Cafe`, `_context.Producto` es `_context.Cafes` y `Producto.Valor` es `Cafe.Precio`.
+
+**En palabras sencillas**
+
+- **Tabla intermedia**: un carrito tiene muchos cafés y un café puede estar en muchos carritos (relación muchos a muchos). Por eso existe `carrito_producto`: cada fila dice "en el carrito X hay N unidades del café Y". El carrito (`carrito`) solo guarda de quién es.
+- **El carrito se crea al primer uso**: no se crea al registrarse. `ObtenerCarritoLocal` busca el carrito del usuario y, si no existe, lo crea en ese momento. Todos los métodos lo llaman primero, así que el primer `GetCarrito` (o el primer "Agregar") lo crea.
+- **El usuario sale del token**: el controlador lee el id con `User.FindFirstValue(ClaimTypes.NameIdentifier)`. El frontend nunca envía de quién es el carrito; así nadie puede ver ni cambiar el carrito de otra persona aunque modifique la petición.
+- **No comprar lo propio**: si el `UsuarioId` del café es el del token, "No puedes comprar tu propio producto." (409). Por eso la cuenta administradora compartida, dueña de los 25 cafés, no puede comprar.
+- **El carrito no descuenta stock**: solo comprueba que no se pida más de lo que hay. El stock bajará cuando exista "confirmar pedido" (guía futura).
+- **Totales**: los calcula la API en `ObtenerCarrito` con una sola consulta (JOIN de `carrito_producto` con `cafes`, `variedades` y `procesos`, proyectada al DTO). `Precio`, `Subtotal` y `Total` son `double` como la guía; como los precios son pesos sin decimales, la conversión desde `decimal` no pierde nada.
+
+**Paso de la guía → archivo**
+
+| Paso | Archivo |
+|---|---|
+| 1. Clase Carrito | `backend/Models/Carrito.cs` |
+| 2. CarritoProducto | `backend/Models/CarritoProducto.cs` (navegación `public Cafe? Producto`) |
+| 3. DbSets | `backend/Data/AppDbContext.cs` (`Carrito`, `CarritoProducto`) + `Data/Configurations/CarritoConfiguration.cs` y `CarritoProductoConfiguration.cs` |
+| 4. Modificar Usuario | `backend/Models/Usuario.cs` (`public Carrito? Carrito`) |
+| 5. Migración | `backend/Data/Migrations/*_AddCarrito.cs` |
+| 6. DTOs | `backend/DTOs/AddProductDto.cs`, `CarritoDto.cs`, `CarritoProductoDto.cs` |
+| 7. Interfaz y registro | `backend/Interfaces/ICarritoRepository.cs`, `backend/Program.cs` (`AddScoped`) |
+| 8–13. Repositorio | `backend/Repositories/CarritoRepository.cs` (`ObtenerCarritoLocal`, `AgregarProducto`, `ObtenerCarrito`, `ActualizarProducto`, `EliminarProducto`, `VaciarCarrito`) |
+| 14. Controlador | `backend/Controllers/CarritoController.cs` |
+| Frontend | `core/services/carrito.ts`, `core/models/carrito.ts`, `shared/carrito/` (`boton-carrito`, `lista-carrito`), `shared/agregar-carrito/`, `shared/zona-avisos/`, `pages/carrito/` |
+
+**Adaptaciones respecto a la guía**
+
+| | Adaptación | Motivo |
+|---|---|---|
+| A | `CarritoProductoDto` agrega `Variedad`, `Proceso`, `PresentacionGramos` y `Stock`; `CarritoDto` agrega `TotalUnidades` | La interfaz muestra variedad, proceso y gramos; el selector de cantidad necesita el stock y el ícono del navbar el total de unidades. |
+| B | `AddProductDto` con `[Range(1, …)]` en `ProductId` y `Cantidad`, mensajes en español | Sin esto se podían enviar cantidades 0 o negativas (el CHECK de la base las rechazaría con un 500). Ahora es un 400 claro. |
+| C | Control de stock en `AgregarProducto` ("El producto está agotado." si el stock es 0; "Solo hay N unidades disponibles de este café." si lo que hay en el carrito más lo nuevo supera el stock) y en `ActualizarProducto` (mismo mensaje) | La guía no controla el stock. Las comprobaciones van después de las de la guía (producto inexistente y propio). La suma se hace en `long` para que una cantidad enorme no desborde. Con 1 unidad el mensaje va en singular ("Solo hay 1 unidad disponible…"). |
+| D | El controlador traduce el texto del repositorio a códigos HTTP, siempre con `{ mensaje }`: 404 (no existe / no está en el carrito), 409 (propio, agotado, sin unidades), 200 (éxito); `GetCarrito` devuelve el `CarritoDto` | Igual que la adaptación 7 de la Guía 1: con `Ok()` siempre, el frontend no sabría si algo falló. Los mensajes son constantes públicas de `CarritoRepository`. |
+
+**Otras diferencias (decisiones tomadas)**
+
+- La interfaz y el repositorio no reciben `CancellationToken` (la guía no lo tiene), igual que `IUsuarioRepository` en la Guía 1.
+- `ObtenerCarrito` agrega `OrderBy(x => x.Id)` (los cafés salen en el orden en que se agregaron) y lee variedad y proceso en la misma proyección.
+- `ActualizarProducto` lee solo la columna `stock` del café (`Select(c => c.Stock)`), sin cargar la entidad.
+- `VaciarCarrito` se dejó como la guía (`ToListAsync` + `RemoveRange`), aunque `ExecuteDeleteAsync` haría un solo `DELETE`: con pocos cafés por carrito no hay diferencia y el código es el de la guía.
+- Configuración: `carrito.usuario_id` único (un carrito por usuario) con FK `CASCADE` a `usuario`; `carrito_producto` con FK `CASCADE` a `carrito` y a `cafes`, índice único `(carrito_id, producto_id)` y `CHECK (cantidad >= 1)`.
+- Skills frente a la guía (gana la guía): `dotnet-webapi` recomienda `ProblemDetails` y `ActionResult<T>` tipados; se mantuvo `IActionResult` con `{ mensaje }`. `optimizing-ef-core-queries`: proyección en `ObtenerCarrito` y lectura de una sola columna en `ActualizarProducto`; se descartó `ExecuteDeleteAsync` para no apartarse de la guía. `database-schema-designer`: índices únicos y `CHECK` en la base, no solo en la API.
+
+**Reglas del carrito (frontend)**
+
+- `Carrito` (`core/services/carrito.ts`) guarda el carrito en un signal. Se carga al iniciar sesión (o al recargar con una sesión guardada) mediante un `effect` sobre la sesión, y se borra de la memoria al cerrar sesión. Después de cada cambio vuelve a pedir `GetCarrito`: los totales siempre son los de la API.
+- **Ícono del navbar** (`shared/carrito/boton-carrito`): siempre visible. Sin sesión es un enlace a `/login?volver=`; con sesión abre el **panel lateral** (`<dialog>` que entra desde la derecha) y muestra `TotalUnidades` en una píldora cereza que hace un pulso corto al cambiar (Web Animations API, 320 ms; sin pulso con movimiento reducido).
+- **"Agregar al carrito"** (`shared/agregar-carrito`, en las cards de Productos e Inicio y en la vista rápida): selector de 1 a (stock − unidades que ya están en el carrito). Sin sesión lleva a `/login?volver=<página actual>`. Botón deshabilitado con el motivo: "Este café es tuyo" (`usuarioId` del café = id del token), "Agotado" o "Ya tienes todas las unidades disponibles". En las cards, el resultado se avisa abajo a la derecha ("Agregado al carrito" + "Ver carrito", `shared/zona-avisos`); en la vista rápida, dentro del panel, porque lo que está fuera de un `<dialog>` modal no se puede pulsar. Los 404 y 409 muestran el mensaje de la API.
+- **Lista del carrito** (`shared/carrito/lista-carrito`, en el panel y en `/carrito`): por café, imagen, nombre, variedad · proceso · gramos, precio unitario, selector de 1 a stock (`ActualizarCarrito`), quitar (`EliminarProducto`) y subtotal. Resumen con unidades y total en COP ("$ 45.000"), "Vaciar carrito" con confirmación (`VaciarCarrito`), estado vacío con "Ver cafés" y "Finalizar compra" deshabilitado con la etiqueta "Próximamente".
+- **`/carrito`**: dentro del layout de la tienda, protegida con el guard `requiereSesion` (sin sesión, `/login?volver=/carrito`).
+
+## Cuenta administradora compartida
+
+- **`desarrollo.testing@gmail.com`** (nombre **"Administrador Altura"**) es la cuenta Administrador del equipo. Está en `Admin:Correos` y es la dueña de los 25 cafés del catálogo.
+- Cada integrante la registra **en su base de datos local** con `POST /api/auth/Register` (Swagger, `CafeApi.http` o `/registro`) y luego carga el catálogo con `& .\seed\seed-productos.ps1` iniciando sesión con ella. La contraseña la comparte el equipo por fuera del repositorio: **nunca se escribe en ningún archivo**.
+- **Esa cuenta no puede comprar**: es dueña de todos los cafés, así que ve "Este café es tuyo" en cada uno (y la API responde 409). **Para probar el carrito se usa una cuenta Cliente** (cualquier correo que no esté en `Admin:Correos`, registrado en `/registro`).
+- Un cambio de rol (desde `/admin/usuarios` o con `UPDATE`) se aplica cuando el usuario vuelve a iniciar sesión: el token que ya tiene conserva el rol anterior hasta que expira (60 min).
+
+## Preparación para producción
+
+Resumen; los pasos completos están en `DEPLOY.md`. **No se ha desplegado nada.**
+
+- **Configuración por variables de entorno** sin código especial (ASP.NET Core ya lee `Seccion__Clave`): `ConnectionStrings__CafeDatabase`, `JwtSettings__Key`, `CloudinarySettings__CloudName`, `CloudinarySettings__ApiKey`, `CloudinarySettings__ApiSecret`, `Admin__Correos__0`, `Cors__AllowedOrigins__0`.
+- **Falla al arrancar con un mensaje claro** si falta `ConnectionStrings:CafeDatabase` o si `JwtSettings:Key` falta, es el marcador `CLAVE_SECRETA_DEL_PROYECTO` o tiene menos de 32 bytes (verificado ejecutando la DLL en Production sin esas variables).
+- **`PORT`** (Railway): si existe, `builder.WebHost.UseUrls("http://0.0.0.0:{PORT}")`; si no, `launchSettings.json` (verificado con `PORT=5099`).
+- **CORS**: `Cors:AllowedOrigins` (en `appsettings.json` solo `http://localhost:4200`); la política se llama `PermitirFrontend`.
+- **Swagger y OpenAPI solo en Development** (en Production `/swagger` da 404). **Sin `UseHttpsRedirection`**: el hosting recibe el HTTPS.
+- **`GET /api/health`** público: `{ "estado": "ok" }` (una línea con `app.MapGet` en `Program.cs`).
+- **Migraciones**: no se aplican al arrancar. Se aplican a mano con `dotnet ef database update --connection "<cadena de producción>"` o con `dotnet ef migrations script --idempotent` (ver `DEPLOY.md`).
+- `CafeApi.csproj` no copia `appsettings.Development.json` ni `appsettings.example.json` al publicar (antes `dotnet publish` copiaba el archivo con secretos).
+- **Frontend**: `environment.ts` (producción) con `apiBaseUrl` de marcador `https://TU-API.up.railway.app/api`; `ng build` sin advertencias. El hosting debe **redirigir todas las rutas a `index.html`** (SPA).
 
 ## Configuración
 
@@ -385,7 +497,8 @@ Copia `appsettings.example.json` → `appsettings.Development.json` y rellena:
 | `ConnectionStrings:CafeDatabase` | PostgreSQL local (`Host=localhost;Port=5432;Database=cafeapi_dev;Username=postgres;Password=...`) |
 | `JwtSettings:Key` | Clave secreta con la que la API firma los JWT: 64 bytes aleatorios en Base64. En `appsettings.json` y `appsettings.example.json` solo va el marcador `CLAVE_SECRETA_DEL_PROYECTO` |
 | `JwtSettings:Issuer` / `Audience` / `DurationInMinutes` | `EcommerceApi` / `EcommerceAngular` / `60` (valores de la guía) |
-| `Admin:Correos` | Correos que se registran como Administrador (comparados en minúsculas). Local: `davidardila0607@gmail.com`, `desarrollo.testing@gmail.com` y `e2e-admin@altura.test` (este último **solo para las pruebas automáticas**) |
+| `Admin:Correos` | Correos que se registran como Administrador (comparados en minúsculas). Local: `davidardila0607@gmail.com`, `desarrollo.testing@gmail.com` (la cuenta compartida) y `e2e-admin@altura.test` (este último **solo para las pruebas automáticas**) |
+| `Cors:AllowedOrigins` | Orígenes del frontend permitidos por CORS. Viene en `appsettings.json` con `http://localhost:4200`; en producción, `Cors__AllowedOrigins__0` |
 | `CloudinarySettings:CloudName` / `ApiKey` / `ApiSecret` | Cuenta de Cloudinary |
 | `Logging:LogLevel` | `Information` / `Microsoft.AspNetCore: Warning` |
 
@@ -394,7 +507,7 @@ Generar una `JwtSettings:Key` (PowerShell):
 $b = New-Object byte[] 64; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
 ```
 
-**Nunca** subas secretos a Git ni los escribas en `appsettings.json` / `appsettings.example.json`.
+**Nunca** subas secretos a Git ni los escribas en `appsettings.json` / `appsettings.example.json`. En producción la misma configuración llega por variables de entorno (lista completa en `DEPLOY.md`).
 
 ## Comandos del backend (desde `backend/`)
 
@@ -493,19 +606,20 @@ Solo se usaron fotos gratuitas (se descartaron las de Unsplash+). La primera ele
 | `productos` | Catálogo | Nuestros cafés \| Altura |
 | `login` | Login (`POST /api/auth/Login`; acepta `?volver=`, `?cuenta=creada`, `?permiso=denegado`) | Iniciar sesión \| Altura |
 | `registro` | Registro (`POST /api/auth/Register`) | Crear cuenta \| Altura |
-| `admin` → `admin/inventario`, `admin/variedades` | Panel (guard `canMatch` por permiso, layout `Admin`) | Inventario \| Altura · Variedades \| Altura |
+| `carrito` | Carrito (layout `Sitio`, guard `requiereSesion`) | Tu carrito \| Altura |
+| `admin` → `admin/inventario`, `admin/variedades`, `admin/usuarios` | Panel (guard `canMatch` por permiso, layout `Admin`; usuarios con `usuarios.gestionar`) | Inventario \| Altura · Variedades \| Altura · Usuarios \| Altura |
 | `**` | redirige a `''` | — |
 
 Transición entre rutas con `withViewTransitions()`; las navegaciones que solo cambian query params y el movimiento reducido marcan `<html class="transicion-instantanea">`. Durante el vuelo de la bolsa se marca `<html class="transicion-vuelo">` (solo la bolsa tiene nombre; el resto hace un fundido corto).
 
 **Estructura de `src/app/`:**
 
-- `core/auth/`: `permisos.ts` (mapa centralizado permiso → roles), `token.ts` (`leerToken`: traduce los claims de .NET, con nombres en URI larga, a id, nombre, email, roles y expiración), `auth.ts` (servicio `Auth` con signals: `registrar`, `iniciarSesion`, sesión en `localStorage`, cierre al expirar, `tienePermiso`), `interceptor.ts` (Bearer solo a la API; 401 → cierra sesión y lleva a `/login`; 403 → aviso), `guard.ts` (`requierePermiso(permiso)`, `canMatch`: sin sesión → `/login?volver=`, sin permiso → `/login?permiso=denegado`).
-- `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`RespuestaLogin`/`RespuestaRegistro`. `Cafe` incluye `usuarioId` y `usuarioNombre`. Si cambia un DTO del backend, actualiza estos modelos.
-- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel).
+- `core/auth/`: `permisos.ts` (mapa centralizado permiso → roles: `inventario.gestionar`, `usuarios.gestionar`), `token.ts` (`leerToken`: traduce los claims de .NET, con nombres en URI larga, a id, nombre, email, roles y expiración), `auth.ts` (servicio `Auth` con signals: `registrar`, `iniciarSesion`, sesión en `localStorage`, cierre al expirar, `tienePermiso`), `interceptor.ts` (Bearer solo a la API; 401 → cierra sesión y lleva a `/login`; 403 → aviso), `guard.ts` (`requierePermiso(permiso)`, `canMatch`: sin sesión → `/login?volver=`, sin permiso → `/login?permiso=denegado`; `requiereSesion` para `/carrito`).
+- `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`RespuestaLogin`/`RespuestaRegistro`, `CarritoDto`/`CarritoProductoDto`/`AddProductDto` (mismos nombres que el backend) y `UsuarioAdmin`/`Rol`. `Cafe` incluye `usuarioId` y `usuarioNombre`. Si cambia un DTO del backend, actualiza estos modelos.
+- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel y de la tienda, con enlace opcional), `Carrito` (Guía 2, ver "Reglas del carrito") y `Usuarios` (`GET /api/usuarios`, `PUT /api/usuarios/{id}/rol`).
 - `core/data/`: `mapa-colombia.ts` (Natural Earth) y `contenido-marca.ts` (texto, color y notas de cata de las 9 variedades; texto, color, ícono y "en taza" de los 3 procesos con `marcaProceso()`; fotos del sitio, pasos del proceso, `ETAPAS_ASCENSO`). **Los productos, las variedades y los procesos siempre vienen de la API**; aquí solo está el texto de marca, asociado por nombre normalizado.
-- `core/utils/`: `gsap.ts` (`cargarGsap`, `refrescarScroll`), `medios.ts` (`matchMedia` seguro, `movimientoReducido`, `punteroFino`, `navegadorCompleto`), `imagenes.ts` (las fotos de producto se piden con el recorte `c_crop,g_center,w_0.86,h_0.86` antes de `f_auto,q_auto,w_N`: la bolsa llena más la card y mide lo mismo en la card, la vista rápida y el vuelo), `texto.ts`, `transicion.ts`, `validadores.ts` (`PATRON_CORREO`, `camposCoinciden`, `entero`), `errores.ts` (`mensajeDeError`: mensaje en español por código HTTP).
-- `layout/sitio`: navbar fijo (se vuelve sólido con un sensor de IntersectionObserver), `<router-outlet>`, footer con cresta y "Acceso administrador". `layout/admin`: cabecera del panel (usuario, "Ver tienda", "Cerrar sesión"), navegación y avisos.
+- `core/utils/`: `gsap.ts` (`cargarGsap`, `refrescarScroll`), `medios.ts` (`matchMedia` seguro, `movimientoReducido`, `punteroFino`, `navegadorCompleto`), `imagenes.ts` (las fotos de producto se piden con el recorte `c_crop,g_center,w_0.86,h_0.86` antes de `f_auto,q_auto,w_N`: la bolsa llena más la card y mide lo mismo en la card, la vista rápida y el vuelo), `texto.ts`, `transicion.ts`, `validadores.ts` (`PATRON_CORREO`, `camposCoinciden`, `entero`), `errores.ts` (`mensajeDeError`: mensaje en español por código HTTP; en 404 y 409 usa el `{ mensaje }` de la API si viene).
+- `layout/sitio`: navbar fijo (se vuelve sólido con un sensor de IntersectionObserver), `<router-outlet>`, footer con cresta y "Acceso administrador" y `ZonaAvisos` ("Agregado al carrito"). `layout/admin`: cabecera del panel (usuario, "Ver tienda", "Cerrar sesión"), navegación (Inventario, Variedades y, con permiso, Usuarios) y avisos.
 - `pages/inicio/`: `Hero` (crestas + palabra + parallax), `Altimetro`, `Destacados`, `Proceso` (galería anclada), `CintaNotas` (marquee con datos de la API), `Origenes` (mapa; 5 regiones con cafés), `Variedades` (cuadrícula de 9 fichas: 3/2/1 columnas, muestra de color, texto y enlace con el número de cafés), `Cierre`. Cada sección lleva `data-etapa`.
 - `pages/productos/`: `Productos` + `Filtros` + `GuiaProcesos` + `catalogo.ts` (lógica pura de filtros ↔ URL `?q=&variedad=&proceso=&presentacion=&origen=&disponibles=1&orden=`, orden, búsqueda sin tildes por nombre, origen, variedad **o proceso**, `contarPor`). Estado en un signal, View Transitions al filtrar y hoja `<dialog>` de filtros en móvil.
   - **Filtros** (barra lateral y hoja móvil, mismo componente): Variedad, Proceso y Origen son **listas verticales**, una fila por opción con su marca (muestra de color, ícono del proceso o `bi-geo-alt`), el nombre y el número de cafés alineado a la derecha; la fila activa tiene fondo `--tinte-activo`, negrita y una barra corta de su color a la izquierda. Filas de 40 px (44 px con puntero táctil). Presentación son tres botones del mismo ancho (Todas · 340 g · 500 g). Con más de 6 variedades se muestran 5 y "Ver las 9 variedades" (`aria-expanded`); la elegida nunca se esconde. La barra lateral es fija al bajar y, si es más alta que la pantalla, tiene su propio scroll.
@@ -513,9 +627,10 @@ Transición entre rutas con `withViewTransitions()`; las navegaciones que solo c
   - **Grilla uniforme**: todas las cards miden lo mismo (3 columnas a ≥1200 px, 2 en tableta, 1 en móvil). Para que los textos queden alineados entre cards, cada fila de la card ocupa una sola línea: variedad + gramos, nombre (con "…" si no cabe), origen + etiqueta de proceso, precio + disponibilidad. Una e2e mide que alto, imagen, nombre, origen y precio estén en la misma posición en las 25 cards.
   - Al filtrar, la URL se escribe con `scroll: 'manual'` (opción por navegación del router de Angular 22): la página no salta arriba; al cambiar de ruta sí se sube, como siempre.
 - `pages/login`, `pages/registro`: formularios reactivos conectados a la API (Guía 1). Registro valida igual que `UsuarioDto` (nombre obligatorio de hasta 100 caracteres, correo válido, contraseña de 6 o más, confirmación) y al terminar lleva a `/login?cuenta=creada` ("Cuenta creada. Ahora inicia sesión."); un 400 muestra el mensaje del backend. Login vuelve a `?volver=` (solo rutas internas) o al Inicio; un 401 muestra "Usuario o contraseña incorrectos.".
-- `pages/admin/`: `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
-- `shared/`: `Navbar`, `MenuUsuario` (cuenta del navbar: sin sesión, ícono a `/login?volver=`; con sesión, la inicial y un menú *disclosure* con nombre, correo, "Panel de administración" solo para Administrador y "Cerrar sesión"; se cierra con Escape, clic fuera o al navegar; es un componente aparte por el presupuesto de 4 kB del CSS del navbar), `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; Escape se atiende en `keydown`), `SelectorCantidad`, `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
-- `src/environments/`: `apiBaseUrl` (`http://localhost:5031/api` en desarrollo; vacío en producción) y `cloudinaryBase`.
+- `pages/admin/`: `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`), `usuarios` (`usuarios-admin.ts`, Guía 2) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
+- `pages/carrito`: página `/carrito` (`PaginaCarrito`) con `ListaCarrito` y "Seguir comprando".
+- `shared/`: `Navbar` (con `BotonCarrito` junto a `MenuUsuario`), `carrito/` (`BotonCarrito` con el panel lateral y `ListaCarrito`), `AgregarCarrito` (selector + botón y sus estados), `ZonaAvisos`, `MenuUsuario` (cuenta del navbar: sin sesión, ícono a `/login?volver=`; con sesión, la inicial y un menú *disclosure* con nombre, correo, "Panel de administración" solo para Administrador y "Cerrar sesión"; se cierra con Escape, clic fuera o al navegar; es un componente aparte por el presupuesto de 4 kB del CSS del navbar), `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; `AgregarCarrito`; Escape se atiende en `keydown`), `SelectorCantidad` (con `etiqueta` y `compacto` para las listas; nunca muestra más que el máximo), `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
+- `src/environments/`: `apiBaseUrl` (`http://localhost:5031/api` en desarrollo; marcador `https://TU-API.up.railway.app/api` en producción, a cambiar al desplegar) y `cloudinaryBase`.
 
 **Comandos (desde `frontend/`):**
 
@@ -534,6 +649,7 @@ Si se cambia `angular.json` (estilos, fuentes), **reinicia `ng serve`**: no reca
 
 **e2e** (`frontend/e2e/*.e2e.ts`, dos proyectos de Playwright: `chromium` con movimiento y `movimiento-reducido` con `prefers-reduced-motion: reduce`; etiquetas `@movimiento`, `@reducido`, `@una-vez`):
 - `altura.e2e.ts`: Inicio (3 destacados de la API con Cloudinary, 9 variedades con enlace al catálogo, altímetro, mapa con 5 orígenes → catálogo filtrado, galería anclada / fila con movimiento reducido), navegación (estado activo, navbar sólido, menú móvil, login ↔ registro), Productos (25 cafés; variedad + proceso + presentación combinados en la URL; "Ver las 9 variedades"; bloque de procesos arriba de la grilla que filtra, marca el activo y no mueve la página; cards del mismo tamaño y alineadas; sin desplazamiento horizontal a 375 px; búsquedas "narino", "honey" y "rosado"; recarga; cards con etiquetas; vista rápida con proceso y color de variedad; vuelo de la bolsa; hoja de filtros en móvil), API caída, formularios sin peticiones a la API, axe-core en todas las vistas a 1440 y 375 px, capturas y grabación.
+- `carrito.e2e.ts` (Guía 2): sin sesión, "Agregar", el ícono del carrito y `/carrito` llevan a `/login`; un Cliente nuevo se registra, agrega desde una card y desde la vista rápida (el contador cambia), llega al límite de stock ("Ya tienes todas las unidades disponibles"), usa el panel, cambia cantidades en `/carrito` (subtotales y total en COP), recarga (el carrito persiste), quita, vacía con confirmación y no entra a `/admin/usuarios`; con el Administrador de pruebas: un café suyo muestra "Este café es tuyo" y en `/admin/usuarios` busca al Cliente, le cambia el rol con confirmación y lo devuelve (su propia fila está deshabilitada); axe del panel, de `/carrito` y de `/admin/usuarios`.
 - `admin.e2e.ts` (usuarios y panel; autocontenido, no depende del catálogo): sin sesión `/admin` → `/login?volver=`; registrar un Cliente desde `/registro` (y el 400 "El usuario ya existe."); contraseña incorrecta (401); el Cliente inicia sesión y vuelve a la página anterior, el menú muestra su nombre y correo sin "Panel de administración", la sesión sobrevive a recargar, `/admin` → "No tienes permiso", cerrar sesión desde el menú; el Administrador entra al panel desde el menú, crea un café con imagen y proceso, **"Creado por" muestra su nombre**, lo edita (el dueño no cambia) y lo elimina (la imagen desaparece de Cloudinary); variedades (crear, duplicada 409, no eliminar con cafés —crea uno por la API—, eliminar); 403 y 401 simulados; axe del login, el menú de cuenta y el panel; cerrar sesión en el panel. **Necesita variables de entorno** con la cuenta Administrador de pruebas, cuyo correo debe estar en `Admin:Correos` (si la cuenta no existe, se registra sola; sin las variables, se omite):
 
 ```powershell
@@ -544,8 +660,10 @@ npm run e2e
 El Cliente se registra en cada ejecución con un correo nuevo (`e2e-cliente-<número>@altura.test`) y una contraseña aleatoria. Los cafés y variedades de prueba llevan "e2e" en el nombre y se borran al terminar (también si una prueba falla). Los usuarios no se pueden borrar por la API; después de las pruebas se borran en PostgreSQL:
 
 ```sql
-DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';  -- falla (RESTRICT) si alguno todavía tiene cafés
-``` La fixture `consola` hace fallar cualquier prueba con errores de consola. Capturas y video (`hero-y-vista-rapida.webm`) en `frontend/e2e/capturas/` (ignorada por Git).
+DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';  -- falla (RESTRICT) si alguno todavía tiene cafés; sus carritos se borran solos (CASCADE)
+```
+
+Antes de cada análisis de axe, `esperarAnimaciones` (`e2e/fixtures.ts`) espera a que terminen las animaciones con fin: a mitad del fundido de entrada del login, axe medía colores intermedios y marcaba contraste insuficiente. La fixture `consola` hace fallar cualquier prueba con errores de consola. Capturas y video (`hero-y-vista-rapida.webm`) en `frontend/e2e/capturas/` (ignorada por Git).
 
 ## Skills usadas en el rediseño y cómo
 
@@ -565,6 +683,9 @@ DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';  -- falla (RESTRICT) s
 | find-animation-opportunities, emil-design-eng (improve-animations en lugar de review-animations, que no está instalada) | Movimiento de los filtros nuevos: chips que entran en cascada corta (25 ms) con `@starting-style` solo al desplegar "Ver las 9 variedades", flecha que gira; sin animación en acciones frecuentes (elegir un chip solo cambia color) ni con movimiento reducido. |
 | impeccable (solo sus guías, sin lanzador ni hooks) | *Audit* + *polish* de Productos y la vista rápida: contraste del chip activo de Lavado, card sola al final de la grilla, recorte de la bolsa en el vuelo. En el ajuste de Productos: anillo de foco recortado por el scroll de la barra lateral (margen interno), píldora activa de 44 px en táctil, tintes de fondo como tokens (`--tinte-hover`, `--tinte-activo`) y un desbordamiento horizontal a 375 px (el texto oculto del botón, con `position: absolute`, escapaba de la fila con scroll: se agregó `position: relative`). |
 | webapp-testing | Capturas y consola durante el desarrollo; pruebas escritas con `@playwright/test` (npm), como pide el proyecto. |
+| Guía 2: dotnet-webapi, create-datadriven-aspnetcore, database-schema-designer, optimizing-ef-core-queries | Carrito y usuarios con el patrón Controller → Repository, índices únicos y `CHECK` en la base, `CASCADE` hacia `cafes`, proyección del carrito en una sola consulta y lectura de una sola columna para el stock. Donde contradecían la guía (ProblemDetails, `CancellationToken`, `ExecuteDeleteAsync`), ganó la guía. |
+| Guía 2: angular-developer | Servicio `@Service()` con signals y un `effect` sobre la sesión, `linkedSignal` para la cantidad (se ajusta sola si baja el máximo) y para limpiar el aviso al cambiar de café, `afterRenderEffect` para el pulso del contador, guard funcional `requiereSesion`. |
+| Guía 2: emil-design-eng, design-taste-frontend, ui-ux-pro-max (`ui-styling`) | Panel lateral con `--ease-cajon` (como la hoja de filtros), pulso del contador corto y solo cuando cambia, sin animar acciones frecuentes (cambiar cantidad o quitar), un solo acento (cereza) para el contador y "Agregar", botones deshabilitados que dicen por qué, estado vacío con una acción clara, confirmación solo en lo destructivo (vaciar) y en el cambio de rol. Los patrones de `ui-styling` (React/shadcn) se implementaron en Angular con el CSS propio. |
 
 Contradicciones resueltas a favor del brief: design-taste-frontend exige modo oscuro y desaconseja cursores propios (se mantuvo un solo tema claro y no hay cursor propio); ui-ux-pro-max propuso un estilo genérico (se descartó); ui-styling presupone React/Tailwind (se usó Angular con CSS propio); impeccable considera amateur `feTurbulence` (se quitó el grano). En la etapa anterior (rediseño editorial) se usaron también estas skills; esa identidad (Fraunces, crema/terracota) quedó reemplazada.
 
@@ -615,7 +736,7 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 | Contenido editorial de variedades en el frontend, asociado por nombre | Las variedades salen de la API; el texto de marca no existe en el backend y no se quiso cambiarlo. |
 | Mapa generado de Natural Earth (dominio público) | Contorno real de Colombia sin dibujarlo a mano; coordenadas de los 32 departamentos como tabla de referencia. |
 | `matchMedia` envuelto en `core/utils/medios.ts` | Sin él, los componentes fallaban en entornos sin navegador completo (jsdom, servidor). |
-| Selector de cantidad como componente propio | Mantiene la vista rápida bajo el presupuesto de 4 kB de CSS por componente y servirá para el carrito. |
+| Selector de cantidad como componente propio | Mantiene la vista rápida bajo el presupuesto de 4 kB de CSS por componente; en la Guía 2 se reutiliza en las cards, la vista rápida y el carrito. |
 | Concepto "Ascenso" (A) + vuelo de la bolsa (B) + color por variedad (C) | Elección del equipo entre tres conceptos con maqueta; el nombre "Altura" se vuelve la experiencia. |
 | Sistema propio y sin Bootstrap | Bootstrap solo aportaba grilla y utilidades; con tokens propios el CSS inicial bajó de ~330 kB a ~99 kB y no hay que pelear con sus estilos. |
 | GSAP + ScrollTrigger con `import()` solo en el Inicio | Lo complejo (parallax, altímetro, galería) queda legible y no pesa en Productos, Login ni el panel. |
@@ -630,22 +751,31 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 | Sesión en `localStorage` (antes `sessionStorage`) | Lo pide la Guía 1 para la tienda: la sesión dura lo que el token (60 min) aunque se cierre la pestaña. |
 | `DELETE /api/images` restringido a `cafes/` y con 409 si la imagen está en uso | Limpia subidas no usadas sin poder borrar otras imágenes de la cuenta. |
 | Credenciales de las e2e del panel por variables de entorno | No se escriben contraseñas en el repositorio. El Cliente de pruebas se registra en cada ejecución con un correo único y una contraseña aleatoria. |
+| Carrito fiel a la Guía 2 (nombres, rutas `api/[controller]`, `string` en el repositorio) con 4 adaptaciones (A–D) | Ver "Guía 2". Gana la guía frente a las skills. |
+| `carrito_producto` con `CASCADE` hacia `cafes` (no `RESTRICT`) | Si el administrador elimina un café, debe poder hacerlo aunque esté en carritos: simplemente desaparece de ellos. |
+| Recargar el carrito completo después de cada cambio | Un `GET` extra por acción, pero los totales y el stock siempre son los de la API y el servicio queda simple. |
+| Un solo componente `AgregarCarrito` para cards y vista rápida | Las reglas (dueño, agotado, completo, sin sesión) viven en un sitio. En la card va en una fila compacta; en la vista rápida, completo con el aviso dentro del `<dialog>`. |
+| `ListaCarrito` compartida entre el panel lateral y `/carrito` | Mismo comportamiento en los dos sitios; ids únicos por instancia porque pueden coexistir. El contenido del panel solo se dibuja mientras está abierto. |
+| Política `GestionUsuarios` aparte de `GestionInventario` | Hoy ambas son "Administrador", pero se podría dar inventario a un "Editor" sin dejarle cambiar roles. |
+| No poder quitarse el propio rol (409 en la API y botón deshabilitado) | Evita que el panel se quede sin administradores por un clic propio. |
+| Producción: variables de entorno, `PORT`, CORS configurable, `/api/health`, migraciones manuales | Ver "Preparación para producción" y `DEPLOY.md`. Aplicar migraciones al arrancar es arriesgado con varias instancias y oculta errores de esquema. |
 
 ## Problemas conocidos y pendientes
 
-- **Carrito pendiente**: `Cart`, `CartItem`, `ICartRepository`/`CartRepository` (lanza `NotImplementedException`) y los DTOs de carrito existen pero no están en el DbContext ni registrados en DI.
+- **Pedidos y pagos pendientes**: el carrito (Guía 2) no descuenta stock ni reserva unidades; "Finalizar compra" está deshabilitado ("Próximamente"). Dos clientes pueden tener en su carrito las mismas últimas unidades.
+- Si llegan a la vez las dos primeras peticiones de carrito de un usuario nuevo, ambas pueden intentar crear el carrito; el índice único `ux_carrito_usuario_id` rechaza la segunda (500 en esa petición; la siguiente funciona). Es poco probable porque el frontend pide `GetCarrito` una vez al iniciar sesión.
+- Si un café del carrito queda con menos stock que la cantidad elegida, `GetCarrito` lo muestra igual; al cambiar la cantidad, la API exige que no supere el stock nuevo.
 - **Login con Google eliminado** en la Guía 1 (endpoint `/api/auth/google`, `GoogleLoginRequest` y el paquete `Google.Apis.Auth`); se rehará en una guía posterior. Fuera de alcance por ahora: cambio y recuperación de contraseña, proveedores externos (Auth0) y borrar usuarios por la API.
 - **Rotar `Jwt:Key`**: dos claves antiguas quedaron en el historial de Git, una en `appsettings.json` (de `6829fba` a `4676745`) y otra en `appsettings.Development.json`, que se subió en `6829fba` y se borró en `a28795a`. Ese archivo también contenía el `Google:ClientId`, que es público. No se reescribió el historial porque el repo es privado. Ninguna de las dos claves está en uso: cada integrante debe generar la suya. En la Guía 1 la sección pasó a llamarse `JwtSettings` y la clave local anterior (del compañero) se **reemplazó** por una nueva de 64 bytes. Las credenciales de Cloudinary y la contraseña de PostgreSQL nunca se subieron (revisión del 2026-09-30).
 - `imagenPublicId` lo envía el cliente y no se valida contra Cloudinary: un publicId ajeno se borraría al eliminar/reemplazar el café (solo puede hacerlo quien tiene el permiso de inventario). Si una creación falla después de subir la imagen, el panel la borra con `DELETE /api/images`; un cliente que use la API directamente puede dejarla huérfana.
 - Los títulos de los 400 automáticos de validación salen en inglés ("One or more validation errors occurred."); los mensajes de cada campo sí están en español.
-- El diagnóstico de arranque de `Program.cs` muestra "PostgreSQL (Supabase)" para cualquier cadena con el puerto 5432, también en local.
 - `__EFMigrationsHistory` conserva su nombre original (la convención snake_case no lo cambia).
-- "Agregar al carrito" está deshabilitado ("Próximamente").
 - El token vive en `localStorage`: es visible para cualquier script de la página (no hay `HttpOnly` sin cookies); aceptable para el proyecto, no para producción.
 - El login responde igual (401) a un correo que no existe y a una contraseña incorrecta, pero el Register sí revela si un correo ya está registrado ("El usuario ya existe."), como pide la guía.
 - `Admin:Correos` solo se consulta al **registrarse**: agregar un correo después no cambia el rol de una cuenta que ya existe (usa el `UPDATE` de la sección "Guía 1").
-- El frontend asume `ng serve` en el puerto 4200: es el único origen permitido por CORS en `Program.cs`. Otro puerto requiere cambiar el backend.
-- `environment.ts` (producción) tiene `apiBaseUrl` vacío: configúralo antes de desplegar.
+- El frontend asume `ng serve` en el puerto 4200: es el único origen de `Cors:AllowedOrigins` en `appsettings.json`. Otro puerto requiere agregarlo ahí (o en `appsettings.Development.json`).
+- `environment.ts` (producción) tiene `apiBaseUrl` de marcador (`https://TU-API.up.railway.app/api`): cámbialo antes de desplegar (ver `DEPLOY.md`).
+- Problemas encontrados en la Guía 2: (1) `dotnet publish` copiaba `appsettings.Development.json` (con secretos) a la salida: se excluyó en el `.csproj`; (2) las e2e de axe fallaban a veces porque medían el login a mitad del fundido de entrada (se agregó `esperarAnimaciones`); (3) en móvil la columna del subtotal apretaba el nombre del café en el carrito (cantidad y subtotal pasaron a una segunda fila); (4) faltaba un `h2` entre el `h1` de `/carrito` y los `h3` de cada café (axe `heading-order`); (5) en Git Bash algunos heredocs con comillas y acentos fallan: los archivos se escribieron con el editor.
 - Con la API apagada, el navegador registra 2 errores de red ("Failed to load resource") en consola; son inevitables y la app los maneja mostrando "Reintentar".
 - Las e2e dependen de los datos del seed (`catalogo.json`: 25 cafés, todos disponibles, Inzá Reserva con 5 unidades, 11 Lavado / 8 Honey / 6 Fermentado, 5 orígenes); si cambian, ajusta `frontend/e2e/altura.e2e.ts`. Las del panel crean y borran datos reales (con "e2e" en el nombre) y suben una imagen real a Cloudinary.
 - Problemas encontrados en el rediseño: (1) la primera foto elegida para el acceso era de cacao, no de café (se reemplazó); (2) la firma de Cloudinary fallaba en PowerShell 5.1 por usar la hora local; (3) `ng serve` debe reiniciarse al cambiar `angular.json`; (4) el router de Angular registra como error de consola las transiciones omitidas en modo desarrollo; (5) la foto del hero estiraba la fila de la grilla (se sacó del flujo con `position: absolute`).

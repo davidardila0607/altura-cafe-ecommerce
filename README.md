@@ -3,7 +3,9 @@
 E-commerce de café de especialidad colombiano **Altura**:
 
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
-- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT) y un **panel de administración** de inventario en `/admin` para el rol Administrador.
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT), **carrito de compras** (Guía 2) y un **panel de administración** en `/admin` (inventario, variedades y usuarios) para el rol Administrador.
+
+El proyecto está preparado para producción, pero todavía **no está desplegado**: los pasos están en [DEPLOY.md](DEPLOY.md).
 
 Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (rama principal: `main`).
 
@@ -33,8 +35,9 @@ dotnet ef database update
 # 4. Levantar la API (déjala corriendo) → http://localhost:5031/swagger
 dotnet run --launch-profile http
 
-# 5. Regístrate con POST /api/auth/Register en Swagger (paso 4b de abajo).
-#    Luego, en otra terminal desde backend/, carga los 25 cafés del catálogo:
+# 5. Registra la cuenta administradora compartida (desarrollo.testing@gmail.com) con
+#    POST /api/auth/Register en Swagger (paso 4b de abajo).
+#    Luego, en otra terminal desde backend/, carga los 25 cafés del catálogo con esa cuenta:
 powershell -ExecutionPolicy Bypass -File .\seed\seed-productos.ps1
 powershell -ExecutionPolicy Bypass -File .\seed\subir-imagenes-sitio.ps1
 
@@ -44,7 +47,8 @@ npm install
 npm start
 ```
 
-- `seed-productos.ps1` pide el correo y la contraseña de **tu** cuenta: debe ser Administrador (su correo en `Admin:Correos` antes de registrarte). Los cafés quedan a tu nombre.
+- `seed-productos.ps1` pide el correo y la contraseña de una cuenta **Administrador** (su correo en `Admin:Correos` antes de registrarla). El equipo usa la cuenta compartida `desarrollo.testing@gmail.com` (ver [Cuenta administradora compartida](#-cuenta-administradora-compartida)); los cafés quedan a su nombre.
+- Para probar el carrito usa una cuenta **Cliente** (ver [Probar el carrito](#-probar-el-carrito-con-una-cuenta-cliente)).
 - El frontend debe usar el puerto **4200**: es el único origen permitido por CORS.
 - **No reutilices** claves JWT que aparezcan en el historial de Git: genera una `JwtSettings:Key` propia.
 
@@ -61,7 +65,9 @@ altura-cafe-ecommerce
 │   ├── seed/                 Productos de ejemplo (script + imágenes) y fotos del sitio
 │   └── appsettings.example.json
 ├── frontend/                 Aplicación Angular (src/, public/, e2e/, herramientas/)
+├── docs/guias/               Guías del profesor (1: usuarios y JWT; 2: carrito)
 ├── CLAUDE.md                 Guía técnica detallada (arquitectura, decisiones, pendientes)
+├── DEPLOY.md                 Cómo desplegar (variables de entorno, migraciones, CORS)
 ├── README.md
 └── CHANGELOG.md
 ```
@@ -103,7 +109,7 @@ Abre `appsettings.Development.json` y rellena:
 | `ConnectionStrings:CafeDatabase` | `Host=localhost;Port=5432;Database=cafeapi_dev;Username=postgres;Password=TU_CONTRASEÑA` |
 | `JwtSettings:Key` | Clave secreta para firmar los JWT: 64 bytes aleatorios en Base64 (ver abajo). Reemplaza `CLAVE_SECRETA_DEL_PROYECTO` |
 | `JwtSettings:Issuer` / `Audience` / `DurationInMinutes` | `EcommerceApi` / `EcommerceAngular` / `60` (ya vienen en el ejemplo) |
-| `Admin:Correos` | Los correos que deben registrarse como **Administrador**, por ejemplo `["tu-correo@ejemplo.com"]`. Cualquier otro correo queda como Cliente |
+| `Admin:Correos` | Los correos que deben registrarse como **Administrador**. Incluye la cuenta compartida: `["desarrollo.testing@gmail.com"]`. Cualquier otro correo queda como Cliente |
 | `CloudinarySettings:CloudName` / `ApiKey` / `ApiSecret` | Credenciales de tu cuenta de Cloudinary |
 
 Para generar la `JwtSettings:Key` en PowerShell (copia el resultado en `appsettings.Development.json`; no lo compartas ni lo subas a Git):
@@ -220,7 +226,26 @@ $env:ALTURA_ADMIN_EMAIL = 'e2e-admin@altura.test'; $env:ALTURA_ADMIN_PASSWORD = 
 npm run e2e
 ```
 
-Registran un Cliente nuevo desde `/registro`, y crean y borran un café, una variedad y una imagen en Cloudinary (todo con "e2e" en el nombre). Los usuarios de prueba se borran después en PostgreSQL: `DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';`.
+Registran Clientes nuevos desde `/registro` (uno de ellos prueba todo el carrito), y crean y borran cafés, una variedad y una imagen en Cloudinary (todo con "e2e" en el nombre). Los usuarios de prueba se borran después en PostgreSQL (sus carritos se borran con ellos): `DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';`.
+
+---
+
+## 👤 Cuenta administradora compartida
+
+- **`desarrollo.testing@gmail.com`** (nombre **"Administrador Altura"**) es la cuenta Administrador del equipo y la dueña de los 25 cafés. Su correo está en `Admin:Correos`.
+- Cada integrante la registra **en su base local**: `POST /api/auth/Register` con `{ "nombre": "Administrador Altura", "email": "desarrollo.testing@gmail.com", "password": "…" }` (la contraseña la comparte el equipo por fuera del repositorio; no se escribe en ningún archivo). Después carga el catálogo con `seed\seed-productos.ps1` iniciando sesión con ella.
+- **Esta cuenta no puede comprar**: como es dueña de todos los cafés, ve "Este café es tuyo" en cada uno y la API responde 409 "No puedes comprar tu propio producto.". Para el carrito se usa una cuenta Cliente.
+
+## 🛒 Probar el carrito con una cuenta Cliente
+
+1. Con la API y el frontend corriendo, abre http://localhost:4200/registro y crea una cuenta con un correo que **no** esté en `Admin:Correos` (queda como Cliente).
+2. Inicia sesión en `/login`. El ícono de la bolsa (junto a tu inicial) muestra cuántas unidades tienes.
+3. En **Productos**, elige la cantidad en una card y pulsa **Agregar**: aparece "Agregado al carrito · Ver carrito" y el número del ícono cambia. También puedes agregar desde la vista rápida ("Ver producto").
+4. Abre el ícono del carrito (panel lateral) o ve a http://localhost:4200/carrito: cambia cantidades (hasta el stock), quita cafés, mira el subtotal de cada uno y el total en pesos, y prueba "Vaciar carrito" (pide confirmación). "Finalizar compra" está deshabilitado ("Próximamente").
+5. Recarga la página o cierra y vuelve a iniciar sesión: el carrito sigue ahí (vive en la base de datos).
+6. Sin sesión, "Agregar" y el ícono del carrito te llevan a `/login`.
+
+En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el token del Cliente.
 
 ---
 
@@ -232,12 +257,14 @@ Registran un Cliente nuevo desde `/registro`, y crean y borran un café, una var
 | `/productos` | Catálogo: filtros en listas (variedad, proceso, origen) y presentación, disponibilidad, orden, búsqueda, bloque de los tres procesos arriba de la grilla y vista rápida |
 | `/login` | Iniciar sesión (`POST /api/auth/Login`); vuelve a la página anterior |
 | `/registro` | Crear cuenta (`POST /api/auth/Register`) |
-| `/admin/inventario` · `/admin/variedades` | Panel: cafés (con imagen) y variedades |
+| `/carrito` | Carrito (con sesión): cantidades, subtotales, total, quitar y vaciar |
+| `/admin/inventario` · `/admin/variedades` · `/admin/usuarios` | Panel: cafés (con imagen), variedades y usuarios (cambio de rol) |
 
 - Productos, variedades, procesos y presentaciones vienen de la API; nada de eso está escrito en el código (solo los textos de marca y los colores de cada variedad y proceso).
 - El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen, variedad o proceso sin importar tildes ni mayúsculas (por ejemplo, "honey" o "narino").
 - Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=caturra&proceso=lavado&presentacion=500`): se pueden compartir y sobreviven a recargar. Cada café muestra su variedad (muestra de color) y su proceso (etiqueta con ícono).
-- "Ver producto" (o cualquier clic en la card) abre la vista rápida: la bolsa "vuela" desde la card y el panel toma el color de la variedad. "Agregar al carrito" aparece deshabilitado ("Próximamente").
+- "Ver producto" (o cualquier clic en la card) abre la vista rápida: la bolsa "vuela" desde la card y el panel toma el color de la variedad.
+- **Carrito** (Guía 2): cada card y la vista rápida tienen selector de cantidad y "Agregar"; el ícono del navbar muestra las unidades y abre un panel lateral; `/carrito` muestra todo con el total. Si el café es tuyo, está agotado o ya tienes todas sus unidades, el botón lo dice y queda deshabilitado.
 - Precios en pesos colombianos (`$ 42.000`); disponibilidad "N disponibles", "Quedan N" (5 o menos) o "Agotado".
 - Registro e inicio de sesión reales: la sesión se guarda en el navegador (`localStorage`) y dura lo que el token (60 minutos). Con sesión, el navbar muestra tu inicial y un menú con tu nombre, tu correo, "Panel de administración" (solo Administrador) y "Cerrar sesión".
 - Todo respeta "reducir movimiento" (la página es igual de completa, sin animaciones de desplazamiento) y funciona con teclado.
@@ -247,7 +274,7 @@ Registran un Cliente nuevo desde `/registro`, y crean y borran un café, una var
 
 1. Inicia sesión en `/login` con una cuenta **Administrador** y abre el menú de tu cuenta → **"Panel de administración"** (también: footer → "Acceso administrador", o http://localhost:4200/admin). Sin sesión, te lleva a `/login`; una cuenta Cliente ve "No tienes permiso".
 2. En la tabla, la columna **"Creado por"** muestra quién creó cada café.
-3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés).
+3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés); en **Usuarios**, buscar por nombre o correo y cambiar el rol (Administrador ↔ Cliente) con confirmación. Nadie puede quitarse su propio rol, y el rol nuevo se aplica la próxima vez que el usuario inicia sesión.
 4. Los cambios se ven en el Inicio y en Productos al recargar. La sesión se cierra sola cuando vence el token o con "Cerrar sesión".
 
 ---
@@ -273,6 +300,14 @@ Registran un Cliente nuevo desde `/registro`, y crean y borran un café, una var
 | GET | `/api/procesos` | Público (Lavado, Honey, Fermentado) |
 | POST | `/api/images` | Administrador |
 | DELETE | `/api/images?publicId=cafes/…` | Administrador (borra una imagen subida que no se usó) |
+| GET | `/api/Carrito/GetCarrito` | Usuario autenticado (lo crea vacío la primera vez) |
+| POST | `/api/Carrito/AgregarProducto` | Usuario autenticado (404 si el café no existe; 409 si es tuyo, está agotado o no hay más unidades) |
+| PUT | `/api/Carrito/ActualizarCarrito` | Usuario autenticado (404 si no está en el carrito; 409 si supera el stock) |
+| DELETE | `/api/Carrito/EliminarProducto/{productId}` | Usuario autenticado (404 si no está en el carrito) |
+| DELETE | `/api/Carrito/VaciarCarrito` | Usuario autenticado |
+| GET | `/api/usuarios` | Administrador (sin contraseñas) |
+| PUT | `/api/usuarios/{id}/rol` | Administrador (`{ "rol": "Cliente" }`; 409 si es tu propio rol) |
+| GET | `/api/health` | Público (`{ "estado": "ok" }`) |
 
 `backend/CafeApi.http` tiene peticiones de ejemplo: primero Register y Login (el token queda en una variable) y luego el resto, con los casos 400, 401 y 403.
 
@@ -283,6 +318,11 @@ Registran un Cliente nuevo desde `/registro`, y crean y borran un café, una var
 ### usuario
 
 - `id`, `nombre` (máx. 100), `email` (único, máx. 150, en minúsculas), `password` (hash de `PasswordHasher`, nunca la contraseña), `rol` (`Administrador` o `Cliente`).
+
+### carrito y carrito_producto (Guía 2)
+
+- `carrito`: `id`, `usuario_id` (único: un carrito por usuario; se borra con el usuario).
+- `carrito_producto` (tabla intermedia): `id`, `carrito_id`, `producto_id` (el café), `cantidad` (≥ 1). Un café aparece una sola vez por carrito; si se elimina el café, sale de los carritos.
 
 ### variedades
 
@@ -323,7 +363,8 @@ Enum en código (no es una tabla): `340 g` y `500 g`. `GET /api/presentaciones` 
 La API usa JSON Web Tokens (JWT) que firma ella misma con `JwtSettings:Key` para proteger los endpoints que modifican datos. Las contraseñas se guardan con hash (`PasswordHasher`). Los GET son públicos.
 
 - Las escrituras usan la política **`GestionInventario`** (`backend/Seguridad/Politicas.cs`), que hoy exige el rol **Administrador**: crear, actualizar y eliminar cafés y variedades; subir y borrar imágenes.
-- **Cliente:** consultar cafés, variedades y presentaciones (recibe 403 en cualquier escritura).
+- La política **`GestionUsuarios`** (también Administrador) protege la lista de usuarios y el cambio de rol.
+- **Cliente:** consultar cafés, variedades y presentaciones y usar **su** carrito (recibe 403 en cualquier escritura del catálogo). El carrito siempre es el del usuario del token.
 - Para dar acceso a otro rol (por ejemplo "Editor") se cambia solo la política y el mapa de permisos del frontend (`frontend/src/app/core/auth/permisos.ts`); los controladores no se tocan. Detalle en CLAUDE.md, sección "Autorización".
 - `401 Unauthorized`: petición sin token o con token inválido. `403 Forbidden`: token válido sin el rol necesario.
 
@@ -356,9 +397,9 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 
 ## 🚧 Próximos Pasos
 
+- Pedidos y pagos ("Finalizar compra"), que es cuando se descontará el stock
 - Login con Google, cambio y recuperación de contraseña
-- Carrito de compras y pedidos (la vista rápida ya tiene el selector de cantidad)
-- Deploy
+- Desplegar siguiendo [DEPLOY.md](DEPLOY.md)
 
 ---
 
