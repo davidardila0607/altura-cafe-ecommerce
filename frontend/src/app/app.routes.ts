@@ -25,6 +25,19 @@ export const routes: Routes = [
         canMatch: [requiereSesion],
         loadComponent: () => import('./pages/carrito/carrito').then((m) => m.PaginaCarrito),
       },
+      {
+        // Guía de pedidos: los pedidos del usuario y el detalle de uno (solo con sesión).
+        path: 'mis-pedidos',
+        title: 'Mis pedidos | Altura',
+        canMatch: [requiereSesion],
+        loadComponent: () => import('./pages/mis-pedidos/mis-pedidos').then((m) => m.MisPedidos),
+      },
+      {
+        path: 'mis-pedidos/:id',
+        title: 'Detalle del pedido | Altura',
+        canMatch: [requiereSesion],
+        loadComponent: () => import('./pages/mis-pedidos/detalle-pedido').then((m) => m.DetallePedido),
+      },
     ],
   },
   {
@@ -53,6 +66,11 @@ export const routes: Routes = [
         path: 'variedades',
         title: 'Variedades | Altura',
         loadComponent: () => import('./pages/admin/variedades/variedades-admin').then((m) => m.VariedadesAdmin),
+      },
+      {
+        path: 'pedidos',
+        title: 'Pedidos | Altura',
+        loadComponent: () => import('./pages/admin/pedidos/pedidos-admin').then((m) => m.PedidosAdmin),
       },
       {
         path: 'usuarios',

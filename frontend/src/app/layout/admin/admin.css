@@ -54,8 +54,11 @@
   font-size: var(--fs-100);
 }
 
+/* Con cuatro secciones (Inventario, Variedades, Pedidos, Usuarios) no caben en una fila
+   de 375 px: se envuelven en vez de crear desplazamiento horizontal. */
 .secciones {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--esp-1);
 }
 

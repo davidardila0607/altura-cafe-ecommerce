@@ -51,6 +51,11 @@
   --proceso-honey: #875700;
   --proceso-fermentado: #6e2e4a;
 
+  /* Estados de un pedido (shared/estado-pedido). Mismos tonos AA ya verificados. */
+  --estado-pendiente: var(--proceso-honey);
+  --estado-pagado: var(--musgo);
+  --estado-rechazado: var(--error);
+
   /* ---------- Tipografía ---------- */
   --fuente: 'Bricolage Grotesque Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --fuente-mono: 'Geist Mono Variable', ui-monospace, 'Cascadia Mono', monospace;

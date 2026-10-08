@@ -1,8 +1,10 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, ElementRef, inject, input, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { CarritoProductoDto } from '../../core/models/carrito';
+import { Avisos } from '../../core/services/avisos';
 import { Carrito } from '../../core/services/carrito';
+import { Pedidos } from '../../core/services/pedidos';
 import { mensajeDeError } from '../../core/utils/errores';
 import { optimizarImagenCloudinary } from '../../core/utils/imagenes';
 import { AtraparFoco } from '../atrapar-foco/atrapar-foco';
@@ -11,8 +13,8 @@ import { SelectorCantidad } from '../selector-cantidad/selector-cantidad';
 
 /**
  * Contenido del carrito: una fila por café (imagen, datos, precio unitario, cantidad, quitar
- * y subtotal), el resumen (unidades y total) y las acciones "Vaciar carrito" y
- * "Finalizar compra" (deshabilitado: los pagos no están en esta guía).
+ * y subtotal), el resumen (unidades y total) y las acciones "Confirmar pedido" (guía de pedidos)
+ * y "Vaciar carrito", las dos con confirmación.
  * Se usa en el panel lateral (`compacta`) y en la página /carrito.
  */
 @Component({
@@ -26,6 +28,9 @@ export class ListaCarrito {
   readonly compacta = input(false);
 
   protected readonly carrito = inject(Carrito);
+  private readonly pedidos = inject(Pedidos);
+  private readonly avisos = inject(Avisos);
+  private readonly router = inject(Router);
   /** Prefijo de ids único: la lista puede estar a la vez en el panel y en /carrito. */
   protected readonly id = `carrito-${Math.random().toString(36).slice(2, 8)}`;
   /** Mensaje de la API si un cambio falla (por ejemplo, "Solo hay 5 unidades…"). */
@@ -60,6 +65,44 @@ export class ListaCarrito {
     await this.ejecutar(() => this.carrito.vaciar());
     this.vaciando.set(false);
     this.confirmacion().nativeElement.close();
+  }
+
+  // ===== Confirmar pedido (guía de pedidos) =====
+  private readonly confirmacionPedido = viewChild.required<ElementRef<HTMLDialogElement>>('confirmacionPedido');
+  protected readonly creandoPedido = signal(false);
+  /** "3 productos" (suma de unidades), para el texto de la confirmación. */
+  protected readonly productosTexto = computed(() => {
+    const unidades = this.carrito.totalUnidades();
+    return unidades === 1 ? '1 producto' : `${unidades} productos`;
+  });
+
+  protected pedirPedido(): void {
+    this.error.set(null);
+    this.confirmacionPedido().nativeElement.showModal();
+  }
+
+  protected cancelarPedido(): void {
+    this.confirmacionPedido().nativeElement.close();
+  }
+
+  /**
+   * Crea el pedido y lleva a su detalle con el aviso "Pedido creado". Si la API lo rechaza
+   * (400 carrito vacío, 409 café propio o sin stock), se muestra su mensaje y el carrito
+   * queda como estaba.
+   */
+  protected async confirmarPedido(): Promise<void> {
+    this.creandoPedido.set(true);
+    try {
+      const { pedidoId } = await this.pedidos.crear();
+      this.confirmacionPedido().nativeElement.close();
+      this.avisos.exito('Pedido creado');
+      await this.router.navigate(['/mis-pedidos', pedidoId]);
+    } catch (error) {
+      this.confirmacionPedido().nativeElement.close();
+      this.error.set(mensajeDeError(error));
+    } finally {
+      this.creandoPedido.set(false);
+    }
   }
 
   /** Ejecuta un cambio y, si la API lo rechaza (404/409), muestra su mensaje. */

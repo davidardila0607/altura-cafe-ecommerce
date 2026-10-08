@@ -1,0 +1,78 @@
+<section class="contenedor pagina" aria-labelledby="pedido-titulo">
+  <a class="enlace-texto" routerLink="/mis-pedidos">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i>
+    Mis pedidos
+  </a>
+
+  @if (pedido.isLoading()) {
+    <h1 id="pedido-titulo" class="titulo-seccion">Pedido #{{ id() }}</h1>
+    <div aria-busy="true">
+      <p class="visually-hidden" role="status">Cargando el pedido…</p>
+      <span class="esqueleto bloque-esqueleto" aria-hidden="true"></span>
+    </div>
+  } @else if (pedido.error()) {
+    <h1 id="pedido-titulo" class="titulo-seccion">Pedido #{{ id() }}</h1>
+    <app-estado-error titulo="No pudimos cargar el pedido" (reintentar)="pedido.reload()" />
+  } @else if (pedido.value(); as p) {
+    <header class="cabecera">
+      <h1 id="pedido-titulo" class="titulo-seccion">Pedido #{{ p.id }}</h1>
+      <app-estado-pedido [estado]="p.estado" />
+    </header>
+    <p class="fecha">
+      Creado el {{ p.fecha | date: "d 'de' MMMM 'de' y, h:mm a" : undefined : 'es-CO' }}
+    </p>
+
+    @if (p.estado === 'Pendiente') {
+      <p class="pago-pendiente" role="note" data-testid="pago-pendiente">
+        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+        <span><strong>Pago pendiente.</strong> El pago en línea estará disponible pronto.</span>
+      </p>
+    }
+
+    <div class="tarjeta">
+      <h2 class="visually-hidden">Cafés del pedido</h2>
+      <ul class="lineas">
+        @for (item of p.productos; track item.productoId) {
+          <li class="linea" data-testid="linea-pedido">
+            <div class="foto">
+              @if (imagen(item.imagenUrl); as url) {
+                <img [src]="url" alt="" width="160" height="200" loading="lazy" decoding="async" />
+              } @else {
+                <i class="bi bi-cup-hot" aria-hidden="true"></i>
+              }
+            </div>
+            <div class="info">
+              <h3 class="nombre">{{ item.nombre }}</h3>
+              <p class="detalle">
+                {{ item.cantidad }} × {{ item.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+              </p>
+            </div>
+            <p class="subtotal" data-testid="subtotal-pedido">
+              <span class="visually-hidden">Subtotal: </span>
+              {{ item.precio * item.cantidad | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+            </p>
+          </li>
+        }
+      </ul>
+
+      <dl class="resumen">
+        <div>
+          <dt>Productos</dt>
+          <dd>{{ unidadesDe(p) }}</dd>
+        </div>
+        <div class="total">
+          <dt>Total</dt>
+          <dd data-testid="total-pedido">{{ p.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</dd>
+        </div>
+      </dl>
+      <p class="nota">Los precios son los del momento en que hiciste el pedido.</p>
+    </div>
+  } @else {
+    <div class="no-encontrado" data-testid="pedido-no-encontrado">
+      <i class="bi bi-receipt" aria-hidden="true"></i>
+      <h1 id="pedido-titulo" class="vacio-titulo">Pedido no encontrado</h1>
+      <p class="vacio-texto">Puede que el número no exista o que el pedido sea de otra cuenta.</p>
+      <a class="boton boton-primario" routerLink="/mis-pedidos">Ver mis pedidos</a>
+    </div>
+  }
+</section>

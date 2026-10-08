@@ -89,19 +89,45 @@
     <button
       type="button"
       class="boton boton-primario boton-ancho"
-      disabled
+      data-testid="confirmar-pedido"
       [attr.aria-describedby]="id + '-nota'"
+      (click)="pedirPedido()"
     >
-      Finalizar compra
-      <span class="proximamente">Próximamente</span>
+      Confirmar pedido
     </button>
-    <p [id]="id + '-nota'" class="nota">El pago y los pedidos llegarán en una próxima versión.</p>
+    <p [id]="id + '-nota'" class="nota">El pedido queda pendiente de pago. El pago en línea llegará pronto.</p>
 
     <button type="button" class="enlace-texto vaciar" (click)="pedirVaciar()">
       Vaciar carrito
     </button>
   </div>
 }
+
+<dialog
+  #confirmacionPedido
+  appAtraparFoco
+  class="confirmacion"
+  data-testid="confirmacion-pedido"
+  [attr.aria-labelledby]="id + '-pedido-titulo'"
+  [attr.aria-describedby]="id + '-pedido-texto'"
+>
+  <h2 [id]="id + '-pedido-titulo'">¿Confirmar el pedido?</h2>
+  <p [id]="id + '-pedido-texto'">
+    Se creará un pedido con {{ productosTexto() }} por
+    {{ carrito.total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}. Tu carrito quedará vacío.
+  </p>
+  <div class="botones">
+    <button type="button" class="boton boton-contorno" (click)="cancelarPedido()">Cancelar</button>
+    <button
+      type="button"
+      class="boton boton-primario"
+      [disabled]="creandoPedido()"
+      (click)="confirmarPedido()"
+    >
+      {{ creandoPedido() ? 'Creando pedido…' : 'Confirmar pedido' }}
+    </button>
+  </div>
+</dialog>
 
 <dialog
   #confirmacion
