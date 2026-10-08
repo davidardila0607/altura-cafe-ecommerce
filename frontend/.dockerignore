@@ -1,0 +1,22 @@
+# Lo que NO entra a la imagen de Docker de la tienda.
+
+# Dependencias y compilaciones locales (la imagen instala y compila desde cero).
+node_modules/
+dist/
+.angular/
+coverage/
+
+# Pruebas e2e y sus resultados (no hacen falta para compilar).
+e2e/
+test-results/
+playwright-report/
+blob-report/
+playwright.config.ts
+
+# Secretos y archivos locales.
+.env
+*.env
+*.log
+
+Dockerfile
+.dockerignore
