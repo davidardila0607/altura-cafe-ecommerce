@@ -47,6 +47,26 @@ namespace CafeApi.Data.Configurations
             builder.Property(p => p.TransactionIdWompi)
                 .HasMaxLength(100);
 
+            // ✅ Dirección de envío (mismos límites que DatosEnvioDto).
+            builder.Property(p => p.DireccionEnvio)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            builder.Property(p => p.Ciudad)
+                .IsRequired()
+                .HasMaxLength(80);
+
+            builder.Property(p => p.Departamento)
+                .IsRequired()
+                .HasMaxLength(80);
+
+            builder.Property(p => p.Telefono)
+                .IsRequired()
+                .HasMaxLength(15);
+
+            builder.Property(p => p.NotasEntrega)
+                .HasMaxLength(300);
+
             // ✅ "Mis pedidos" siempre filtra por usuario: este índice evita recorrer la tabla.
             builder.HasIndex(p => p.UsuarioId)
                 .HasDatabaseName("ix_pedido_usuario_id");

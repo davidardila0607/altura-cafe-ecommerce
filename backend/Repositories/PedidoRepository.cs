@@ -48,7 +48,8 @@ namespace CafeApi.Repositories
         // ✅ Paso 8: convierte el carrito en un pedido "Pendiente" y vacía el carrito.
         // Todo se guarda con un solo SaveChangesAsync: o se crea el pedido y se vacía
         // el carrito, o no pasa nada.
-        public async Task<string> CrearPedido(int usuarioId)
+        // Adaptación (dirección de envío): recibe además DatosEnvioDto, ya validado por [ApiController].
+        public async Task<string> CrearPedido(int usuarioId, DatosEnvioDto datos)
         {
             var carrito = await _context.Carrito
                 .Include(x => x.Productos)
@@ -64,7 +65,12 @@ namespace CafeApi.Repositories
             {
                 UsuarioId = usuarioId,
                 Estado = "Pendiente",
-                Fecha = DateTime.UtcNow
+                Fecha = DateTime.UtcNow,
+                DireccionEnvio = datos.DireccionEnvio.Trim(),
+                Ciudad = datos.Ciudad.Trim(),
+                Departamento = datos.Departamento.Trim(),
+                Telefono = datos.Telefono,
+                NotasEntrega = string.IsNullOrWhiteSpace(datos.NotasEntrega) ? null : datos.NotasEntrega.Trim()
             };
 
             foreach (var item in carrito.Productos)
@@ -137,6 +143,11 @@ namespace CafeApi.Repositories
                     Estado = x.Estado,
                     Total = x.Total,
                     ReferenciaWompi = x.ReferenciaWompi,
+                    DireccionEnvio = x.DireccionEnvio,
+                    Ciudad = x.Ciudad,
+                    Departamento = x.Departamento,
+                    Telefono = x.Telefono,
+                    NotasEntrega = x.NotasEntrega,
                     Productos = x.Productos
                         .OrderBy(p => p.Id)
                         .Select(p => new PedidoProductoDto
@@ -163,6 +174,11 @@ namespace CafeApi.Repositories
                     Estado = x.Estado,
                     Total = x.Total,
                     ReferenciaWompi = x.ReferenciaWompi,
+                    DireccionEnvio = x.DireccionEnvio,
+                    Ciudad = x.Ciudad,
+                    Departamento = x.Departamento,
+                    Telefono = x.Telefono,
+                    NotasEntrega = x.NotasEntrega,
                     Productos = x.Productos
                         .OrderBy(p => p.Id)
                         .Select(p => new PedidoProductoDto
@@ -187,11 +203,51 @@ namespace CafeApi.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        // ✅ Adaptación F: todos los pedidos (más recientes primero) con el nombre y el
-        // correo del cliente, leídos en el mismo JOIN (nunca se lee el hash de la contraseña).
-        public async Task<List<PedidoAdminDto>> ObtenerTodos()
+        // ✅ Historial de compras (panel): reemplaza a ObtenerTodos (adaptación F de la guía de
+        // pedidos). Filtros opcionales: estado, rango de fechas (días de Colombia) y texto (nombre o
+        // correo del cliente, o referencia). Los indicadores se calculan sobre los pedidos "Pagado"
+        // del rango y del texto (no dependen del filtro de estado, para que no queden en cero al
+        // mirar solo los pendientes). Todo se resuelve en la base de datos (COUNT, SUM y una
+        // proyección); nunca se lee el hash de la contraseña del cliente.
+        public async Task<HistorialDto> ObtenerHistorial(string? estado, DateOnly? desde, DateOnly? hasta, string? texto)
         {
-            return await _context.Pedido
+            var consulta = _context.Pedido.AsQueryable();
+
+            if (desde != null)
+            {
+                var inicio = InicioDelDiaEnColombia(desde.Value);
+                consulta = consulta.Where(x => x.Fecha >= inicio);
+            }
+
+            if (hasta != null)
+            {
+                // "Hasta el 7 de octubre" incluye todo ese día: menor que el inicio del 8.
+                var fin = InicioDelDiaEnColombia(hasta.Value.AddDays(1));
+                consulta = consulta.Where(x => x.Fecha < fin);
+            }
+
+            if (!string.IsNullOrWhiteSpace(texto))
+            {
+                // ILIKE = LIKE sin distinguir mayúsculas (PostgreSQL). Se escapan % y _ para que
+                // se busquen como letras y no como comodines.
+                var patron = "%" + texto.Trim().Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
+                consulta = consulta.Where(x =>
+                    EF.Functions.ILike(x.Usuario!.Nombre, patron) ||
+                    EF.Functions.ILike(x.Usuario.Email, patron) ||
+                    EF.Functions.ILike(x.ReferenciaWompi, patron));
+            }
+
+            var pagados = consulta.Where(x => x.Estado == "Pagado");
+            var comprasPagadas = await pagados.CountAsync();
+            var ingresos = await pagados.SumAsync(x => (decimal?)x.Total) ?? 0;
+            var unidadesVendidas = await pagados.SelectMany(x => x.Productos).SumAsync(p => (int?)p.Cantidad) ?? 0;
+
+            if (!string.IsNullOrEmpty(estado))
+            {
+                consulta = consulta.Where(x => x.Estado == estado);
+            }
+
+            var pedidos = await consulta
                 .OrderByDescending(x => x.Fecha)
                 .ThenByDescending(x => x.Id)
                 .Select(x => new PedidoAdminDto
@@ -201,8 +257,15 @@ namespace CafeApi.Repositories
                     Estado = x.Estado,
                     Total = x.Total,
                     ReferenciaWompi = x.ReferenciaWompi,
+                    DireccionEnvio = x.DireccionEnvio,
+                    Ciudad = x.Ciudad,
+                    Departamento = x.Departamento,
+                    Telefono = x.Telefono,
+                    NotasEntrega = x.NotasEntrega,
                     ClienteNombre = x.Usuario!.Nombre,
                     ClienteEmail = x.Usuario.Email,
+                    TransactionIdWompi = x.TransactionIdWompi,
+                    Unidades = x.Productos.Sum(p => p.Cantidad),
                     Productos = x.Productos
                         .OrderBy(p => p.Id)
                         .Select(p => new PedidoProductoDto
@@ -214,7 +277,20 @@ namespace CafeApi.Repositories
                             Precio = p.Precio
                         }).ToList()
                 }).ToListAsync();
+
+            return new HistorialDto
+            {
+                ComprasPagadas = comprasPagadas,
+                UnidadesVendidas = unidadesVendidas,
+                Ingresos = ingresos,
+                Pedidos = pedidos
+            };
         }
+
+        // Colombia está en UTC-5 todo el año (sin horario de verano): las 00:00 en Colombia
+        // son las 05:00 UTC. Las fechas de los pedidos se guardan en UTC.
+        private static DateTime InicioDelDiaEnColombia(DateOnly dia) =>
+            new DateTime(dia, TimeOnly.MinValue, DateTimeKind.Utc).AddHours(5);
 
         // ✅ Guía 3, adaptación 4: antes de preparar el pago se comprueba que se pueda pagar.
         // Devuelve null si todo está bien, o el motivo (el controlador elige 404 o 409).

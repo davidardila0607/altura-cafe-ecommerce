@@ -25,5 +25,12 @@ namespace CafeApi.Models
         // referencia cambia a "PEDIDO-15-2" (Wompi no deja reutilizar una referencia ya usada).
         public string ReferenciaWompi { get; set; } = string.Empty;
         public string? TransactionIdWompi { get; set; }
+
+        // ✅ Adaptación a la guía de pedidos: adónde se envía el café (llega en DatosEnvioDto).
+        public string DireccionEnvio { get; set; } = string.Empty;
+        public string Ciudad { get; set; } = string.Empty;
+        public string Departamento { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
+        public string? NotasEntrega { get; set; }
     }
 }

@@ -512,6 +512,26 @@ GET {{baseUrl}}/api/Pedido/GetPedido/1
 ### Crear pedido con el carrito vacío - 400 { mensaje: "El carrito está vacío." }
 POST {{baseUrl}}/api/Pedido/CrearPedido
 Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "direccionEnvio": "Calle 45 # 12-30, apto 402",
+  "ciudad": "Bucaramanga",
+  "departamento": "Santander",
+  "telefono": "3001234567"
+}
+
+### Crear pedido con un teléfono inválido - 400 (errors.Telefono: "El teléfono debe tener entre 7 y 15 dígitos, solo números.")
+POST {{baseUrl}}/api/Pedido/CrearPedido
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "direccionEnvio": "Calle 45 # 12-30, apto 402",
+  "ciudad": "Bucaramanga",
+  "departamento": "Santander",
+  "telefono": "300-ABC"
+}
 
 ### Preparar el carrito: 2 unidades de un café...
 POST {{baseUrl}}/api/Carrito/AgregarProducto
@@ -534,9 +554,19 @@ Content-Type: application/json
 }
 
 ### Crear pedido (Cliente) - 200 { mensaje: "Pedido creado correctamente.", pedidoId }
+# El pedido queda con la referencia "PEDIDO-{id}" y los datos de envío.
 # @name crearPedido
 POST {{baseUrl}}/api/Pedido/CrearPedido
 Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "direccionEnvio": "Calle 45 # 12-30, apto 402",
+  "ciudad": "Bucaramanga",
+  "departamento": "Santander",
+  "telefono": "3001234567",
+  "notasEntrega": "Dejar en portería"
+}
 
 ### Mis pedidos - 200 PedidoDto[] (el más reciente primero)
 GET {{baseUrl}}/api/Pedido/GetPedidos
@@ -550,12 +580,21 @@ Authorization: Bearer {{tokenCliente}}
 GET {{baseUrl}}/api/Pedido/GetPedido/999999
 Authorization: Bearer {{tokenCliente}}
 
-### Todos los pedidos (Administrador) - 200 con clienteNombre y clienteEmail
-GET {{baseUrl}}/api/Pedido/Todos
+### Historial de compras (Administrador) - 200 { comprasPagadas, unidadesVendidas, ingresos, pedidos: [...] }
+# Cada pedido trae cliente, unidades, referencia, transacción, dirección de envío y productos.
+GET {{baseUrl}}/api/Pedido/Historial
 Authorization: Bearer {{token}}
 
-### Todos los pedidos con la cuenta Cliente - 403
-GET {{baseUrl}}/api/Pedido/Todos
+### Historial filtrado: pagados del 1 al 7 de octubre (días de Colombia) que coincidan con "ana"
+GET {{baseUrl}}/api/Pedido/Historial?estado=Pagado&desde=2026-10-01&hasta=2026-10-07&texto=ana
+Authorization: Bearer {{token}}
+
+### Historial con un estado desconocido - 400
+GET {{baseUrl}}/api/Pedido/Historial?estado=Enviado
+Authorization: Bearer {{token}}
+
+### Historial con la cuenta Cliente - 403
+GET {{baseUrl}}/api/Pedido/Historial
 Authorization: Bearer {{tokenCliente}}
 
 ### Eliminar un café que está en un pedido (Administrador) - 409

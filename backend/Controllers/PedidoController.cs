@@ -12,7 +12,7 @@ namespace CafeApi.Controllers
 {
     // ✅ Guía de pedidos, paso 11: pedidos del usuario que inició sesión.
     // Rutas: POST /api/Pedido/CrearPedido, GET /api/Pedido/GetPedidos,
-    // GET /api/Pedido/GetPedido/{pedidoId} y, para el panel, GET /api/Pedido/Todos.
+    // GET /api/Pedido/GetPedido/{pedidoId} y, para el panel, GET /api/Pedido/Historial.
     // Guía 3 (Wompi): POST {id}/PrepararPago, POST Webhook (público), POST {id}/SimularPago
     // (solo en modo simulación) y POST {id}/ConfirmarPago (solo con Wompi real).
     [ApiController]
@@ -41,12 +41,13 @@ namespace CafeApi.Controllers
         //   "El carrito está vacío." → 400 (no hay nada que comprar)
         //   "No puedes comprar tus propios productos." / sin stock / agotado → 409
         //   "Pedido creado correctamente." → 200 { mensaje, pedidoId } (adaptación C)
+        // Dirección de envío: el cuerpo es DatosEnvioDto; si falta o no es válido → 400.
         [Authorize]
         [HttpPost("CrearPedido")]
-        public async Task<IActionResult> Crear()
+        public async Task<IActionResult> Crear([FromBody] DatosEnvioDto datos)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var mensaje = await _pedidoRepository.CrearPedido(userId);
+            var mensaje = await _pedidoRepository.CrearPedido(userId, datos);
 
             if (mensaje == PedidoRepository.MensajeCarritoVacio)
             {
@@ -91,13 +92,28 @@ namespace CafeApi.Controllers
             return Ok(pedido);
         }
 
-        // ✅ Adaptación F: todos los pedidos con el cliente, para /admin/pedidos.
+        // ✅ Historial de compras para /admin/historial (reemplaza a GET Todos, adaptación F).
         // Misma política que el inventario (hoy, rol Administrador): un Cliente recibe 403.
+        // Ejemplo: GET /api/Pedido/Historial?estado=Pagado&desde=2026-10-01&hasta=2026-10-07&texto=ana
         [Authorize(Policy = Politicas.GestionInventario)]
-        [HttpGet("Todos")]
-        public async Task<List<PedidoAdminDto>> ObtenerTodos()
+        [HttpGet("Historial")]
+        public async Task<IActionResult> Historial(
+            [FromQuery] string? estado,
+            [FromQuery] DateOnly? desde,
+            [FromQuery] DateOnly? hasta,
+            [FromQuery] string? texto)
         {
-            return await _pedidoRepository.ObtenerTodos();
+            if (!string.IsNullOrEmpty(estado) && estado is not ("Pendiente" or "Pagado" or "Rechazado"))
+            {
+                return BadRequest(new { mensaje = "El estado debe ser Pendiente, Pagado o Rechazado." });
+            }
+
+            if (desde != null && hasta != null && desde > hasta)
+            {
+                return BadRequest(new { mensaje = "La fecha inicial no puede ser posterior a la final." });
+            }
+
+            return Ok(await _pedidoRepository.ObtenerHistorial(estado, desde, hasta, texto));
         }
 
         // ===== Guía 3: pagos con Wompi =====
