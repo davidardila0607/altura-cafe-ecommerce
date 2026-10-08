@@ -3,7 +3,7 @@
 E-commerce de café de especialidad colombiano **Altura**:
 
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
-- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT), **carrito de compras** (Guía 2) y un **panel de administración** en `/admin` (inventario, variedades y usuarios) para el rol Administrador.
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT), **carrito de compras** (Guía 2), **pedidos** (guía de pedidos: confirmar el carrito, "Mis pedidos") y un **panel de administración** en `/admin` (inventario, variedades, pedidos y usuarios) para el rol Administrador.
 
 El proyecto está preparado para producción, pero todavía **no está desplegado**: los pasos están en [DEPLOY.md](DEPLOY.md).
 
@@ -65,7 +65,7 @@ altura-cafe-ecommerce
 │   ├── seed/                 Productos de ejemplo (script + imágenes) y fotos del sitio
 │   └── appsettings.example.json
 ├── frontend/                 Aplicación Angular (src/, public/, e2e/, herramientas/)
-├── docs/guias/               Guías del profesor (1: usuarios y JWT; 2: carrito)
+├── docs/guias/               Guías del profesor (1: usuarios y JWT; 2: carrito; pedidos; 3: Wompi)
 ├── CLAUDE.md                 Guía técnica detallada (arquitectura, decisiones, pendientes)
 ├── DEPLOY.md                 Cómo desplegar (variables de entorno, migraciones, CORS)
 ├── README.md
@@ -226,7 +226,12 @@ $env:ALTURA_ADMIN_EMAIL = 'e2e-admin@altura.test'; $env:ALTURA_ADMIN_PASSWORD = 
 npm run e2e
 ```
 
-Registran Clientes nuevos desde `/registro` (uno de ellos prueba todo el carrito), y crean y borran cafés, una variedad y una imagen en Cloudinary (todo con "e2e" en el nombre). Los usuarios de prueba se borran después en PostgreSQL (sus carritos se borran con ellos): `DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';`.
+Registran Clientes nuevos desde `/registro` (uno de ellos prueba todo el carrito y otros dos, los pedidos), y crean y borran cafés, una variedad y una imagen en Cloudinary (todo con "e2e" en el nombre). Los pedidos y los usuarios de prueba se borran después en PostgreSQL (los carritos se borran con los usuarios; los pedidos hay que borrarlos antes):
+
+```sql
+DELETE FROM pedido WHERE usuario_id IN (SELECT id FROM usuario WHERE email LIKE 'e2e-%@altura.test');
+DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';
+```
 
 ---
 
@@ -234,18 +239,30 @@ Registran Clientes nuevos desde `/registro` (uno de ellos prueba todo el carrito
 
 - **`desarrollo.testing@gmail.com`** (nombre **"Administrador Altura"**) es la cuenta Administrador del equipo y la dueña de los 25 cafés. Su correo está en `Admin:Correos`.
 - Cada integrante la registra **en su base local**: `POST /api/auth/Register` con `{ "nombre": "Administrador Altura", "email": "desarrollo.testing@gmail.com", "password": "…" }` (la contraseña la comparte el equipo por fuera del repositorio; no se escribe en ningún archivo). Después carga el catálogo con `seed\seed-productos.ps1` iniciando sesión con ella.
-- **Esta cuenta no puede comprar**: como es dueña de todos los cafés, ve "Este café es tuyo" en cada uno y la API responde 409 "No puedes comprar tu propio producto.". Para el carrito se usa una cuenta Cliente.
+- **Esta cuenta no puede comprar**: como es dueña de todos los cafés, ve "Este café es tuyo" en cada uno y la API responde 409 "No puedes comprar tu propio producto." (y, si de algún modo llegara a su carrito, el pedido respondería 409 "No puedes comprar tus propios productos."). Para el carrito y los pedidos se usa una cuenta Cliente.
 
 ## 🛒 Probar el carrito con una cuenta Cliente
 
 1. Con la API y el frontend corriendo, abre http://localhost:4200/registro y crea una cuenta con un correo que **no** esté en `Admin:Correos` (queda como Cliente).
 2. Inicia sesión en `/login`. El ícono de la bolsa (junto a tu inicial) muestra cuántas unidades tienes.
 3. En **Productos**, elige la cantidad en una card y pulsa **Agregar**: aparece "Agregado al carrito · Ver carrito" y el número del ícono cambia. También puedes agregar desde la vista rápida ("Ver producto").
-4. Abre el ícono del carrito (panel lateral) o ve a http://localhost:4200/carrito: cambia cantidades (hasta el stock), quita cafés, mira el subtotal de cada uno y el total en pesos, y prueba "Vaciar carrito" (pide confirmación). "Finalizar compra" está deshabilitado ("Próximamente").
+4. Abre el ícono del carrito (panel lateral) o ve a http://localhost:4200/carrito: cambia cantidades (hasta el stock), quita cafés, mira el subtotal de cada uno y el total en pesos, y prueba "Vaciar carrito" (pide confirmación).
 5. Recarga la página o cierra y vuelve a iniciar sesión: el carrito sigue ahí (vive en la base de datos).
 6. Sin sesión, "Agregar" y el ícono del carrito te llevan a `/login`.
 
 En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el token del Cliente.
+
+## 🧾 Probar un pedido con una cuenta Cliente
+
+1. Con la misma cuenta Cliente, agrega dos cafés al carrito (por ejemplo, 2 unidades de uno y 1 de otro).
+2. Abre el carrito (panel lateral o `/carrito`) y pulsa **Confirmar pedido**. Aparece la confirmación "Se creará un pedido con 3 productos por $ …"; confírmala.
+3. Llegas a `/mis-pedidos/{número}` con el aviso "Pedido creado": estado **Pendiente**, el aviso "Pago pendiente. El pago en línea estará disponible pronto.", cada café con su precio y su subtotal, y el total. El número del carrito vuelve a 0.
+4. En el menú de tu cuenta → **Mis pedidos** ves la lista (el más reciente primero).
+5. El precio queda guardado: si el administrador cambia el precio de un café, tu pedido sigue mostrando el anterior. El stock **no** baja todavía: se descontará cuando el pago se apruebe (guía de Wompi).
+6. Si mientras tanto el stock de un café bajó por debajo de lo que tienes en el carrito, el pedido no se crea y ves "No hay stock suficiente de … (disponibles: N)."; tu carrito queda igual.
+7. Con una cuenta **Administrador**, en `/admin/pedidos` ves todos los pedidos con el nombre y el correo del cliente, filtras por estado y despliegas el detalle de cada uno.
+
+En Swagger o `backend/CafeApi.http` están las rutas de `/api/Pedido` (con los casos 400, 401, 403, 404 y 409).
 
 ---
 
@@ -257,16 +274,18 @@ En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el 
 | `/productos` | Catálogo: filtros en listas (variedad, proceso, origen) y presentación, disponibilidad, orden, búsqueda, bloque de los tres procesos arriba de la grilla y vista rápida |
 | `/login` | Iniciar sesión (`POST /api/auth/Login`); vuelve a la página anterior |
 | `/registro` | Crear cuenta (`POST /api/auth/Register`) |
-| `/carrito` | Carrito (con sesión): cantidades, subtotales, total, quitar y vaciar |
-| `/admin/inventario` · `/admin/variedades` · `/admin/usuarios` | Panel: cafés (con imagen), variedades y usuarios (cambio de rol) |
+| `/carrito` | Carrito (con sesión): cantidades, subtotales, total, quitar, vaciar y "Confirmar pedido" |
+| `/mis-pedidos` · `/mis-pedidos/{id}` | Pedidos del usuario (con sesión) y el detalle de uno |
+| `/admin/inventario` · `/admin/variedades` · `/admin/pedidos` · `/admin/usuarios` | Panel: cafés (con imagen), variedades, todos los pedidos (filtro por estado) y usuarios (cambio de rol) |
 
 - Productos, variedades, procesos y presentaciones vienen de la API; nada de eso está escrito en el código (solo los textos de marca y los colores de cada variedad y proceso).
 - El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen, variedad o proceso sin importar tildes ni mayúsculas (por ejemplo, "honey" o "narino").
 - Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=caturra&proceso=lavado&presentacion=500`): se pueden compartir y sobreviven a recargar. Cada café muestra su variedad (muestra de color) y su proceso (etiqueta con ícono).
 - "Ver producto" (o cualquier clic en la card) abre la vista rápida: la bolsa "vuela" desde la card y el panel toma el color de la variedad.
 - **Carrito** (Guía 2): cada card y la vista rápida tienen selector de cantidad y "Agregar"; el ícono del navbar muestra las unidades y abre un panel lateral; `/carrito` muestra todo con el total. Si el café es tuyo, está agotado o ya tienes todas sus unidades, el botón lo dice y queda deshabilitado.
+- **Pedidos**: "Confirmar pedido" convierte el carrito en un pedido "Pendiente" (con confirmación) y lleva a su detalle; "Mis pedidos" está en el menú de la cuenta.
 - Precios en pesos colombianos (`$ 42.000`); disponibilidad "N disponibles", "Quedan N" (5 o menos) o "Agotado".
-- Registro e inicio de sesión reales: la sesión se guarda en el navegador (`localStorage`) y dura lo que el token (60 minutos). Con sesión, el navbar muestra tu inicial y un menú con tu nombre, tu correo, "Panel de administración" (solo Administrador) y "Cerrar sesión".
+- Registro e inicio de sesión reales: la sesión se guarda en el navegador (`localStorage`) y dura lo que el token (60 minutos). Con sesión, el navbar muestra tu inicial y un menú con tu nombre, tu correo, "Mis pedidos", "Panel de administración" (solo Administrador) y "Cerrar sesión".
 - Todo respeta "reducir movimiento" (la página es igual de completa, sin animaciones de desplazamiento) y funciona con teclado.
 - Stack: Angular 22 (standalone, signals), sistema de diseño propio (sin Bootstrap; quedan los Bootstrap Icons), fuentes Bricolage Grotesque y Geist Mono vía npm, GSAP + ScrollTrigger cargado solo en el Inicio y View Transitions.
 
@@ -274,7 +293,7 @@ En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el 
 
 1. Inicia sesión en `/login` con una cuenta **Administrador** y abre el menú de tu cuenta → **"Panel de administración"** (también: footer → "Acceso administrador", o http://localhost:4200/admin). Sin sesión, te lleva a `/login`; una cuenta Cliente ve "No tienes permiso".
 2. En la tabla, la columna **"Creado por"** muestra quién creó cada café.
-3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés); en **Usuarios**, buscar por nombre o correo y cambiar el rol (Administrador ↔ Cliente) con confirmación. Nadie puede quitarse su propio rol, y el rol nuevo se aplica la próxima vez que el usuario inicia sesión.
+3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés); en **Pedidos**, ver todos los pedidos con su cliente, filtrar por estado y desplegar el detalle; en **Usuarios**, buscar por nombre o correo y cambiar el rol (Administrador ↔ Cliente) con confirmación. Nadie puede quitarse su propio rol, y el rol nuevo se aplica la próxima vez que el usuario inicia sesión.
 4. Los cambios se ven en el Inicio y en Productos al recargar. La sesión se cierra sola cuando vence el token o con "Cerrar sesión".
 
 ---
@@ -290,7 +309,7 @@ En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el 
 | GET | `/api/cafes/{id}` | Público |
 | POST | `/api/cafes` | Administrador |
 | PUT | `/api/cafes/{id}` | Administrador |
-| DELETE | `/api/cafes/{id}` | Administrador |
+| DELETE | `/api/cafes/{id}` | Administrador (409 si el café aparece en algún pedido) |
 | GET | `/api/variedades` | Público |
 | GET | `/api/variedades/{id}` | Público |
 | POST | `/api/variedades` | Administrador |
@@ -305,6 +324,10 @@ En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el 
 | PUT | `/api/Carrito/ActualizarCarrito` | Usuario autenticado (404 si no está en el carrito; 409 si supera el stock) |
 | DELETE | `/api/Carrito/EliminarProducto/{productId}` | Usuario autenticado (404 si no está en el carrito) |
 | DELETE | `/api/Carrito/VaciarCarrito` | Usuario autenticado |
+| POST | `/api/Pedido/CrearPedido` | Usuario autenticado (200 `{ mensaje, pedidoId }`; 400 carrito vacío; 409 café propio o sin stock) |
+| GET | `/api/Pedido/GetPedidos` | Usuario autenticado (sus pedidos, el más reciente primero) |
+| GET | `/api/Pedido/GetPedido/{pedidoId}` | Usuario autenticado (404 si no existe o es de otro usuario) |
+| GET | `/api/Pedido/Todos` | Administrador (todos los pedidos con el nombre y el correo del cliente) |
 | GET | `/api/usuarios` | Administrador (sin contraseñas) |
 | PUT | `/api/usuarios/{id}/rol` | Administrador (`{ "rol": "Cliente" }`; 409 si es tu propio rol) |
 | GET | `/api/health` | Público (`{ "estado": "ok" }`) |
@@ -323,6 +346,11 @@ En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el 
 
 - `carrito`: `id`, `usuario_id` (único: un carrito por usuario; se borra con el usuario).
 - `carrito_producto` (tabla intermedia): `id`, `carrito_id`, `producto_id` (el café), `cantidad` (≥ 1). Un café aparece una sola vez por carrito; si se elimina el café, sale de los carritos.
+
+### pedido y pedido_producto (guía de pedidos)
+
+- `pedido`: `id`, `usuario_id`, `total` (pesos sin decimales), `estado` (`Pendiente`, `Pagado` o `Rechazado`; hoy todos nacen `Pendiente`), `fecha` (UTC).
+- `pedido_producto`: `id`, `pedido_id`, `producto_id` (el café), `cantidad` (≥ 1) y `precio` (el del momento de la compra). Un café que aparece en un pedido no se puede borrar (409), para conservar el historial.
 
 ### variedades
 
@@ -397,7 +425,7 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 
 ## 🚧 Próximos Pasos
 
-- Pedidos y pagos ("Finalizar compra"), que es cuando se descontará el stock
+- Pagos con Wompi (guía 3): el pedido pasará a "Pagado" o "Rechazado" y se descontará el stock
 - Login con Google, cambio y recuperación de contraseña
 - Desplegar siguiendo [DEPLOY.md](DEPLOY.md)
 

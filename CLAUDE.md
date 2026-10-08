@@ -16,7 +16,7 @@ El proyecto es universitario y quienes lo entregan deben poder explicar cada par
 E-commerce de café de especialidad **Altura** (proyecto universitario en grupo):
 
 - **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés (25 en el seed), sus variedades (9), procesos (3) y presentaciones, y las imágenes de producto en Cloudinary.
-- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, **Login y Registro reales** (Guía 1: usuarios en la base de datos, contraseñas con hash y JWT propio), **carrito de compras** (Guía 2: ícono con contador, panel lateral y página `/carrito`) y un **panel de administración** (`/admin`: inventario, variedades y usuarios) solo para el rol Administrador.
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, **Login y Registro reales** (Guía 1: usuarios en la base de datos, contraseñas con hash y JWT propio), **carrito de compras** (Guía 2: ícono con contador, panel lateral y página `/carrito`), **pedidos** (guía de pedidos: "Confirmar pedido" desde el carrito, `/mis-pedidos` y su detalle) y un **panel de administración** (`/admin`: inventario, variedades, pedidos y usuarios) solo para el rol Administrador.
 
 El proyecto está **preparado para producción pero no desplegado**: los pasos están en `DEPLOY.md`.
 
@@ -34,7 +34,8 @@ CafeApi/
 │                            y fotos del sitio (subir-imagenes-sitio.ps1 + sitio/fotos.json)
 ├── frontend/                Proyecto Angular altura-web (package.json, angular.json, src/, public/, e2e/,
 │                            playwright.config.ts, herramientas/generar-paisaje.mjs)
-├── docs/guias/              Guías del profesor (guía 1: usuarios y JWT; guía 2: carrito de compras)
+├── docs/guias/              Guías del profesor (guía 1: usuarios y JWT; guía 2: carrito de compras; pedidos;
+│                            guía 3: Wompi, todavía sin implementar)
 ├── .gitignore               Reglas de .NET, Node/Angular y Playwright
 ├── CLAUDE.md                Esta guía
 ├── README.md                Puesta en marcha paso a paso
@@ -134,7 +135,8 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 | Panel lateral del administrador | Abrir | 420 ms | `--ease-cajon` | `formulario-admin.css` |
 | Panel lateral del carrito (entra desde la derecha) | Abrir | 420 ms | `--ease-cajon` | `boton-carrito.css` (`@starting-style`; sin desplazamiento con movimiento reducido) |
 | Pulso del contador del carrito (`scale` 1 → 1,3 → 1) | Cambia el número de unidades | 320 ms | `--ease-salida` | `boton-carrito.ts` (Web Animations API; no con movimiento reducido) |
-| Avisos de la tienda ("Agregado al carrito", sube 8 px + fundido) | Aparecer | 260 ms | `--ease-salida` | `zona-avisos.ts` (`@starting-style`) |
+| Avisos de la tienda ("Agregado al carrito", "Pedido creado"; sube 8 px + fundido) | Aparecer | 260 ms | `--ease-salida` | `zona-avisos.ts` (`@starting-style`) |
+| Flecha de "Detalle" en `/admin/pedidos` (gira 180°) | Desplegar / plegar el detalle | 240 ms | `--ease-salida` | `pedidos-admin.css` (sin transición con movimiento reducido) |
 
 ## Librerías y por qué
 
@@ -189,16 +191,17 @@ ImagesController / CafesController  →  Interfaces/ICloudinaryService  →  Ser
 AuthController  →  Interfaces/IUsuarioRepository  →  Repositories/UsuarioRepository  →  AppDbContext (tabla usuario) + JwtSettings
 UsuariosController  →  Interfaces/IUsuarioRepository  →  Repositories/UsuarioRepository  →  AppDbContext (lista y cambio de rol)
 CarritoController  →  Interfaces/ICarritoRepository  →  Repositories/CarritoRepository  →  AppDbContext (carrito, carrito_producto, cafes)
+PedidoController   →  Interfaces/IPedidoRepository   →  Repositories/PedidoRepository   →  AppDbContext (carrito, pedido, pedido_producto, cafes, usuario)
 ```
 
 - **Controllers/**: validan (DataAnnotations + reglas como "la variedad existe"), mapean DTO ↔ entidad y deciden el código HTTP. No hay capa de servicios de negocio (decisión del grupo: se mantiene Controller → Repository).
 - **Repositories/**: todos los métodos son `*Async` y reciben `CancellationToken`. Las lecturas usan `AsNoTracking()` y proyectan directamente a DTO con `Select` (un solo SELECT con JOIN, sin N+1). Para modificar o borrar: `FindAsync` (con seguimiento) → el controlador cambia la entidad → `UpdateAsync`/`DeleteAsync` (que llaman a `SaveChangesAsync`).
-- **Data/AppDbContext.cs**: `DbSet` de `Variedades`, `Procesos`, `Cafes`, `Usuario`, `Carrito` y `CarritoProducto` (los tres últimos en singular, como las guías). Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
+- **Data/AppDbContext.cs**: `DbSet` de `Variedades`, `Procesos`, `Cafes`, `Usuario`, `Carrito`, `CarritoProducto`, `Pedido` y `PedidoProducto` (los cinco últimos en singular, como las guías). Aplica las configuraciones de `Data/Configurations/` (una clase `IEntityTypeConfiguration` por entidad) y asigna `created_at`/`updated_at` en UTC al guardar.
 - **Data/Migrations/**: migraciones de EF Core. **Son la fuente de verdad del esquema** (ya no existe `database/schema.sql`).
 - **Data/DbUpdateExceptionExtensions.cs**: detecta violaciones de unicidad (23505) y de clave foránea (23503) de PostgreSQL para responder 409.
 - **Seguridad/**: `Roles` y `Politicas` (autorización por políticas; ver "Autorización").
 - **Middleware/ExceptionMiddleware.cs**: cualquier excepción no controlada → 500 con mensaje genérico en español. El detalle solo va al log.
-- Registro en `Program.cs`: `AddDbContext<AppDbContext>(UseNpgsql + UseSnakeCaseNamingConvention)`, repositorios (incluido `ICarritoRepository`) y `CloudinaryService` como `Scoped`. También: puerto `PORT`, CORS desde `Cors:AllowedOrigins`, comprobación de la cadena de conexión y de `JwtSettings:Key` al arrancar y `GET /api/health` (ver "Preparación para producción").
+- Registro en `Program.cs`: `AddDbContext<AppDbContext>(UseNpgsql + UseSnakeCaseNamingConvention)`, repositorios (incluidos `ICarritoRepository` e `IPedidoRepository`) y `CloudinaryService` como `Scoped`. También: puerto `PORT`, CORS desde `Cors:AllowedOrigins`, comprobación de la cadena de conexión y de `JwtSettings:Key` al arrancar y `GET /api/health` (ver "Preparación para producción").
 
 ## Modelo de datos
 
@@ -275,7 +278,29 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 
 Índice único `ux_carrito_producto_carrito_producto` sobre `(carrito_id, producto_id)`: un café aparece una sola vez por carrito (agregarlo otra vez suma la cantidad). La columna se llama `producto_id` porque la guía llama `ProductoId` a la propiedad, aunque apunta a `cafes`.
 
-**Migración `AddCarrito`**: solo crea `carrito` y `carrito_producto` con sus índices y FKs; no toca otras tablas (revisado antes de aplicarla). El carrito anterior en inglés (`Cart`, `CartItem`, `ICartRepository`, `CartRepository` ADO.NET con `NotImplementedException` y 4 DTOs) nunca estuvo en el DbContext ni en DI y se eliminó.
+**Migración `AddCarrito`**: solo crea `carrito` y `carrito_producto` con sus índices y FKs; no toca otras tablas (revisado antes de aplicarla).
+
+**pedido** (guía de pedidos, migración `AddPedidos`)
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| id | integer identity | PK; es el "número de pedido" (#id) |
+| usuario_id | integer | FK → usuario, `ON DELETE RESTRICT` (índice `ix_pedido_usuario_id`): el historial no se pierde |
+| total | numeric(12,0) | suma de precio × cantidad, calculada al crear |
+| estado | varchar(20) | obligatorio, `CHECK (estado IN ('Pendiente','Pagado','Rechazado'))` (`ck_pedido_estado`); hoy todos nacen `Pendiente`; los otros dos los asignará la guía de Wompi |
+| fecha | timestamptz | UTC, `DateTime.UtcNow` al crear |
+
+**pedido_producto**
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| id | integer identity | PK |
+| pedido_id | integer | FK → pedido, `ON DELETE CASCADE` (índice `ix_pedido_producto_pedido_id`) |
+| producto_id | integer | FK → cafes, `ON DELETE RESTRICT` (índice `ix_pedido_producto_producto_id`): un café con pedidos no se borra |
+| cantidad | integer | `CHECK (cantidad >= 1)` (`ck_pedido_producto_cantidad`) |
+| precio | numeric(12,0) | precio del café **en el momento de la compra** |
+
+**Migración `AddPedidos`**: solo crea `pedido` y `pedido_producto` con sus índices, FKs y `CHECK`; no toca otras tablas (revisado antes de aplicarla). Al contrario que en `carrito_producto` (CASCADE hacia `cafes`), aquí la FK al café es `RESTRICT`. El carrito anterior en inglés (`Cart`, `CartItem`, `ICartRepository`, `CartRepository` ADO.NET con `NotImplementedException` y 4 DTOs) nunca estuvo en el DbContext ni en DI y se eliminó.
 
 ## Endpoints y permisos
 
@@ -290,7 +315,7 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 | GET | /api/cafes/{id} | Público | 200, 404 |
 | POST | /api/cafes | Inventario | 201 `CafeResponseDto`, 400, 401, 403, 409 duplicado |
 | PUT | /api/cafes/{id} | Inventario | 200 `CafeResponseDto`, 400, 401, 403, 404, 409 |
-| DELETE | /api/cafes/{id} | Inventario | 204, 401, 403, 404 (borrado físico + borra la imagen) |
+| DELETE | /api/cafes/{id} | Inventario | 204, 401, 403, 404 (borrado físico + borra la imagen); 409 `ProblemDetails` "No se puede eliminar un café que tiene pedidos." |
 | GET | /api/variedades | Público | 200 `VariedadResponseDto[]` |
 | GET | /api/variedades/{id} | Público | 200, 404 |
 | POST | /api/variedades | Inventario | 201, 400, 401, 403, 409 nombre duplicado |
@@ -305,6 +330,10 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 | PUT | /api/Carrito/ActualizarCarrito | JWT | 200 `{ mensaje }`; 400; 401; 404 "El producto no está en el carrito."; 409 sin unidades |
 | DELETE | /api/Carrito/EliminarProducto/{productId} | JWT | 200 `{ mensaje }`; 401; 404 |
 | DELETE | /api/Carrito/VaciarCarrito | JWT | 200 `{ mensaje: "Carrito vaciado." }`, 401 |
+| POST | /api/Pedido/CrearPedido | JWT | 200 `{ mensaje: "Pedido creado correctamente.", pedidoId }`; 400 "El carrito está vacío."; 401; 409 "No puedes comprar tus propios productos." / "No hay stock suficiente de NOMBRE (disponibles: N)." / "NOMBRE está agotado." |
+| GET | /api/Pedido/GetPedidos | JWT | 200 `PedidoDto[]` (los del usuario, el más reciente primero), 401 |
+| GET | /api/Pedido/GetPedido/{pedidoId} | JWT | 200 `PedidoDto`; 401; 404 `{ mensaje: "Pedido no encontrado." }` (no existe o es de otro usuario) |
+| GET | /api/Pedido/Todos | Inventario | 200 `PedidoAdminDto[]` (PedidoDto + clienteNombre + clienteEmail), 401, 403 |
 | GET | /api/usuarios | Usuarios | 200 `UsuarioAdminDto[]` (id, nombre, email, rol, cafesCreados; nunca el password), 401, 403 |
 | PUT | /api/usuarios/{id}/rol | Usuarios | 200 `{ mensaje: "Rol actualizado." }`; 400 rol distinto de Administrador/Cliente; 401; 403; 404 "El usuario no existe."; 409 "No puedes quitarte tu propio rol de administrador." |
 | GET | /api/health | Público | 200 `{ estado: "ok" }` (monitoreo del hosting) |
@@ -322,7 +351,7 @@ Reglas relevantes:
 
 - `backend/Seguridad/Roles.cs`: constantes `Administrador` y `Cliente` (los valores del claim `role`).
 - `backend/Seguridad/Politicas.cs`: las políticas `GestionInventario` y `GestionUsuarios` (las dos `RequireRole(Roles.Administrador)`), registradas en `Program.cs` con `Politicas.Registrar(builder.Services.AddAuthorizationBuilder())`.
-- Los controladores piden la **política**, no un rol: `[Authorize(Policy = Politicas.GestionInventario)]`, `[Authorize(Policy = Politicas.GestionUsuarios)]` (todo `UsuariosController`). El carrito solo pide `[Authorize]` (cualquier rol).
+- Los controladores piden la **política**, no un rol: `[Authorize(Policy = Politicas.GestionInventario)]` (también `GET /api/Pedido/Todos`), `[Authorize(Policy = Politicas.GestionUsuarios)]` (todo `UsuariosController`). El carrito y los pedidos propios solo piden `[Authorize]` (cualquier rol).
 - En el frontend, `core/auth/permisos.ts` tiene `inventario.gestionar` y `usuarios.gestionar`.
 
 **Agregar un rol nuevo (por ejemplo "Editor") que gestione el inventario**, sin tocar controladores:
@@ -335,9 +364,11 @@ Reglas relevantes:
 ## Panel de administración
 
 - **Entrar**: con la misma sesión de la tienda. Menú de cuenta del navbar → "Panel de administración" (solo aparece al rol Administrador), footer → "Acceso administrador" o `http://localhost:4200/admin`. Sin sesión, el guard lleva a `/login?volver=/admin…`; con una cuenta Cliente, a `/login?permiso=denegado`, que muestra "No tienes permiso para entrar al panel de administración.".
-- **Rutas**: `/admin/inventario` (cafés), `/admin/variedades`, `/admin/usuarios`. Todo `/admin` está protegido con `canMatch` por permiso (`/admin/usuarios` además con `usuarios.gestionar`) y se carga de forma diferida. La pantalla `/admin/ingresar` se eliminó.
+- **Rutas**: `/admin/inventario` (cafés), `/admin/variedades`, `/admin/pedidos`, `/admin/usuarios`. Todo `/admin` está protegido con `canMatch` por permiso (`/admin/usuarios` además con `usuarios.gestionar`) y se carga de forma diferida. La pantalla `/admin/ingresar` se eliminó.
 - **Inventario**: lista con búsqueda (sin tildes), columna **"Creado por"** (`usuarioNombre`), crear y editar en un panel lateral (nombre, variedad, presentación, origen, stock, precio e imagen con vista previa; tipo jpg/png/webp y 5 MB se validan antes de subir), eliminar con confirmación "Esta acción es irreversible", avisos de éxito y mensajes en español para 400, 401, 403, 404 y 409.
 - **Variedades**: crear, editar y eliminar (409 si tiene cafés).
+- **Pedidos** (guía de pedidos, solo lectura): tabla con número, cliente (nombre y correo), fecha (`dd/MM/yyyy, h:mm a`), estado, total y "Detalle" desplegable (`aria-expanded`; cafés con cantidad × precio y subtotal). Filtro por estado con botones en píldora (`aria-pressed`) y el número de pedidos de cada uno. Cambiar el estado lo hará la guía de Wompi.
+- Eliminar un café que aparece en un pedido muestra el 409 "No se puede eliminar un café que tiene pedidos.".
 - **Usuarios** (Guía 2): tabla con nombre, correo, rol (etiqueta: Administrador en bosque, Cliente con borde), "Cafés creados" y buscador por nombre o correo (sin tildes). "Hacer Administrador" / "Hacer Cliente" con confirmación; la fila propia dice "(tú)" y su botón está deshabilitado (si aun así llega un 409, se muestra el mensaje de la API). Aviso fijo: "El nuevo rol se aplica la próxima vez que el usuario inicie sesión." No se pueden borrar usuarios.
 - **Sesión**: token en `localStorage` (sobrevive a cerrar la pestaña); se cierra sola al expirar el JWT (`JwtSettings:DurationInMinutes`, 60). Un 401 de la API a una petición con sesión la cierra y lleva a `/login` ("Tu sesión terminó. Vuelve a iniciar sesión."); un 403 muestra "No tienes permiso para esta acción". "Cerrar sesión" en el panel lleva a `/login`.
 - Los cambios se ven en Inicio y Productos al recargar (leen la misma API).
@@ -421,7 +452,7 @@ Implementación de `docs/guias/guia-2-carrito-de-compras.md` (guía del profesor
 - **El carrito se crea al primer uso**: no se crea al registrarse. `ObtenerCarritoLocal` busca el carrito del usuario y, si no existe, lo crea en ese momento. Todos los métodos lo llaman primero, así que el primer `GetCarrito` (o el primer "Agregar") lo crea.
 - **El usuario sale del token**: el controlador lee el id con `User.FindFirstValue(ClaimTypes.NameIdentifier)`. El frontend nunca envía de quién es el carrito; así nadie puede ver ni cambiar el carrito de otra persona aunque modifique la petición.
 - **No comprar lo propio**: si el `UsuarioId` del café es el del token, "No puedes comprar tu propio producto." (409). Por eso la cuenta administradora compartida, dueña de los 25 cafés, no puede comprar.
-- **El carrito no descuenta stock**: solo comprueba que no se pida más de lo que hay. El stock bajará cuando exista "confirmar pedido" (guía futura).
+- **El carrito no descuenta stock**: solo comprueba que no se pida más de lo que hay. Confirmar el pedido tampoco lo descuenta: bajará cuando el pago se apruebe (guía de Wompi).
 - **Totales**: los calcula la API en `ObtenerCarrito` con una sola consulta (JOIN de `carrito_producto` con `cafes`, `variedades` y `procesos`, proyectada al DTO). `Precio`, `Subtotal` y `Total` son `double` como la guía; como los precios son pesos sin decimales, la conversión desde `decimal` no pierde nada.
 
 **Paso de la guía → archivo**
@@ -462,14 +493,77 @@ Implementación de `docs/guias/guia-2-carrito-de-compras.md` (guía del profesor
 - `Carrito` (`core/services/carrito.ts`) guarda el carrito en un signal. Se carga al iniciar sesión (o al recargar con una sesión guardada) mediante un `effect` sobre la sesión, y se borra de la memoria al cerrar sesión. Después de cada cambio vuelve a pedir `GetCarrito`: los totales siempre son los de la API.
 - **Ícono del navbar** (`shared/carrito/boton-carrito`): siempre visible. Sin sesión es un enlace a `/login?volver=`; con sesión abre el **panel lateral** (`<dialog>` que entra desde la derecha) y muestra `TotalUnidades` en una píldora cereza que hace un pulso corto al cambiar (Web Animations API, 320 ms; sin pulso con movimiento reducido).
 - **"Agregar al carrito"** (`shared/agregar-carrito`, en las cards de Productos e Inicio y en la vista rápida): selector de 1 a (stock − unidades que ya están en el carrito). Sin sesión lleva a `/login?volver=<página actual>`. Botón deshabilitado con el motivo: "Este café es tuyo" (`usuarioId` del café = id del token), "Agotado" o "Ya tienes todas las unidades disponibles". En las cards, el resultado se avisa abajo a la derecha ("Agregado al carrito" + "Ver carrito", `shared/zona-avisos`); en la vista rápida, dentro del panel, porque lo que está fuera de un `<dialog>` modal no se puede pulsar. Los 404 y 409 muestran el mensaje de la API.
-- **Lista del carrito** (`shared/carrito/lista-carrito`, en el panel y en `/carrito`): por café, imagen, nombre, variedad · proceso · gramos, precio unitario, selector de 1 a stock (`ActualizarCarrito`), quitar (`EliminarProducto`) y subtotal. Resumen con unidades y total en COP ("$ 45.000"), "Vaciar carrito" con confirmación (`VaciarCarrito`), estado vacío con "Ver cafés" y "Finalizar compra" deshabilitado con la etiqueta "Próximamente".
+- **Lista del carrito** (`shared/carrito/lista-carrito`, en el panel y en `/carrito`): por café, imagen, nombre, variedad · proceso · gramos, precio unitario, selector de 1 a stock (`ActualizarCarrito`), quitar (`EliminarProducto`) y subtotal. Resumen con unidades y total en COP ("$ 45.000"), "Confirmar pedido" (guía de pedidos, ver abajo), "Vaciar carrito" con confirmación (`VaciarCarrito`) y estado vacío con "Ver cafés".
 - **`/carrito`**: dentro del layout de la tienda, protegida con el guard `requiereSesion` (sin sesión, `/login?volver=/carrito`).
+
+## Guía de pedidos
+
+Implementación de `docs/guias/guia-pedidos.md` (en el PDF del profesor aparece como "Guía 2 — Pedidos"; va después de la del carrito y antes de la de Wompi). Se respetaron sus nombres de clases, interfaz, métodos, DTOs, DbSets, propiedades, rutas, el estado `"Pendiente"` y la migración `AddPedidos`. Equivalencias: el "Producto" de la guía es nuestro `Cafe`, `item.Producto.Valor` es `Cafe.Precio` y `p.Producto.Nombre` / `ImagenUrl` son `Cafe.Nombre` / `Cafe.ImagenUrl`.
+
+**En palabras sencillas**
+
+- **Qué es un pedido**: la "foto" de un carrito en el momento de confirmarlo. `pedido` guarda de quién es, cuándo se hizo, el total y su estado; `pedido_producto` guarda cada café con su cantidad y su precio. Hoy todos nacen **Pendiente** (todavía no hay pago).
+- **Por qué se guarda el precio**: el precio del café puede cambiar después. Si el pedido leyera el precio actual, un pedido de ayer cambiaría de total hoy. Por eso `CrearPedido` copia `Cafe.Precio` en `PedidoProducto.Precio`, y "Mis pedidos" muestra siempre ese precio guardado (verificado: se cambió el precio de un café y el pedido conservó el anterior).
+- **Qué pasa con el carrito**: `CrearPedido` agrega el pedido y borra las filas de `carrito_producto` del usuario en **un solo `SaveChangesAsync`**: o pasan las dos cosas o ninguna. El carrito (la fila de `carrito`) sigue existiendo, vacío. Si algo falla (carrito vacío, café propio, sin stock), se devuelve el motivo **antes** de guardar y el carrito queda igual.
+- **Por qué todavía no se descuenta el stock**: un pedido "Pendiente" aún no está pagado. Si se descontara al crearlo, un pedido que nunca se paga dejaría unidades "atrapadas". El stock se descontará cuando el pago se apruebe (guía de Wompi). Mientras tanto, `CrearPedido` sí **comprueba** que haya stock suficiente (adaptación A).
+- **Nadie ve pedidos ajenos**: el usuario sale del token y `ObtenerPedido` filtra por `Id` **y** `UsuarioId`. El pedido de otra persona, para la API, simplemente no existe (404).
+
+**Paso de la guía → archivo**
+
+| Paso | Archivo |
+|---|---|
+| 1. Clase Pedido | `backend/Models/Pedido.cs` |
+| 2. PedidoProducto | `backend/Models/PedidoProducto.cs` (navegación `public Cafe? Producto`) |
+| 3. DbSets | `backend/Data/AppDbContext.cs` (`Pedido`, `PedidoProducto`) + `Data/Configurations/PedidoConfiguration.cs` y `PedidoProductoConfiguration.cs` |
+| 4. Modificar Usuario | `backend/Models/Usuario.cs` (`ICollection<Pedido> Pedidos`) |
+| 5. Migración | `backend/Data/Migrations/*_AddPedidos.cs` |
+| 6. DTOs | `backend/DTOs/PedidoDto.cs`, `PedidoProductoDto.cs` (+ `PedidoAdminDto.cs`, adaptación F) |
+| 7. Interfaz y registro | `backend/Interfaces/IPedidoRepository.cs`, `backend/Program.cs` (`AddScoped`) |
+| 8–10. Repositorio | `backend/Repositories/PedidoRepository.cs` (`CrearPedido`, `ObtenerPedidos`, `ObtenerPedido`) |
+| 11. Controlador | `backend/Controllers/PedidoController.cs` |
+| Adaptación E | `backend/Interfaces/ICafeRepository.cs` y `Repositories/CafeRepository.cs` (`TienePedidosAsync`), `Controllers/CafesController.cs` (DELETE) |
+| Frontend | `core/models/pedido.ts`, `core/services/pedidos.ts`, `shared/carrito/lista-carrito` ("Confirmar pedido"), `shared/estado-pedido`, `pages/mis-pedidos/` (`mis-pedidos`, `detalle-pedido`), `pages/admin/pedidos/`, `shared/menu-usuario` ("Mis pedidos"), `layout/admin` ("Pedidos") |
+
+**Adaptaciones respecto a la guía**
+
+| | Adaptación | Motivo |
+|---|---|---|
+| A | Control de stock en `CrearPedido`, después de la comprobación de café propio: stock 0 → "NOMBRE está agotado."; cantidad mayor que el stock → "No hay stock suficiente de NOMBRE (disponibles: N)." No se crea nada y el carrito queda igual. **El stock no se descuenta** | El stock pudo bajar desde que el café entró al carrito. Descontarlo es trabajo de la guía de Wompi (cuando el pago se aprueba). |
+| B | `ObtenerPedidos` ordena por `Fecha` descendente (y por `Id` descendente para desempatar) | "Mis pedidos" muestra primero el más reciente. |
+| C | `CrearPedido` sigue devolviendo el texto de la guía y se agregó un segundo método mínimo, `ObtenerUltimoPedidoId(usuarioId)` (lee solo la columna `id` del pedido más reciente del usuario). El controlador lo llama después de un `CrearPedido` exitoso y responde `{ mensaje, pedidoId }` | Es lo más simple que no cambia la firma de la guía: un `out` no se puede usar en métodos `async` y devolver una tupla cambiaría `Task<string>`. El frontend usa el id para abrir `/mis-pedidos/{id}`. |
+| D | El controlador traduce el texto a códigos HTTP, siempre con `{ mensaje }`: carrito vacío → 400; café propio, sin stock o agotado → 409; éxito → 200 `{ mensaje, pedidoId }`; `GetPedido` inexistente o ajeno → 404 "Pedido no encontrado." | Igual que la adaptación 7 de la Guía 1 y la D de la Guía 2: con `Ok()` siempre, el frontend no sabría si algo falló, y `GetPedido` devolvería un 204 vacío. |
+| E | `DELETE /api/cafes/{id}` responde 409 "No se puede eliminar un café que tiene pedidos." (lo comprueba `TienePedidosAsync` antes de borrar; si un pedido aparece entre la comprobación y el borrado, la FK `RESTRICT` da 23503 y también se responde 409). Un café que solo está en carritos se sigue borrando | Conservar el historial: un pedido no puede quedar con un café que ya no existe. Sin la comprobación, la FK daría un 500. |
+| F | `GET /api/Pedido/Todos` con la política `GestionInventario`: todos los pedidos (más recientes primero) con `ClienteNombre` y `ClienteEmail`, en `PedidoAdminDto : PedidoDto` | La página `/admin/pedidos`. Heredar de `PedidoDto` evita repetir sus propiedades. |
+
+**Correcciones de errores del PDF**
+
+- La interfaz declara `Task<PedidoDto> ObtenerPedido(...)` pero la implementación devuelve `PedidoDto?`: se usó `Task<PedidoDto?>` en las dos.
+- `return Ok(await _ pedidoRepository.CrearPedido(userId));` tiene un espacio en `_ pedidoRepository`: es `_pedidoRepository`.
+- `(decimal)item.Producto.Valor`: en este proyecto `Cafe.Precio` ya es `decimal`, así que no hay conversión.
+- La guía dice "ampliará el e-commerce construido en la Guía 1", pero necesita el carrito de la Guía 2.
+
+**Otras diferencias (decisiones tomadas)**
+
+- Como en las guías anteriores, la interfaz y el repositorio no reciben `CancellationToken` y los DTOs son clases (no `sealed record`); `Fecha` es `DateTime` (en UTC), no `DateTimeOffset`.
+- `GetPedidos` y `Todos` devuelven la lista directamente (como la guía); `GetPedido` pasó a `IActionResult` por el 404.
+- Los productos de cada pedido salen ordenados por `Id` (el orden en que se agregaron), como en `ObtenerCarrito`.
+- Mensaje de café propio: el de esta guía, "No puedes comprar tus propios productos." (el carrito conserva el suyo, "No puedes comprar tu propio producto.").
+- `CrearPedido` es la guía tal cual (`Include` + `ThenInclude` con seguimiento): necesita las entidades del carrito para borrarlas con `RemoveRange`. Las lecturas (`ObtenerPedidos`, `ObtenerPedido`, `Todos`) proyectan directamente al DTO: una sola consulta con JOIN, sin cargar entidades.
+- Índice `ix_pedido_usuario_id` (lo usan "Mis pedidos", `GetPedido` y `ObtenerUltimoPedidoId`). No se indexó `fecha`: la tabla es pequeña y el orden de `Todos` no lo necesita hoy.
+- Skills frente a la guía (gana la guía): `dotnet-webapi` recomienda `sealed record`, `DateTimeOffset`, `CancellationToken`, capa de servicios y ProblemDetails; se mantuvo el estilo de las guías. `database-schema-designer`: `CHECK` de estado y cantidad, `RESTRICT` hacia `usuario` y `cafes`, `CASCADE` de pedido a sus productos. `optimizing-ef-core-queries`: proyecciones y lectura de una sola columna en `ObtenerUltimoPedidoId`. La skill pide no aplicar la migración sin permiso: aquí el plan de trabajo pedía aplicarla.
+
+**Reglas de los pedidos (frontend)**
+
+- **"Confirmar pedido"** (`shared/carrito/lista-carrito`, en el panel lateral y en `/carrito`): habilitado cuando hay cafés. Abre una confirmación (`<dialog>`) "Se creará un pedido con N productos por $ TOTAL. Tu carrito quedará vacío." (N = unidades). Al confirmar: `Pedidos.crear()` → recarga el carrito (el contador vuelve a 0) → aviso "Pedido creado" → `/mis-pedidos/{pedidoId}`. Un 400 o 409 muestra el mensaje de la API bajo la lista y el carrito queda igual.
+- **`/mis-pedidos`** (guard `requiereSesion`; enlace "Mis pedidos" en el menú de la cuenta): una fila por pedido (enlace al detalle) con "Pedido #id", fecha (`d 'de' MMMM 'de' y`, es-CO), estado, hasta 3 fotos pequeñas, "N productos" y total en COP. Estado vacío con "Ver cafés" (`/productos`).
+- **`/mis-pedidos/:id`** (guard `requiereSesion`): fecha y hora, estado, aviso "Pago pendiente. El pago en línea estará disponible pronto." si está Pendiente, cada café (imagen, nombre, cantidad × precio guardado, subtotal = precio × cantidad) y total. El 404 (o un id que no es número) muestra "Pedido no encontrado" con "Ver mis pedidos": el `rxResource` convierte el 404 en `null` con `catchError`.
+- **Etiqueta de estado** (`shared/estado-pedido`): píldora con ícono y color propio (Pendiente `bi-hourglass-split` en miel, Pagado `bi-check-circle` en musgo, Rechazado `bi-x-circle` en el rojo de error), tokens `--estado-*` en `styles.css`. Fondo opaco (papel teñido al 8 %) para que pase AA sobre la niebla de la página.
 
 ## Cuenta administradora compartida
 
 - **`desarrollo.testing@gmail.com`** (nombre **"Administrador Altura"**) es la cuenta Administrador del equipo. Está en `Admin:Correos` y es la dueña de los 25 cafés del catálogo.
 - Cada integrante la registra **en su base de datos local** con `POST /api/auth/Register` (Swagger, `CafeApi.http` o `/registro`) y luego carga el catálogo con `& .\seed\seed-productos.ps1` iniciando sesión con ella. La contraseña la comparte el equipo por fuera del repositorio: **nunca se escribe en ningún archivo**.
-- **Esa cuenta no puede comprar**: es dueña de todos los cafés, así que ve "Este café es tuyo" en cada uno (y la API responde 409). **Para probar el carrito se usa una cuenta Cliente** (cualquier correo que no esté en `Admin:Correos`, registrado en `/registro`).
+- **Esa cuenta no puede comprar**: es dueña de todos los cafés, así que ve "Este café es tuyo" en cada uno (y la API responde 409; un pedido con un café propio también da 409). **Para probar el carrito y los pedidos se usa una cuenta Cliente** (cualquier correo que no esté en `Admin:Correos`, registrado en `/registro`).
 - Un cambio de rol (desde `/admin/usuarios` o con `UPDATE`) se aplica cuando el usuario vuelve a iniciar sesión: el token que ya tiene conserva el rol anterior hasta que expira (60 min).
 
 ## Preparación para producción
@@ -607,7 +701,8 @@ Solo se usaron fotos gratuitas (se descartaron las de Unsplash+). La primera ele
 | `login` | Login (`POST /api/auth/Login`; acepta `?volver=`, `?cuenta=creada`, `?permiso=denegado`) | Iniciar sesión \| Altura |
 | `registro` | Registro (`POST /api/auth/Register`) | Crear cuenta \| Altura |
 | `carrito` | Carrito (layout `Sitio`, guard `requiereSesion`) | Tu carrito \| Altura |
-| `admin` → `admin/inventario`, `admin/variedades`, `admin/usuarios` | Panel (guard `canMatch` por permiso, layout `Admin`; usuarios con `usuarios.gestionar`) | Inventario \| Altura · Variedades \| Altura · Usuarios \| Altura |
+| `mis-pedidos` · `mis-pedidos/:id` | Mis pedidos y detalle (layout `Sitio`, guard `requiereSesion`) | Mis pedidos \| Altura · Detalle del pedido \| Altura |
+| `admin` → `admin/inventario`, `admin/variedades`, `admin/pedidos`, `admin/usuarios` | Panel (guard `canMatch` por permiso, layout `Admin`; usuarios con `usuarios.gestionar`) | Inventario \| Altura · Variedades \| Altura · Pedidos \| Altura · Usuarios \| Altura |
 | `**` | redirige a `''` | — |
 
 Transición entre rutas con `withViewTransitions()`; las navegaciones que solo cambian query params y el movimiento reducido marcan `<html class="transicion-instantanea">`. Durante el vuelo de la bolsa se marca `<html class="transicion-vuelo">` (solo la bolsa tiene nombre; el resto hace un fundido corto).
@@ -615,11 +710,11 @@ Transición entre rutas con `withViewTransitions()`; las navegaciones que solo c
 **Estructura de `src/app/`:**
 
 - `core/auth/`: `permisos.ts` (mapa centralizado permiso → roles: `inventario.gestionar`, `usuarios.gestionar`), `token.ts` (`leerToken`: traduce los claims de .NET, con nombres en URI larga, a id, nombre, email, roles y expiración), `auth.ts` (servicio `Auth` con signals: `registrar`, `iniciarSesion`, sesión en `localStorage`, cierre al expirar, `tienePermiso`), `interceptor.ts` (Bearer solo a la API; 401 → cierra sesión y lleva a `/login`; 403 → aviso), `guard.ts` (`requierePermiso(permiso)`, `canMatch`: sin sesión → `/login?volver=`, sin permiso → `/login?permiso=denegado`; `requiereSesion` para `/carrito`).
-- `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`RespuestaLogin`/`RespuestaRegistro`, `CarritoDto`/`CarritoProductoDto`/`AddProductDto` (mismos nombres que el backend) y `UsuarioAdmin`/`Rol`. `Cafe` incluye `usuarioId` y `usuarioNombre`. Si cambia un DTO del backend, actualiza estos modelos.
-- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel y de la tienda, con enlace opcional), `Carrito` (Guía 2, ver "Reglas del carrito") y `Usuarios` (`GET /api/usuarios`, `PUT /api/usuarios/{id}/rol`).
+- `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`RespuestaLogin`/`RespuestaRegistro`, `CarritoDto`/`CarritoProductoDto`/`AddProductDto` y `PedidoDto`/`PedidoProductoDto`/`PedidoAdminDto`/`RespuestaCrearPedido` (mismos nombres que el backend; `unidadesDe(pedido)`), y `UsuarioAdmin`/`Rol`. `Cafe` incluye `usuarioId` y `usuarioNombre`. Si cambia un DTO del backend, actualiza estos modelos.
+- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel y de la tienda, con enlace opcional), `Carrito` (Guía 2, ver "Reglas del carrito"), `Pedidos` (`crear`, `misPedidos`, `pedido`, `todos`; ver "Reglas de los pedidos") y `Usuarios` (`GET /api/usuarios`, `PUT /api/usuarios/{id}/rol`).
 - `core/data/`: `mapa-colombia.ts` (Natural Earth) y `contenido-marca.ts` (texto, color y notas de cata de las 9 variedades; texto, color, ícono y "en taza" de los 3 procesos con `marcaProceso()`; fotos del sitio, pasos del proceso, `ETAPAS_ASCENSO`). **Los productos, las variedades y los procesos siempre vienen de la API**; aquí solo está el texto de marca, asociado por nombre normalizado.
 - `core/utils/`: `gsap.ts` (`cargarGsap`, `refrescarScroll`), `medios.ts` (`matchMedia` seguro, `movimientoReducido`, `punteroFino`, `navegadorCompleto`), `imagenes.ts` (las fotos de producto se piden con el recorte `c_crop,g_center,w_0.86,h_0.86` antes de `f_auto,q_auto,w_N`: la bolsa llena más la card y mide lo mismo en la card, la vista rápida y el vuelo), `texto.ts`, `transicion.ts`, `validadores.ts` (`PATRON_CORREO`, `camposCoinciden`, `entero`), `errores.ts` (`mensajeDeError`: mensaje en español por código HTTP; en 404 y 409 usa el `{ mensaje }` de la API si viene).
-- `layout/sitio`: navbar fijo (se vuelve sólido con un sensor de IntersectionObserver), `<router-outlet>`, footer con cresta y "Acceso administrador" y `ZonaAvisos` ("Agregado al carrito"). `layout/admin`: cabecera del panel (usuario, "Ver tienda", "Cerrar sesión"), navegación (Inventario, Variedades y, con permiso, Usuarios) y avisos.
+- `layout/sitio`: navbar fijo (se vuelve sólido con un sensor de IntersectionObserver), `<router-outlet>`, footer con cresta y "Acceso administrador" y `ZonaAvisos` ("Agregado al carrito"). `layout/admin`: cabecera del panel (usuario, "Ver tienda", "Cerrar sesión"), navegación (Inventario, Variedades, Pedidos y, con permiso, Usuarios; se envuelve en móvil) y avisos.
 - `pages/inicio/`: `Hero` (crestas + palabra + parallax), `Altimetro`, `Destacados`, `Proceso` (galería anclada), `CintaNotas` (marquee con datos de la API), `Origenes` (mapa; 5 regiones con cafés), `Variedades` (cuadrícula de 9 fichas: 3/2/1 columnas, muestra de color, texto y enlace con el número de cafés), `Cierre`. Cada sección lleva `data-etapa`.
 - `pages/productos/`: `Productos` + `Filtros` + `GuiaProcesos` + `catalogo.ts` (lógica pura de filtros ↔ URL `?q=&variedad=&proceso=&presentacion=&origen=&disponibles=1&orden=`, orden, búsqueda sin tildes por nombre, origen, variedad **o proceso**, `contarPor`). Estado en un signal, View Transitions al filtrar y hoja `<dialog>` de filtros en móvil.
   - **Filtros** (barra lateral y hoja móvil, mismo componente): Variedad, Proceso y Origen son **listas verticales**, una fila por opción con su marca (muestra de color, ícono del proceso o `bi-geo-alt`), el nombre y el número de cafés alineado a la derecha; la fila activa tiene fondo `--tinte-activo`, negrita y una barra corta de su color a la izquierda. Filas de 40 px (44 px con puntero táctil). Presentación son tres botones del mismo ancho (Todas · 340 g · 500 g). Con más de 6 variedades se muestran 5 y "Ver las 9 variedades" (`aria-expanded`); la elegida nunca se esconde. La barra lateral es fija al bajar y, si es más alta que la pantalla, tiene su propio scroll.
@@ -627,9 +722,11 @@ Transición entre rutas con `withViewTransitions()`; las navegaciones que solo c
   - **Grilla uniforme**: todas las cards miden lo mismo (3 columnas a ≥1200 px, 2 en tableta, 1 en móvil). Para que los textos queden alineados entre cards, cada fila de la card ocupa una sola línea: variedad + gramos, nombre (con "…" si no cabe), origen + etiqueta de proceso, precio + disponibilidad. Una e2e mide que alto, imagen, nombre, origen y precio estén en la misma posición en las 25 cards.
   - Al filtrar, la URL se escribe con `scroll: 'manual'` (opción por navegación del router de Angular 22): la página no salta arriba; al cambiar de ruta sí se sube, como siempre.
 - `pages/login`, `pages/registro`: formularios reactivos conectados a la API (Guía 1). Registro valida igual que `UsuarioDto` (nombre obligatorio de hasta 100 caracteres, correo válido, contraseña de 6 o más, confirmación) y al terminar lleva a `/login?cuenta=creada` ("Cuenta creada. Ahora inicia sesión."); un 400 muestra el mensaje del backend. Login vuelve a `?volver=` (solo rutas internas) o al Inicio; un 401 muestra "Usuario o contraseña incorrectos.".
-- `pages/admin/`: `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`), `usuarios` (`usuarios-admin.ts`, Guía 2) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
+- `pages/admin/`: `pedidos` (guía de pedidos), `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`), `usuarios` (`usuarios-admin.ts`, Guía 2) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
 - `pages/carrito`: página `/carrito` (`PaginaCarrito`) con `ListaCarrito` y "Seguir comprando".
-- `shared/`: `Navbar` (con `BotonCarrito` junto a `MenuUsuario`), `carrito/` (`BotonCarrito` con el panel lateral y `ListaCarrito`), `AgregarCarrito` (selector + botón y sus estados), `ZonaAvisos`, `MenuUsuario` (cuenta del navbar: sin sesión, ícono a `/login?volver=`; con sesión, la inicial y un menú *disclosure* con nombre, correo, "Panel de administración" solo para Administrador y "Cerrar sesión"; se cierra con Escape, clic fuera o al navegar; es un componente aparte por el presupuesto de 4 kB del CSS del navbar), `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; `AgregarCarrito`; Escape se atiende en `keydown`), `SelectorCantidad` (con `etiqueta` y `compacto` para las listas; nunca muestra más que el máximo), `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
+- `pages/mis-pedidos`: `MisPedidos` (`/mis-pedidos`) y `DetallePedido` (`/mis-pedidos/:id`, el id llega como `input()` por `withComponentInputBinding`).
+- `pages/admin/pedidos`: `PedidosAdmin` (`/admin/pedidos`, estilos de `lista-admin.css` + `pedidos-admin.css`).
+- `shared/`: `Navbar` (con `BotonCarrito` junto a `MenuUsuario`), `carrito/` (`BotonCarrito` con el panel lateral y `ListaCarrito`), `AgregarCarrito` (selector + botón y sus estados), `ZonaAvisos`, `MenuUsuario` (cuenta del navbar: sin sesión, ícono a `/login?volver=`; con sesión, la inicial y un menú *disclosure* con nombre, correo, "Mis pedidos", "Panel de administración" solo para Administrador y "Cerrar sesión"; se cierra con Escape, clic fuera o al navegar; es un componente aparte por el presupuesto de 4 kB del CSS del navbar), `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `EstadoPedidoEtiqueta` (`shared/estado-pedido`, estado de un pedido), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; `AgregarCarrito`; Escape se atiende en `keydown`), `SelectorCantidad` (con `etiqueta` y `compacto` para las listas; nunca muestra más que el máximo), `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
 - `src/environments/`: `apiBaseUrl` (`http://localhost:5031/api` en desarrollo; marcador `https://TU-API.up.railway.app/api` en producción, a cambiar al desplegar) y `cloudinaryBase`.
 
 **Comandos (desde `frontend/`):**
@@ -650,6 +747,7 @@ Si se cambia `angular.json` (estilos, fuentes), **reinicia `ng serve`**: no reca
 **e2e** (`frontend/e2e/*.e2e.ts`, dos proyectos de Playwright: `chromium` con movimiento y `movimiento-reducido` con `prefers-reduced-motion: reduce`; etiquetas `@movimiento`, `@reducido`, `@una-vez`):
 - `altura.e2e.ts`: Inicio (3 destacados de la API con Cloudinary, 9 variedades con enlace al catálogo, altímetro, mapa con 5 orígenes → catálogo filtrado, galería anclada / fila con movimiento reducido), navegación (estado activo, navbar sólido, menú móvil, login ↔ registro), Productos (25 cafés; variedad + proceso + presentación combinados en la URL; "Ver las 9 variedades"; bloque de procesos arriba de la grilla que filtra, marca el activo y no mueve la página; cards del mismo tamaño y alineadas; sin desplazamiento horizontal a 375 px; búsquedas "narino", "honey" y "rosado"; recarga; cards con etiquetas; vista rápida con proceso y color de variedad; vuelo de la bolsa; hoja de filtros en móvil), API caída, formularios sin peticiones a la API, axe-core en todas las vistas a 1440 y 375 px, capturas y grabación.
 - `carrito.e2e.ts` (Guía 2): sin sesión, "Agregar", el ícono del carrito y `/carrito` llevan a `/login`; un Cliente nuevo se registra, agrega desde una card y desde la vista rápida (el contador cambia), llega al límite de stock ("Ya tienes todas las unidades disponibles"), usa el panel, cambia cantidades en `/carrito` (subtotales y total en COP), recarga (el carrito persiste), quita, vacía con confirmación y no entra a `/admin/usuarios`; con el Administrador de pruebas: un café suyo muestra "Este café es tuyo" y en `/admin/usuarios` busca al Cliente, le cambia el rol con confirmación y lo devuelve (su propia fila está deshabilitada); axe del panel, de `/carrito` y de `/admin/usuarios`.
+- `pedidos.e2e.ts` (guía de pedidos): sin sesión, `/mis-pedidos` y `/mis-pedidos/1` llevan a `/login`; dos Clientes nuevos se registran por la API (`e2e-pedidos-a/b-<número>@altura.test`); el Cliente A agrega dos cafés desde las cards, prueba un 409 simulado con `page.route` (mensaje de la API y carrito intacto), confirma el pedido ("Se creará un pedido con 2 productos por $ 95.000"), llega al detalle con "Pedido creado", Pendiente, el aviso de pago pendiente y el total, el contador queda en 0, lo ve en "Mis pedidos" desde el menú y no entra a `/admin/pedidos`; el Cliente B ve "Pedido no encontrado" en el pedido de A y su lista vacía; el Administrador de pruebas ve el pedido con nombre y correo del cliente, despliega el detalle, filtra por estado y no hay desplazamiento horizontal a 375 px. axe de la confirmación, el detalle, Mis pedidos (con y sin pedidos), "no encontrado" y `/admin/pedidos`. Como el 409 simulado y el 404 dejan "Failed to load resource" en consola, ese bloque usa `permitirErroresDeRed`.
 - `admin.e2e.ts` (usuarios y panel; autocontenido, no depende del catálogo): sin sesión `/admin` → `/login?volver=`; registrar un Cliente desde `/registro` (y el 400 "El usuario ya existe."); contraseña incorrecta (401); el Cliente inicia sesión y vuelve a la página anterior, el menú muestra su nombre y correo sin "Panel de administración", la sesión sobrevive a recargar, `/admin` → "No tienes permiso", cerrar sesión desde el menú; el Administrador entra al panel desde el menú, crea un café con imagen y proceso, **"Creado por" muestra su nombre**, lo edita (el dueño no cambia) y lo elimina (la imagen desaparece de Cloudinary); variedades (crear, duplicada 409, no eliminar con cafés —crea uno por la API—, eliminar); 403 y 401 simulados; axe del login, el menú de cuenta y el panel; cerrar sesión en el panel. **Necesita variables de entorno** con la cuenta Administrador de pruebas, cuyo correo debe estar en `Admin:Correos` (si la cuenta no existe, se registra sola; sin las variables, se omite):
 
 ```powershell
@@ -660,6 +758,8 @@ npm run e2e
 El Cliente se registra en cada ejecución con un correo nuevo (`e2e-cliente-<número>@altura.test`) y una contraseña aleatoria. Los cafés y variedades de prueba llevan "e2e" en el nombre y se borran al terminar (también si una prueba falla). Los usuarios no se pueden borrar por la API; después de las pruebas se borran en PostgreSQL:
 
 ```sql
+-- Primero los pedidos (pedido → usuario es RESTRICT; sus productos se borran solos por CASCADE).
+DELETE FROM pedido WHERE usuario_id IN (SELECT id FROM usuario WHERE email LIKE 'e2e-%@altura.test');
 DELETE FROM usuario WHERE email LIKE 'e2e-%@altura.test';  -- falla (RESTRICT) si alguno todavía tiene cafés; sus carritos se borran solos (CASCADE)
 ```
 
@@ -686,6 +786,11 @@ Antes de cada análisis de axe, `esperarAnimaciones` (`e2e/fixtures.ts`) espera 
 | Guía 2: dotnet-webapi, create-datadriven-aspnetcore, database-schema-designer, optimizing-ef-core-queries | Carrito y usuarios con el patrón Controller → Repository, índices únicos y `CHECK` en la base, `CASCADE` hacia `cafes`, proyección del carrito en una sola consulta y lectura de una sola columna para el stock. Donde contradecían la guía (ProblemDetails, `CancellationToken`, `ExecuteDeleteAsync`), ganó la guía. |
 | Guía 2: angular-developer | Servicio `@Service()` con signals y un `effect` sobre la sesión, `linkedSignal` para la cantidad (se ajusta sola si baja el máximo) y para limpiar el aviso al cambiar de café, `afterRenderEffect` para el pulso del contador, guard funcional `requiereSesion`. |
 | Guía 2: emil-design-eng, design-taste-frontend, ui-ux-pro-max (`ui-styling`) | Panel lateral con `--ease-cajon` (como la hoja de filtros), pulso del contador corto y solo cuando cambia, sin animar acciones frecuentes (cambiar cantidad o quitar), un solo acento (cereza) para el contador y "Agregar", botones deshabilitados que dicen por qué, estado vacío con una acción clara, confirmación solo en lo destructivo (vaciar) y en el cambio de rol. Los patrones de `ui-styling` (React/shadcn) se implementaron en Angular con el CSS propio. |
+
+| Guía de pedidos: dotnet-webapi, create-datadriven-aspnetcore, database-schema-designer, optimizing-ef-core-queries | Pedido y PedidoProducto con el patrón Controller → Repository, `CHECK` de estado y cantidad, `RESTRICT` hacia `usuario` y `cafes` y `CASCADE` hacia los productos del pedido, migración revisada antes de aplicarla, proyecciones en las tres lecturas y `CafeApi.http` con todos los casos. Donde contradecían la guía (records, `DateTimeOffset`, `CancellationToken`, ProblemDetails, capa de servicios), ganó la guía. |
+| Guía de pedidos: angular-developer | `@Service()` `Pedidos`, `rxResource` con `params` para el detalle (el 404 se convierte en `null` con `catchError`), `input()` del `:id` por `withComponentInputBinding`, guard `requiereSesion` en las dos rutas nuevas y prueba unitaria del servicio. |
+| Guía de pedidos: ui-ux-pro-max (`ui-styling`), design-taste-frontend, emil-design-eng | Mis pedidos como lista de filas-enlace sobre papel (como `/carrito`), estado con ícono además de color, confirmación solo en la acción importante (crear el pedido), un solo acento (cereza) en "Confirmar pedido", sin animaciones nuevas en vistas frecuentes salvo la flecha del detalle (240 ms, nada con movimiento reducido). Los patrones de `ui-styling` (shadcn/Tailwind) se hicieron con el CSS propio. |
+| Guía de pedidos: webapp-testing | Capturas a 1440 y 375 px con Playwright para revisar las pantallas (así apareció el desbordamiento de la navegación del panel); las pruebas se escribieron con `@playwright/test`, como el resto del proyecto. |
 
 Contradicciones resueltas a favor del brief: design-taste-frontend exige modo oscuro y desaconseja cursores propios (se mantuvo un solo tema claro y no hay cursor propio); ui-ux-pro-max propuso un estilo genérico (se descartó); ui-styling presupone React/Tailwind (se usó Angular con CSS propio); impeccable considera amateur `feTurbulence` (se quitó el grano). En la etapa anterior (rediseño editorial) se usaron también estas skills; esa identidad (Fraunces, crema/terracota) quedó reemplazada.
 
@@ -758,11 +863,20 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 | `ListaCarrito` compartida entre el panel lateral y `/carrito` | Mismo comportamiento en los dos sitios; ids únicos por instancia porque pueden coexistir. El contenido del panel solo se dibuja mientras está abierto. |
 | Política `GestionUsuarios` aparte de `GestionInventario` | Hoy ambas son "Administrador", pero se podría dar inventario a un "Editor" sin dejarle cambiar roles. |
 | No poder quitarse el propio rol (409 en la API y botón deshabilitado) | Evita que el panel se quede sin administradores por un clic propio. |
+| Pedidos fieles a la guía (nombres, rutas `api/[controller]`, `string` en el repositorio) con 6 adaptaciones (A–F) | Ver "Guía de pedidos". Gana la guía frente a las skills. |
+| `pedido_producto` con `RESTRICT` hacia `cafes` (en el carrito es `CASCADE`) | Un pedido es historial: no puede perder sus cafés. El borrado de un café con pedidos responde 409. |
+| El stock no se descuenta al crear el pedido, solo se comprueba | Un pedido pendiente no está pagado; el stock bajará con el pago aprobado (guía de Wompi). |
+| `pedidoId` con un segundo método (`ObtenerUltimoPedidoId`) | No cambia la firma de `CrearPedido` de la guía y se explica en una línea. |
+| Etiqueta de estado con fondo opaco | Con un tinte transparente, "Pendiente" quedaba en 4,4:1 sobre la niebla de la página (axe lo detectó); opaco queda en 5,1:1 o más. |
 | Producción: variables de entorno, `PORT`, CORS configurable, `/api/health`, migraciones manuales | Ver "Preparación para producción" y `DEPLOY.md`. Aplicar migraciones al arrancar es arriesgado con varias instancias y oculta errores de esquema. |
 
 ## Problemas conocidos y pendientes
 
-- **Pedidos y pagos pendientes**: el carrito (Guía 2) no descuenta stock ni reserva unidades; "Finalizar compra" está deshabilitado ("Próximamente"). Dos clientes pueden tener en su carrito las mismas últimas unidades.
+- **Pagos pendientes (guía de Wompi)**: los pedidos nacen "Pendiente" y se quedan así; ni el carrito ni el pedido descuentan stock ni reservan unidades. Dos clientes pueden tener pedidos pendientes por las mismas últimas unidades: `CrearPedido` solo comprueba el stock de ese momento.
+- Si un usuario confirma el pedido dos veces casi a la vez (por ejemplo, desde dos pestañas), las dos peticiones pueden leer el mismo carrito: la segunda falla al borrar filas que ya no existen (500 en esa petición; el primer pedido queda bien). El botón se deshabilita mientras se crea el pedido, así que desde una sola pestaña no pasa.
+- `ObtenerUltimoPedidoId` toma el pedido más reciente del usuario: si ese mismo usuario creara otro pedido entre las dos consultas (dos pestañas), el `pedidoId` devuelto sería el del otro pedido (los dos son suyos).
+- No se pueden borrar ni cancelar pedidos por la API (fuera de alcance: cancelar, envíos y facturación). Para borrar usuarios de prueba hay que borrar antes sus pedidos (ver la limpieza de las e2e).
+- Problemas encontrados en la guía de pedidos: (1) la etiqueta de estado "Pendiente" con fondo transparente no llegaba a 4,5:1 sobre la niebla (fondo opaco); (2) con el cuarto enlace ("Pedidos"), la navegación del panel desbordaba a 375 px en todas sus páginas (ahora se envuelve; lo comprueba una e2e); (3) en Git Bash los heredocs con comillas y acentos siguen fallando: los archivos se escribieron con el editor.
 - Si llegan a la vez las dos primeras peticiones de carrito de un usuario nuevo, ambas pueden intentar crear el carrito; el índice único `ux_carrito_usuario_id` rechaza la segunda (500 en esa petición; la siguiente funciona). Es poco probable porque el frontend pide `GetCarrito` una vez al iniciar sesión.
 - Si un café del carrito queda con menos stock que la cantidad elegida, `GetCarrito` lo muestra igual; al cambiar la cantidad, la API exige que no supere el stock nuevo.
 - **Login con Google eliminado** en la Guía 1 (endpoint `/api/auth/google`, `GoogleLoginRequest` y el paquete `Google.Apis.Auth`); se rehará en una guía posterior. Fuera de alcance por ahora: cambio y recuperación de contraseña, proveedores externos (Auth0) y borrar usuarios por la API.

@@ -769,3 +769,31 @@ Guía 2 del profesor: carrito de compras (`docs/guias/guia-2-carrito-de-compras.
 - 43 pruebas unitarias (nuevas: servicio `Carrito` y componente `AgregarCarrito`).
 - 69 pruebas e2e (nuevas en `carrito.e2e.ts`: carrito sin sesión, flujo completo del Cliente, "Este café es tuyo" y `/admin/usuarios`; axe del panel, `/carrito` y usuarios). Las revisiones de axe esperan a que terminen las animaciones de entrada.
 - Verificado por la API (36 comprobaciones): 401 sin token, carrito creado al primer uso, suma de cantidades, 409 por stock, agotado y café propio, 404, 400 con cantidad 0, totales correctos, café eliminado que sale del carrito, usuarios sin contraseña, 403 para el Cliente y 409 al quitarse el propio rol.
+
+---
+
+## [1.18.0] - 2026-10-07
+
+Guía de pedidos del profesor (`docs/guias/guia-pedidos.md`; en el PDF, "Guía 2 — Pedidos"): el carrito se convierte en un pedido.
+
+### 🚀 Añadido
+
+- **Tablas `pedido`** (usuario, total, estado y fecha) y **`pedido_producto`** (café, cantidad y precio del momento de la compra), con la migración `AddPedidos`: `CHECK` del estado (`Pendiente`, `Pagado`, `Rechazado`) y de la cantidad, FK `RESTRICT` hacia `usuario` y `cafes`, `CASCADE` del pedido a sus productos e índice por usuario.
+- **`/api/Pedido`** como la guía: `CrearPedido`, `GetPedidos` y `GetPedido/{pedidoId}`, con `IPedidoRepository`/`PedidoRepository` y el usuario tomado del token. Adaptaciones: control de stock al crear ("No hay stock suficiente de NOMBRE (disponibles: N)." / "NOMBRE está agotado."; el stock no se descuenta) (A); pedidos más recientes primero (B); `{ mensaje, pedidoId }` en la respuesta (C); 400/409/404/200 con `{ mensaje }` (D); 409 al eliminar un café que tiene pedidos (E); `GET /api/Pedido/Todos` para el panel con nombre y correo del cliente (F).
+- **Frontend**: "Confirmar pedido" en el carrito (panel y `/carrito`) con confirmación "Se creará un pedido con N productos por $ TOTAL"; `/mis-pedidos` y `/mis-pedidos/{id}` (con sesión) con estado, aviso de pago pendiente, precios guardados y total; "Mis pedidos" en el menú de la cuenta; "Pedido no encontrado" para pedidos ajenos o inexistentes.
+- **`/admin/pedidos`**: todos los pedidos con el cliente, filtro por estado y detalle desplegable.
+- `CafeApi.http` con los endpoints de pedidos (401, 400, 200, 404, 403 y 409).
+
+### 🔄 Cambiado
+
+- "Finalizar compra" (deshabilitado) pasó a ser "Confirmar pedido".
+- La navegación del panel se envuelve en pantallas pequeñas (con cuatro secciones desbordaba a 375 px).
+- La limpieza de las e2e borra primero los pedidos de prueba y después los usuarios.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` (desarrollo y producción) sin advertencias.
+- 46 pruebas unitarias (nuevas: servicio `Pedidos`).
+- 74 pruebas e2e (nuevas en `pedidos.e2e.ts`: sin sesión, flujo completo del Cliente con un 409 simulado, pedido ajeno, panel con filtro y detalle, sin desplazamiento horizontal a 375 px; axe en todas las vistas nuevas).
+- Verificado por la API (34 comprobaciones): 401 sin token en los cuatro endpoints, 400 con el carrito vacío, pedido con dos cafés (carrito vacío, estado Pendiente, precios y total correctos, stock sin cambios), el pedido conserva el precio anterior al cambiar el del café, 409 por stock insuficiente y agotado sin crear nada, 409 por café propio, orden de "Mis pedidos", 404 para pedidos ajenos e inexistentes, 403/200 en `Todos` y 409 al borrar un café con pedidos (un café solo en carritos se sigue borrando).
+- Al terminar se borraron los pedidos y usuarios de prueba; el stock y el precio de los 25 cafés quedaron exactamente como antes y Cloudinary sin imágenes huérfanas.
