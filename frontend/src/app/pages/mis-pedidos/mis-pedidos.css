@@ -22,6 +22,17 @@ h1 {
   border-top: 1px solid var(--linea);
 }
 
+/* Fila: el enlace al detalle y, si se puede pagar, el botón "Pagar" a la derecha (fuera del enlace). */
+.lista li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.pagar {
+  padding-right: var(--esp-5);
+}
+
 /* Escritorio: número y fecha | estado | fotos | productos | total | flecha. */
 .pedido {
   display: grid;
@@ -116,6 +127,11 @@ h1 {
 
   .fotos {
     display: none;
+  }
+
+  .pagar {
+    grid-column: 1 / -1;
+    padding: 0 var(--esp-4) var(--esp-4);
   }
 
   .unidades {

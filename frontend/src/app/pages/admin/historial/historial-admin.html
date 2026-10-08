@@ -1,0 +1,175 @@
+<header class="encabezado">
+  <div>
+    <h1 class="titulo">Historial de compras</h1>
+    @if (historial.hasValue()) {
+      <p class="resumen">{{ filas().length }} {{ filas().length === 1 ? 'pedido' : 'pedidos' }} en la lista</p>
+    }
+  </div>
+</header>
+
+<!-- Indicadores: solo pedidos pagados del rango de fechas y la búsqueda (no dependen del estado). -->
+<section class="indicadores" aria-labelledby="indicadores-titulo" data-testid="indicadores">
+  <h2 id="indicadores-titulo" class="visually-hidden">Resumen de compras pagadas</h2>
+  @if (historial.hasValue()) {
+    <dl>
+      <div>
+        <dt>Compras pagadas</dt>
+        <dd data-testid="compras-pagadas">{{ historial.value().comprasPagadas }}</dd>
+      </div>
+      <div>
+        <dt>Unidades vendidas</dt>
+        <dd data-testid="unidades-vendidas">{{ historial.value().unidadesVendidas }}</dd>
+      </div>
+      <div>
+        <dt>Ingresos</dt>
+        <dd data-testid="ingresos">{{ historial.value().ingresos | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</dd>
+      </div>
+    </dl>
+  } @else {
+    <span class="esqueleto indicadores-esqueleto" aria-hidden="true"></span>
+  }
+</section>
+
+<div class="filtros" role="search" aria-label="Filtrar el historial">
+  <div class="estados" role="group" aria-label="Estado">
+    @for (e of estados; track e.valor) {
+      <button type="button" class="opcion" [attr.aria-pressed]="estado() === e.valor" (click)="estado.set(e.valor)">
+        {{ e.texto }}
+      </button>
+    }
+  </div>
+
+  <div class="campos">
+    <div>
+      <label for="historial-desde" class="etiqueta">Desde</label>
+      <input
+        id="historial-desde"
+        type="date"
+        class="campo"
+        [max]="hasta() || null"
+        [value]="desde()"
+        (change)="desde.set($any($event.target).value)"
+      />
+    </div>
+    <div>
+      <label for="historial-hasta" class="etiqueta">Hasta</label>
+      <input
+        id="historial-hasta"
+        type="date"
+        class="campo"
+        [min]="desde() || null"
+        [value]="hasta()"
+        (change)="hasta.set($any($event.target).value)"
+      />
+    </div>
+    <div class="buscar">
+      <label for="historial-buscar" class="etiqueta">Buscar</label>
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input
+        id="historial-buscar"
+        type="search"
+        class="campo"
+        placeholder="Cliente, correo o referencia"
+        autocomplete="off"
+        [value]="texto()"
+        (input)="texto.set($any($event.target).value)"
+      />
+    </div>
+  </div>
+
+  @if (hayFiltros()) {
+    <button type="button" class="enlace-texto limpiar" (click)="limpiar()">Quitar filtros</button>
+  }
+</div>
+
+@if (historial.isLoading() && !historial.hasValue()) {
+  <div class="tabla-envoltorio" aria-busy="true">
+    <p class="visually-hidden" role="status">Cargando el historial…</p>
+    @for (n of [1, 2, 3]; track n) {
+      <span class="esqueleto fila-esqueleto" aria-hidden="true"></span>
+    }
+  </div>
+} @else if (historial.error()) {
+  <app-estado-error titulo="No pudimos cargar el historial" (reintentar)="historial.reload()" />
+} @else {
+  <div class="tabla-envoltorio" [attr.aria-busy]="historial.isLoading()">
+    <table class="tabla">
+      <caption class="visually-hidden">Compras de la tienda, de la más reciente a la más antigua. Pulsa una para ver el detalle.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Referencia</th>
+          <th scope="col">Fecha y hora</th>
+          <th scope="col">Cliente</th>
+          <th scope="col" class="numero">Unidades</th>
+          <th scope="col" class="numero">Total</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of filas(); track p.id) {
+          <tr class="fila" data-testid="fila-historial" (click)="abrir(p)">
+            <td>
+              <!-- El botón hace la fila accesible con teclado; el clic en cualquier parte de la fila también abre. -->
+              <button type="button" class="referencia" [attr.aria-label]="'Ver detalle de ' + p.referenciaWompi" (click)="$event.stopPropagation(); abrir(p)">
+                {{ p.referenciaWompi }}
+              </button>
+            </td>
+            <td class="detalle-fila" data-titulo="Fecha">{{ p.fecha | date: 'dd/MM/yyyy, h:mm a' : undefined : 'es-CO' }}</td>
+            <td data-titulo="Cliente">
+              <span class="cliente">{{ p.clienteNombre }}</span>
+              <span class="correo">{{ p.clienteEmail }}</span>
+            </td>
+            <td class="numero" data-titulo="Unidades">{{ p.unidades }}</td>
+            <td class="numero" data-titulo="Total">{{ p.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</td>
+            <td><app-estado-pedido [estado]="p.estado" /></td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vacio">
+              @if (hayFiltros()) {
+                Ninguna compra coincide con los filtros.
+                <button type="button" class="enlace-texto" (click)="limpiar()">Quitar filtros</button>
+              } @else {
+                Todavía no hay compras. Cuando un cliente confirme un pedido, aparecerá aquí.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<dialog #panel appAtraparFoco class="panel" aria-labelledby="historial-panel-titulo" (click)="clicFuera($event)" data-testid="panel-compra">
+  @if (seleccionado(); as p) {
+    <div class="panel-cabecera">
+      <div>
+        <h2 id="historial-panel-titulo" class="panel-titulo">{{ p.referenciaWompi }}</h2>
+        <p class="subtitulo-panel">Pedido #{{ p.id }} · {{ p.fecha | date: "d 'de' MMMM 'de' y, h:mm a" : undefined : 'es-CO' }}</p>
+      </div>
+      <button type="button" class="boton-icono" aria-label="Cerrar detalle" (click)="cerrar()">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="panel-cuerpo">
+      <dl class="ficha">
+        <div>
+          <dt>Estado</dt>
+          <dd><app-estado-pedido [estado]="p.estado" /></dd>
+        </div>
+        <div>
+          <dt>Cliente</dt>
+          <dd>
+            <span class="cliente">{{ p.clienteNombre }}</span>
+            <span class="correo">{{ p.clienteEmail }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Transacción</dt>
+          <dd class="mono">{{ p.transactionIdWompi ?? 'Sin transacción todavía' }}</dd>
+        </div>
+      </dl>
+      <app-resumen-pedido [pedido]="p" />
+    </div>
+  }
+</dialog>

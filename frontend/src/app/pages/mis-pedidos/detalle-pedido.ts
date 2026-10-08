@@ -1,23 +1,25 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, input } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { catchError, of, throwError } from 'rxjs';
-import { unidadesDe } from '../../core/models/pedido';
+import { sePuedePagar } from '../../core/models/pedido';
 import { Pedidos } from '../../core/services/pedidos';
-import { optimizarImagenCloudinary } from '../../core/utils/imagenes';
+import { BotonPagar } from '../../shared/boton-pagar/boton-pagar';
 import { EstadoError } from '../../shared/estado-error/estado-error';
 import { EstadoPedidoEtiqueta } from '../../shared/estado-pedido/estado-pedido';
+import { ResumenPedido } from '../../shared/resumen-pedido/resumen-pedido';
 
 /**
- * Detalle de un pedido (/mis-pedidos/:id, solo con sesión): fecha, estado, cada café con el
- * precio guardado al comprar y el total. Si el pedido no existe o es de otra persona, la API
- * responde 404 y se muestra "Pedido no encontrado".
+ * Detalle de un pedido (/mis-pedidos/:id, solo con sesión): fecha, referencia, estado, cada café
+ * con el precio guardado, el total y la dirección de envío. Si está Pendiente o Rechazado, el
+ * botón "Pagar" (guía 3). Si el pedido no existe o es de otra persona, la API responde 404 y se
+ * muestra "Pedido no encontrado".
  */
 @Component({
   selector: 'app-detalle-pedido',
-  imports: [CurrencyPipe, DatePipe, RouterLink, EstadoError, EstadoPedidoEtiqueta],
+  imports: [DatePipe, RouterLink, EstadoError, EstadoPedidoEtiqueta, ResumenPedido, BotonPagar],
   templateUrl: './detalle-pedido.html',
   styleUrl: './detalle-pedido.css',
 })
@@ -40,9 +42,5 @@ export class DetallePedido {
         : of(null),
   });
 
-  protected readonly unidadesDe = unidadesDe;
-
-  protected imagen(url: string | null): string | null {
-    return optimizarImagenCloudinary(url, 'f_auto,q_auto,w_160');
-  }
+  protected readonly sePuedePagar = sePuedePagar;
 }

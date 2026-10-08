@@ -1,0 +1,73 @@
+/* "Datos de envío": diálogo centrado, como las confirmaciones, un poco más ancho. */
+.envio {
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: var(--esp-6);
+  border: 0;
+  border-radius: 24px;
+  background: var(--papel);
+  color: var(--texto);
+  box-shadow: var(--sombra-2);
+}
+
+.envio::backdrop {
+  background: rgb(19 40 31 / 0.45);
+}
+
+h2 {
+  font-size: var(--fs-600);
+}
+
+.resumen {
+  margin: var(--esp-2) 0 var(--esp-5);
+  color: var(--texto-suave);
+}
+
+.grupo {
+  margin-bottom: var(--esp-4);
+}
+
+.doble {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--esp-4);
+}
+
+.opcional {
+  color: var(--texto-suave);
+  font-weight: 500;
+}
+
+textarea.campo {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.error-api {
+  display: flex;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  border-radius: var(--radio-campo);
+  background: rgb(163 39 31 / 0.08);
+  color: var(--error);
+  font-weight: 600;
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--esp-3);
+  margin-top: var(--esp-5);
+}
+
+@media (max-width: 575.98px) {
+  .envio {
+    padding: var(--esp-5) var(--esp-4);
+  }
+
+  .doble {
+    grid-template-columns: 1fr;
+  }
+}

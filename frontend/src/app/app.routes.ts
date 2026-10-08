@@ -38,6 +38,19 @@ export const routes: Routes = [
         canMatch: [requiereSesion],
         loadComponent: () => import('./pages/mis-pedidos/detalle-pedido').then((m) => m.DetallePedido),
       },
+      {
+        // Guía 3: pasarela de pruebas (modo simulación) y resultado del pago (solo con sesión).
+        path: 'pago/simulador',
+        title: 'Pasarela de pruebas | Altura',
+        canMatch: [requiereSesion],
+        loadComponent: () => import('./pages/pago/pasarela-pruebas').then((m) => m.PasarelaPruebas),
+      },
+      {
+        path: 'pago/resultado',
+        title: 'Resultado del pago | Altura',
+        canMatch: [requiereSesion],
+        loadComponent: () => import('./pages/pago/resultado-pago').then((m) => m.ResultadoPago),
+      },
     ],
   },
   {
@@ -68,10 +81,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/admin/variedades/variedades-admin').then((m) => m.VariedadesAdmin),
       },
       {
-        path: 'pedidos',
-        title: 'Pedidos | Altura',
-        loadComponent: () => import('./pages/admin/pedidos/pedidos-admin').then((m) => m.PedidosAdmin),
+        // Historial de compras (antes "Pedidos"; la ruta vieja redirige aquí).
+        path: 'historial',
+        title: 'Historial de compras | Altura',
+        loadComponent: () => import('./pages/admin/historial/historial-admin').then((m) => m.HistorialAdmin),
       },
+      { path: 'pedidos', redirectTo: 'historial' },
       {
         path: 'usuarios',
         title: 'Usuarios | Altura',

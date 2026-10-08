@@ -1,0 +1,80 @@
+<section class="contenedor pagina" aria-labelledby="pasarela-titulo">
+  <p class="simulacion" role="note" data-testid="aviso-simulacion">
+    <i class="bi bi-cone-striped" aria-hidden="true"></i>
+    <span>
+      <strong>Modo simulación:</strong> no se procesan pagos reales. Esta pantalla reemplaza la pasarela de Wompi
+      mientras no hay llaves de Sandbox.
+    </span>
+  </p>
+
+  <h1 id="pasarela-titulo" class="titulo-seccion">Pasarela de pruebas</h1>
+
+  @if (!datosCompletos()) {
+    <div class="vacio">
+      <p>Faltan los datos del pago. Vuelve a tu pedido y pulsa "Pagar".</p>
+      <a class="boton boton-primario" routerLink="/mis-pedidos">Ver mis pedidos</a>
+    </div>
+  } @else {
+    <div class="comprobante">
+      <div class="cobro">
+        <p class="concepto">Pago del pedido #{{ pedidoId() }}</p>
+        <p class="monto" data-testid="monto-pasarela">
+          {{ totalPesos() | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+        </p>
+        <dl class="datos">
+          <div>
+            <dt>Referencia</dt>
+            <dd class="mono" data-testid="referencia-pasarela">{{ referencia() }}</dd>
+          </div>
+          <div>
+            <dt>Moneda</dt>
+            <dd>Pesos colombianos (COP)</dd>
+          </div>
+          <div>
+            <dt>Firma de integridad</dt>
+            <dd class="mono firma" [title]="firma()">{{ firma() }}</dd>
+          </div>
+        </dl>
+
+        @if (error(); as mensaje) {
+          <p class="error" role="alert">
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            {{ mensaje }}
+          </p>
+        }
+
+        <div class="acciones">
+          <button
+            type="button"
+            class="boton boton-primario boton-ancho"
+            [disabled]="procesando() !== null"
+            (click)="simular(true)"
+          >
+            <i class="bi bi-check-circle" aria-hidden="true"></i>
+            {{ procesando() === 'aprobado' ? 'Procesando…' : 'Simular pago aprobado' }}
+          </button>
+          <button
+            type="button"
+            class="boton boton-contorno boton-ancho"
+            [disabled]="procesando() !== null"
+            (click)="simular(false)"
+          >
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
+            {{ procesando() === 'rechazado' ? 'Procesando…' : 'Simular pago rechazado' }}
+          </button>
+          <a class="enlace-texto cancelar" [routerLink]="['/mis-pedidos', pedidoId()]">Cancelar</a>
+        </div>
+      </div>
+
+      <div class="pedido">
+        @if (detalle.isLoading()) {
+          <span class="esqueleto bloque-esqueleto" aria-hidden="true"></span>
+        } @else if (detalle.error()) {
+          <app-estado-error titulo="No pudimos cargar el pedido" (reintentar)="detalle.reload()" />
+        } @else if (detalle.value(); as p) {
+          <app-resumen-pedido [pedido]="p" />
+        }
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,195 @@
+/* Lo propio del historial (lo común está en lista-admin.css y formulario-admin.css). */
+
+/* ===== Indicadores: una franja con tres cifras separadas por líneas (no tres tarjetas) ===== */
+.indicadores {
+  margin-bottom: var(--esp-6);
+}
+
+.indicadores dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-block: 1px solid var(--linea-fuerte);
+}
+
+.indicadores dl > div {
+  padding: var(--esp-4) var(--esp-5);
+}
+
+.indicadores dl > div + div {
+  border-left: 1px solid var(--linea);
+}
+
+.indicadores dt {
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+.indicadores dd {
+  margin: var(--esp-1) 0 0;
+  font-size: var(--fs-600);
+  font-weight: 800;
+  font-stretch: 78%;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.indicadores-esqueleto {
+  display: block;
+  height: 5.5rem;
+}
+
+/* ===== Filtros ===== */
+.filtros {
+  display: grid;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-5);
+}
+
+.estados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.opcion {
+  min-height: 2.75rem;
+  padding: 0 var(--esp-4);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio-pildora);
+  background: var(--papel);
+  color: var(--texto);
+  font-weight: 650;
+  transition: transform var(--dur-presion) var(--ease-salida);
+}
+
+.opcion:active {
+  transform: scale(0.97);
+}
+
+.opcion[aria-pressed='true'] {
+  border-color: var(--bosque);
+  background: var(--bosque);
+  color: var(--texto-claro);
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: 11rem 11rem minmax(0, 24rem);
+  gap: var(--esp-4);
+  align-items: end;
+}
+
+/* Los campos de fecha tienen un ancho mínimo propio: sin esto desbordan a 375 px. */
+.campos > div,
+.campos .campo {
+  min-width: 0;
+}
+
+.buscar {
+  position: relative;
+}
+
+.buscar .bi-search {
+  position: absolute;
+  left: 1rem;
+  bottom: 0.9rem;
+  color: var(--texto-suave);
+  pointer-events: none;
+}
+
+.buscar .campo {
+  padding-left: 2.6rem;
+}
+
+.limpiar {
+  justify-self: start;
+  border: 0;
+  background: none;
+}
+
+/* ===== Tabla ===== */
+.fila {
+  cursor: pointer;
+}
+
+.referencia {
+  padding: 0.4rem 0;
+  border: 0;
+  background: none;
+  color: var(--bosque);
+  font-family: var(--fuente-mono);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--linea-fuerte);
+  text-underline-offset: 0.25em;
+}
+
+.cliente {
+  display: block;
+  font-weight: 650;
+}
+
+.correo {
+  display: block;
+  color: var(--texto-suave);
+}
+
+/* ===== Panel lateral ===== */
+.subtitulo-panel {
+  margin-top: var(--esp-1);
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+.ficha {
+  display: grid;
+  gap: var(--esp-3);
+  margin: 0 0 var(--esp-3);
+}
+
+.ficha div {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--esp-3);
+  align-items: baseline;
+}
+
+.ficha dt {
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+.ficha dd {
+  margin: 0;
+}
+
+.mono {
+  font-family: var(--fuente-mono);
+  font-size: var(--fs-200);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 759.98px) {
+  .indicadores dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .indicadores dl > div + div {
+    border-left: 0;
+    border-top: 1px solid var(--linea);
+  }
+
+  .campos {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .buscar {
+    grid-column: 1 / -1;
+  }
+
+  /* Sin columna de imagen: cada dato ocupa todo el ancho de la tarjeta. */
+  .tabla td:not(.celda-imagen) {
+    grid-column: 1 / -1;
+  }
+}

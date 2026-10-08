@@ -1,0 +1,54 @@
+<section class="contenedor pagina" aria-labelledby="resultado-titulo">
+  @if (resultado.isLoading()) {
+    <div class="tarjeta" aria-busy="true">
+      <h1 id="resultado-titulo" class="titulo">Confirmando tu pago…</h1>
+      <p class="visually-hidden" role="status">Confirmando el pago</p>
+      <span class="esqueleto bloque-esqueleto" aria-hidden="true"></span>
+    </div>
+  } @else if (resultado.error() || !resultado.value()) {
+    <div class="tarjeta" data-testid="resultado-desconocido">
+      <span class="sello" aria-hidden="true"><i class="bi bi-question-circle"></i></span>
+      <h1 id="resultado-titulo" class="titulo">No pudimos confirmar el pago</h1>
+      <p class="texto">Revisa el estado de tu pedido en Mis pedidos. Si ves "Pagado", todo salió bien.</p>
+      <a class="boton boton-primario" routerLink="/mis-pedidos">Ver mis pedidos</a>
+    </div>
+  } @else if (resultado.value(); as p) {
+    <div class="tarjeta" [attr.data-estado]="p.estado" data-testid="resultado-pago">
+      @switch (p.estado) {
+        @case ('Pagado') {
+          <span class="sello" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+          <h1 id="resultado-titulo" class="titulo">¡Pago aprobado!</h1>
+          <p class="texto">
+            Tu pedido <strong>#{{ p.id }}</strong> está pagado. Lo preparamos y te lo enviamos a la dirección de abajo.
+          </p>
+        }
+        @case ('Rechazado') {
+          <span class="sello" aria-hidden="true"><i class="bi bi-x-lg"></i></span>
+          <h1 id="resultado-titulo" class="titulo">El pago fue rechazado</h1>
+          <p class="texto">No se hizo ningún cobro por el pedido <strong>#{{ p.id }}</strong>. Puedes intentarlo de nuevo.</p>
+        }
+        @default {
+          <span class="sello" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span>
+          <h1 id="resultado-titulo" class="titulo">Tu pago está en proceso</h1>
+          <p class="texto">
+            Todavía no tenemos el resultado del pedido <strong>#{{ p.id }}</strong>. Revisa su estado en Mis pedidos en unos
+            minutos.
+          </p>
+        }
+      }
+
+      <div class="acciones">
+        @if (p.estado === 'Rechazado') {
+          <app-boton-pagar [pedidoId]="p.id" etiqueta="Intentar de nuevo" />
+          <a class="boton boton-contorno" routerLink="/mis-pedidos">Ver mis pedidos</a>
+        } @else {
+          <a class="boton boton-primario" routerLink="/mis-pedidos">Ver mis pedidos</a>
+        }
+      </div>
+
+      <div class="resumen">
+        <app-resumen-pedido [pedido]="p" />
+      </div>
+    </div>
+  }
+</section>
