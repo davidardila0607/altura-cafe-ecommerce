@@ -1,0 +1,23 @@
+# Lo que NO entra a la imagen de Docker de la API.
+
+# Secretos locales: nunca deben llegar a una imagen.
+appsettings.Development.json
+**/appsettings.Development.json
+.env
+*.env
+
+# Compilaciones locales (la imagen compila desde cero).
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Herramientas y archivos que la API no necesita para ejecutarse.
+seed/
+.config/
+.vs/
+*.user
+CafeApi.http
+appsettings.example.json
+Dockerfile
+.dockerignore

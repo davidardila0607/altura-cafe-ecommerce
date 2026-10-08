@@ -41,14 +41,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-var connectionString =
-    builder.Configuration.GetConnectionString("CafeDatabase");
+// ✅ Cadena de conexión: ConnectionStrings:CafeDatabase o, si no existe, la variable DATABASE_URL
+// que entrega PostgreSQL en Railway (convertida al formato de Npgsql en Data/CadenaDeConexion.cs).
+var connectionString = CadenaDeConexion.Resolver(builder.Configuration);
 
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException(
         "Falta la cadena de conexión. Configura ConnectionStrings:CafeDatabase " +
-        "(en local, appsettings.Development.json; en producción, la variable ConnectionStrings__CafeDatabase).");
+        "(en local, appsettings.Development.json) o la variable DATABASE_URL (en Railway, una referencia a la base PostgreSQL).");
 }
 
 // ✅ Sin una clave propia la API firmaría tokens con el marcador de appsettings.json.
@@ -63,6 +64,19 @@ if (string.IsNullOrWhiteSpace(claveJwt) ||
         "Falta la clave de los JWT o es demasiado corta. Configura JwtSettings:Key con 64 bytes aleatorios en Base64 " +
         "(en local, appsettings.Development.json; en producción, la variable JwtSettings__Key).");
 }
+// ✅ Sin Cloudinary, CloudinaryService falla al crearse y hasta GET /api/cafes respondería 500
+// (el controlador lo recibe en el constructor). Mejor detener el arranque con un mensaje claro.
+var cloudinary = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
+
+if (string.IsNullOrWhiteSpace(cloudinary?.CloudName) ||
+    string.IsNullOrWhiteSpace(cloudinary.ApiKey) ||
+    string.IsNullOrWhiteSpace(cloudinary.ApiSecret))
+{
+    throw new InvalidOperationException(
+        "Falta la configuración de Cloudinary. Configura CloudinarySettings:CloudName, ApiKey y ApiSecret " +
+        "(en local, appsettings.Development.json; en producción, las variables CloudinarySettings__CloudName, __ApiKey y __ApiSecret).");
+}
+
 builder.Services.Configure<CloudinarySettings>(
  builder.Configuration.GetSection("CloudinarySettings"));
 
@@ -214,6 +228,21 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// ✅ Migraciones al arrancar (opcional): si Database:AplicarMigracionesAlIniciar es true
+// (en Railway, la variable Database__AplicarMigracionesAlIniciar=true), la API aplica las
+// migraciones pendientes antes de atender peticiones. Por defecto es false: en local se
+// siguen aplicando a mano con "dotnet ef database update". Con una sola instancia (como en
+// Railway) es seguro; con varias instancias a la vez convendría aplicarlas a mano.
+if (app.Configuration.GetValue<bool>("Database:AplicarMigracionesAlIniciar"))
+{
+    using var alcance = app.Services.CreateScope();
+    var contexto = alcance.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    app.Logger.LogInformation("Aplicando las migraciones pendientes de la base de datos...");
+    contexto.Database.Migrate();
+    app.Logger.LogInformation("Migraciones aplicadas.");
+}
 
 // ✅ Swagger y OpenAPI solo en Development: en producción no se publica la documentación.
 // No hay UseHttpsRedirection: en producción el hosting (Railway) recibe el HTTPS y
