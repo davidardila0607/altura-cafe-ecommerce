@@ -562,3 +562,59 @@ Authorization: Bearer {{tokenCliente}}
 # { detail: "No se puede eliminar un café que tiene pedidos." }
 DELETE {{baseUrl}}/api/cafes/51
 Authorization: Bearer {{token}}
+
+### ===== Pagos con Wompi (guía 3, modo simulación) =====
+# Con ModoSimulado = true (appsettings) la "pasarela de pruebas" reemplaza a Wompi.
+
+### Preparar el pago sin token - 401
+POST {{baseUrl}}/api/Pedido/1/PrepararPago
+
+### Preparar el pago (Cliente) - 200 { publicKey, reference: "PEDIDO-{id}", amountInCents, currency: "COP",
+# integritySignature, redirectUrl, modoSimulado }. 404 si el pedido no existe o es de otro usuario;
+# 409 "Este pedido ya fue pagado." o "No hay stock suficiente de …"
+POST {{baseUrl}}/api/Pedido/{{crearPedido.response.body.$.pedidoId}}/PrepararPago
+Authorization: Bearer {{tokenCliente}}
+
+### Simular un pago aprobado - 200 { estado: "Pagado", transactionId: "SIM-…" } (descuenta el stock)
+# Con { "aprobado": false } → { estado: "Rechazado" }. Con ModoSimulado = false → 404.
+POST {{baseUrl}}/api/Pedido/{{crearPedido.response.body.$.pedidoId}}/SimularPago
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "aprobado": true
+}
+
+### Webhook con un checksum inválido - 401 (no cambia nada)
+# Un evento válido necesita signature.checksum = SHA-256(valores de signature.properties + timestamp + EventSecret);
+# así lo arma la pasarela de pruebas (SimularPago). Wompi lo envía solo cuando la API está publicada.
+POST {{baseUrl}}/api/Pedido/Webhook
+Content-Type: application/json
+
+{
+  "event": "transaction.updated",
+  "data": {
+    "transaction": {
+      "id": "12345-1700000000-00000",
+      "reference": "PEDIDO-1",
+      "status": "APPROVED",
+      "amount_in_cents": 4600000,
+      "currency": "COP"
+    }
+  },
+  "signature": {
+    "properties": ["transaction.id", "transaction.status", "transaction.amount_in_cents"],
+    "checksum": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "timestamp": 1700000000
+}
+
+### Confirmar un pago (modo real, ModoSimulado = false) - consulta la transacción a Wompi
+# En modo simulación responde 404.
+POST {{baseUrl}}/api/Pedido/{{crearPedido.response.body.$.pedidoId}}/ConfirmarPago
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "transactionId": "12345-1700000000-00000"
+}

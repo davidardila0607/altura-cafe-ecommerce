@@ -123,6 +123,13 @@ builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 // ✅ Guía de pedidos, paso 7: pedidos creados a partir del carrito.
 builder.Services.AddScoped<IPedidoRepository, PedidoRepository>();
 
+// ✅ Guía 3, pasos 4 y 10: configuración y servicio de Wompi (en el PDF a la línea de
+// Configure le falta el paréntesis de cierre). AddHttpClient permite a WompiService consultar
+// una transacción a la API de Wompi (ConfirmarPago, modo real).
+builder.Services.Configure<WompiSettings>(builder.Configuration.GetSection("WompiSettings"));
+builder.Services.AddScoped<IWompiService, WompiService>();
+builder.Services.AddHttpClient();
+
 // ✅ Registro del servicio Cloudinary.
 builder.Services.AddScoped<
 ICloudinaryService,

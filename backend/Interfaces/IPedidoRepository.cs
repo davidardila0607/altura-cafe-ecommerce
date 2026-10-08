@@ -20,5 +20,14 @@ namespace CafeApi.Interfaces
 
         // ✅ Adaptación F: todos los pedidos con los datos del cliente (panel de administración).
         Task<List<PedidoAdminDto>> ObtenerTodos();
+
+        // ✅ Guía 3, adaptación 4: null si el pedido se puede pagar; si no, el motivo.
+        Task<string?> ValidarPago(int usuarioId, int pedidoId);
+
+        // ✅ Guía 3, paso 12.
+        Task<WompiPagoDto?> PrepararPago(int usuarioId, int pedidoId);
+
+        // ✅ Guía 3, paso 17.
+        Task ProcesarPagoWompi(WompiWebhookDto webhook);
     }
 }
