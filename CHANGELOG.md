@@ -4,6 +4,8 @@ Todos los cambios importantes de este proyecto serán documentados aquí.
 
 El formato está basado en Keep a Changelog.
 
+Altura se inició a partir de **CafeApi** (repositorio `pablorja/CafeApi`); las primeras versiones de este registro corresponden a esa etapa. Autores: David Ardila y Pablo Santamaría.
+
 ---
 
 ## [1.0.0] - 2026-09-26
@@ -826,3 +828,33 @@ Guía 3 del profesor (Wompi Sandbox, `docs/guias/guia-3-wompi-sandbox.md`) con m
 - 79 pruebas e2e en verde (nuevas: `pagos.e2e.ts` con la compra completa, el rechazo y reintento y el historial, y las reseñas en `altura.e2e.ts`; `pedidos.e2e.ts` actualizada).
 - Verificado por la API (62 comprobaciones): datos de envío inválidos (400), referencia, firma de integridad y monto en centavos, 404/409 de PrepararPago, checksum inválido (401), aprobado con descuento de stock, evento repetido sin doble descuento, DECLINED/VOIDED/ERROR, monto o moneda distintos, reintento con referencia nueva, SimularPago aprobado y rechazado, 404 de SimularPago con `ModoSimulado = false` y del historial: 403 para el Cliente, indicadores y filtros.
 - Al terminar se borraron los pedidos y usuarios de prueba y el stock de los 25 cafés quedó exactamente como antes.
+
+---
+
+## [1.20.0] - 2026-10-08
+
+Autoría del proyecto y preparación para desplegar en Railway (sin desplegar nada todavía).
+
+### 📝 Documentación
+
+- **Autoría**: David Ardila y Pablo Santamaría (README, CLAUDE.md y este registro), conservando como hecho histórico que el proyecto se inició a partir de CafeApi.
+- **DEPLOY.md** reescrito para principiantes: un solo repositorio con dos servicios en Railway (Root Directory `backend` y `frontend`) más PostgreSQL, paso a paso con los botones de la documentación de Railway, tabla completa de variables, cuenta administradora, carga del catálogo con `-ApiBaseUrl` y problemas comunes (CORS, 404 al recargar, base de datos, variables mal escritas, logs).
+
+### 🚀 Añadido
+
+- `backend/Dockerfile` (SDK → runtime de ASP.NET, sin root) y `backend/.dockerignore`.
+- Soporte de `DATABASE_URL` de Railway (`Data/CadenaDeConexion.cs`).
+- `Database:AplicarMigracionesAlIniciar` para aplicar las migraciones al arrancar (falso por defecto).
+- `frontend/Dockerfile` (Node 24 → nginx), `frontend/nginx.conf.template` (puerto `PORT`, rutas de la SPA, caché de archivos con huella) y `frontend/.dockerignore`.
+- `frontend/herramientas/escribir-entorno.mjs`: la URL de la API sale de la variable `API_URL` al compilar.
+
+### 🔄 Cambiado
+
+- La API se detiene al arrancar con un mensaje claro si falta Cloudinary.
+- La publicación de la API ya no copia los JSON del seed.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` (producción) sin advertencias; 49 pruebas unitarias y la suite e2e en verde.
+- API publicada y ejecutada como en Railway (Production, `PORT`, `DATABASE_URL`, migraciones contra una base vacía, CORS y Wompi por variables) y build del frontend con `API_URL` servido con respaldo a `index.html`. Docker no está instalado: las imágenes se probarán en Railway.
+- Ningún archivo con secretos entra en las imágenes (`.dockerignore`) ni en los commits (`.gitignore`).

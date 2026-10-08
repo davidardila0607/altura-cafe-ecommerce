@@ -20,7 +20,9 @@ E-commerce de café de especialidad **Altura** (proyecto universitario en grupo)
 
 El proyecto está **preparado para producción pero no desplegado**: los pasos están en `DEPLOY.md`.
 
-Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El repositorio anterior (`pablorja/CafeApi`) ya no se usa. No se hace force push ni se reescribe el historial.
+**Autores**: David Ardila y Pablo Santamaría.
+
+Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El proyecto se inició a partir de CafeApi (repositorio `pablorja/CafeApi`), que ya no se usa. No se hace force push ni se reescribe el historial.
 
 ## Estructura del repositorio
 
@@ -29,17 +31,19 @@ CafeApi/
 ├── backend/                 Proyecto .NET (CafeApi.sln, CafeApi.csproj, Program.cs, Controllers/, Data/, DTOs/,
 │   │                        Interfaces/, Middleware/, Models/, Repositories/, Services/, Configurations/, Seguridad/,
 │   │                        Properties/, CafeApi.http, appsettings*.json)
+│   ├── Dockerfile, .dockerignore   Imagen de la API para Railway (ver "Preparación para producción")
 │   ├── .config/             Manifiesto de dotnet-ef (herramienta local)
 │   └── seed/                Productos de ejemplo (seed-productos.ps1 + imagenes/: SVG fuente, PNG, DISENO.md)
 │                            y fotos del sitio (subir-imagenes-sitio.ps1 + sitio/fotos.json)
 ├── frontend/                Proyecto Angular altura-web (package.json, angular.json, src/, public/, e2e/,
-│                            playwright.config.ts, herramientas/generar-paisaje.mjs)
+│                            playwright.config.ts, herramientas/: generar-paisaje.mjs, generar-bolsas.mjs,
+│                            escribir-entorno.mjs; Dockerfile, nginx.conf.template y .dockerignore para Railway)
 ├── docs/guias/              Guías del profesor (guía 1: usuarios y JWT; guía 2: carrito de compras; pedidos;
 │                            guía 3: Wompi Sandbox, implementada con modo simulación)
 ├── .gitignore               Reglas de .NET, Node/Angular y Playwright
 ├── CLAUDE.md                Esta guía
 ├── README.md                Puesta en marcha paso a paso
-├── DEPLOY.md                Pasos para desplegar (variables de entorno, migraciones, CORS, frontend)
+├── DEPLOY.md                Guía paso a paso para desplegar en Railway (servicios, variables, problemas comunes)
 └── CHANGELOG.md
 ```
 
@@ -668,19 +672,24 @@ La sección de cierre ("Llegaste a la cumbre", su texto, el botón y la foto) se
 - **Esa cuenta no puede comprar**: es dueña de todos los cafés, así que ve "Este café es tuyo" en cada uno (y la API responde 409; un pedido con un café propio también da 409). **Para probar el carrito y los pedidos se usa una cuenta Cliente** (cualquier correo que no esté en `Admin:Correos`, registrado en `/registro`).
 - Un cambio de rol (desde `/admin/usuarios` o con `UPDATE`) se aplica cuando el usuario vuelve a iniciar sesión: el token que ya tiene conserva el rol anterior hasta que expira (60 min).
 
-## Preparación para producción
+## Preparación para producción (Railway)
 
-Resumen; los pasos completos están en `DEPLOY.md`. **No se ha desplegado nada.**
+Resumen; la guía paso a paso para principiantes está en `DEPLOY.md`. **No se ha desplegado nada** (no hay cuentas ni recursos creados). Camino elegido por el equipo: **un solo repositorio con dos servicios en Railway** (Root Directory `backend` y `frontend`) más una base PostgreSQL de Railway; el de dos repositorios se menciona en una línea.
 
-- **Configuración por variables de entorno** sin código especial (ASP.NET Core ya lee `Seccion__Clave`): `ConnectionStrings__CafeDatabase`, `JwtSettings__Key`, `CloudinarySettings__CloudName`, `CloudinarySettings__ApiKey`, `CloudinarySettings__ApiSecret`, `Admin__Correos__0`, `Cors__AllowedOrigins__0`.
-- **Falla al arrancar con un mensaje claro** si falta `ConnectionStrings:CafeDatabase` o si `JwtSettings:Key` falta, es el marcador `CLAVE_SECRETA_DEL_PROYECTO` o tiene menos de 32 bytes (verificado ejecutando la DLL en Production sin esas variables).
+- **Configuración por variables de entorno** sin código especial (ASP.NET Core ya lee `Seccion__Clave`): `DATABASE_URL` (o `ConnectionStrings__CafeDatabase`), `JwtSettings__*`, `CloudinarySettings__*`, `Admin__Correos__0`, `Cors__AllowedOrigins__0`, `WompiSettings__*`, `Database__AplicarMigracionesAlIniciar`. Lista completa con ejemplos en `DEPLOY.md`.
+- **`DATABASE_URL`** (Railway, formato `postgresql://usuario:clave@host:puerto/base`): `Data/CadenaDeConexion.cs` la convierte al formato de Npgsql si no hay `ConnectionStrings:CafeDatabase` (que tiene prioridad). `SSL Mode=Prefer`: la documentación de Railway no exige un modo SSL y su red privada ya va cifrada (WireGuard); no se usa `Trust Server Certificate` porque desde Npgsql 8 está obsoleto.
+- **`Database:AplicarMigracionesAlIniciar`** (`false` por defecto; en Railway `true`): la API ejecuta `Database.Migrate()` al arrancar y lo registra en el log. Verificado contra una base vacía: crea las 7 migraciones, las 9 variedades y los 3 procesos. En la primera ejecución EF Core registra un `fail` al consultar `__EFMigrationsHistory` (aún no existe): es normal.
+- **Falla al arrancar con un mensaje claro** si falta la cadena de conexión (ni `ConnectionStrings:CafeDatabase` ni `DATABASE_URL`), si `JwtSettings:Key` falta, es el marcador `CLAVE_SECRETA_DEL_PROYECTO` o tiene menos de 32 bytes, o si falta algún dato de `CloudinarySettings` (antes, sin Cloudinary, hasta `GET /api/cafes` respondía 500 porque `CafesController` recibe `CloudinaryService` en el constructor).
 - **`PORT`** (Railway): si existe, `builder.WebHost.UseUrls("http://0.0.0.0:{PORT}")`; si no, `launchSettings.json` (verificado con `PORT=5099`).
 - **CORS**: `Cors:AllowedOrigins` (en `appsettings.json` solo `http://localhost:4200`); la política se llama `PermitirFrontend`.
 - **Swagger y OpenAPI solo en Development** (en Production `/swagger` da 404). **Sin `UseHttpsRedirection`**: el hosting recibe el HTTPS.
 - **`GET /api/health`** público: `{ "estado": "ok" }` (una línea con `app.MapGet` en `Program.cs`).
-- **Migraciones**: no se aplican al arrancar. Se aplican a mano con `dotnet ef database update --connection "<cadena de producción>"` o con `dotnet ef migrations script --idempotent` (ver `DEPLOY.md`).
-- `CafeApi.csproj` no copia `appsettings.Development.json` ni `appsettings.example.json` al publicar (antes `dotnet publish` copiaba el archivo con secretos).
-- **Frontend**: `environment.ts` (producción) con `apiBaseUrl` de marcador `https://TU-API.up.railway.app/api`; `ng build` sin advertencias. El hosting debe **redirigir todas las rutas a `index.html`** (SPA).
+- **`backend/Dockerfile`** multietapa (`mcr.microsoft.com/dotnet/sdk:10.0` compila y publica; `mcr.microsoft.com/dotnet/aspnet:10.0` ejecuta, con `USER $APP_UID`), `ASPNETCORE_ENVIRONMENT=Production` y `PORT=8080` por defecto (Railway lo reemplaza). **`backend/.dockerignore`** deja fuera `appsettings.Development.json`, `.env`, `bin`, `obj`, `seed`, `.config` y `CafeApi.http`.
+- `CafeApi.csproj` no copia `appsettings.Development.json`, `appsettings.example.json` ni `seed/**` al publicar (verificado: la publicación solo trae `appsettings.json`).
+- **Frontend**: `environment.ts` (producción) conserva el marcador `https://TU-API.up.railway.app/api`, pero **no se edita a mano**: `frontend/herramientas/escribir-entorno.mjs` escribe ahí el valor de la variable `API_URL` antes de `ng build` (valida que termine en `/api` y se detiene si falta). Se eligió esto (y no un `config.json` leído al cargar la app) porque es lo más simple: en Railway, cambiar una variable vuelve a construir el servicio, y no agrega una petición antes de arrancar Angular. El `Dockerfile` la recibe con `ARG API_URL`: según la documentación de Railway, las variables solo llegan al build si el Dockerfile las declara con `ARG`.
+- **`frontend/Dockerfile`** multietapa (`node:24-slim` hace `npm ci` y el build; `nginx:1.27-alpine` sirve `dist/altura-web/browser`). **`frontend/nginx.conf.template`**: la imagen de nginx reemplaza `${PORT}` al arrancar; `try_files $uri $uri/ /index.html` (las rutas de la SPA funcionan al recargar); caché de un año (`immutable`) para los archivos con huella (`main-…js`, `chunk-…js`, `styles-…css` y `media/`), `no-cache` para `index.html` y una hora para el resto (favicon, SVG de `public/`); `gzip` y `X-Content-Type-Options`. **`frontend/.dockerignore`** deja fuera `node_modules`, `dist`, `.angular`, `e2e` y `.env`.
+- **Sin `railway.json` / `railway.toml`**: la documentación de Railway marca *Config as Code* como obsoleto ("New services cannot opt into Config as Code"; los servicios antiguos lo leen hasta el 2026-12-01) y recomienda *Infrastructure as Code* (`.railway/railway.ts` con su CLI), que sería otra herramienta para explicar. El healthcheck (`/api/health` en la API, `/` en la tienda), el Root Directory y los Watch Paths se configuran en **Settings** de cada servicio (pasos en `DEPLOY.md`). Contradicción con el plan de trabajo (pedía `railway.json`): ganó la documentación.
+- **Verificación sin Docker** (no está instalado en el equipo y no se instaló): se publicó la API en Release y se ejecutó la DLL como en Railway (`Production`, `PORT`, `DATABASE_URL` en formato URL, migraciones al iniciar contra una base vacía, CORS con dos orígenes, `RedirectUrl` y `ModoSimulado` por variable): `/api/health` 200, Swagger 404, CORS acepta solo los orígenes configurados, 25 cafés. El frontend se compiló con `API_URL` y se sirvió con un servidor estático con la misma regla de respaldo a `index.html`: carga los cafés desde esa URL y `/productos` funciona al recargar. **Las imágenes de Docker y la configuración de nginx se probarán directamente en Railway.**
 
 ## Configuración
 
@@ -699,6 +708,8 @@ Copia `appsettings.example.json` → `appsettings.Development.json` y rellena:
 | `WompiSettings:PublicKey` / `PrivateKey` / `IntegritySecret` / `EventSecret` | Llaves de Wompi (Guía 3). Hoy, **marcadores claramente falsos** (`pub_test_SIMULADO`, `prv_test_SIMULADO`, `test_integrity_SIMULADO_local`, `test_events_SIMULADO_local`); con ellos funciona el modo simulación (la firma y el checksum se calculan igual) |
 | `WompiSettings:BaseUrl` / `RedirectUrl` | `https://sandbox.wompi.co/v1` / `http://localhost:4200/pago/resultado` |
 | `WompiSettings:ModoSimulado` | `true`: pasarela de pruebas de Altura. `false`: Wompi real (ver "Guía 3: Wompi") |
+| `Database:AplicarMigracionesAlIniciar` | `false` en local (las migraciones se aplican con `dotnet ef database update`); `true` en Railway |
+| `DATABASE_URL` (solo variable de entorno) | En Railway, referencia a la base (`${{Postgres.DATABASE_URL}}`); se usa si no hay `ConnectionStrings:CafeDatabase` |
 | `Logging:LogLevel` | `Information` / `Microsoft.AspNetCore: Warning` |
 
 Generar una `JwtSettings:Key` (PowerShell):
@@ -991,9 +1002,18 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 | El stock no se descuenta al crear el pedido, solo se comprueba | Un pedido pendiente no está pagado; el stock bajará con el pago aprobado (guía de Wompi). |
 | `pedidoId` con un segundo método (`ObtenerUltimoPedidoId`) | No cambia la firma de `CrearPedido` de la guía y se explica en una línea. |
 | Etiqueta de estado con fondo opaco | Con un tinte transparente, "Pendiente" quedaba en 4,4:1 sobre la niebla de la página (axe lo detectó); opaco queda en 5,1:1 o más. |
-| Producción: variables de entorno, `PORT`, CORS configurable, `/api/health`, migraciones manuales | Ver "Preparación para producción" y `DEPLOY.md`. Aplicar migraciones al arrancar es arriesgado con varias instancias y oculta errores de esquema. |
+| Producción: variables de entorno, `PORT`, CORS configurable, `/api/health` | Ver "Preparación para producción" y `DEPLOY.md`. |
+| Railway: un solo repositorio con dos servicios (Root Directory `backend` y `frontend`) y un `Dockerfile` en cada carpeta | Elección del equipo; cada servicio se construye solo con su carpeta y no hace falta separar el código. |
+| Migraciones al arrancar solo con `Database:AplicarMigracionesAlIniciar=true` (falso por defecto) | En Railway hay una sola instancia y evita correr `dotnet ef` contra la base remota; en local siguen siendo manuales (con varias instancias a la vez convendría volver a aplicarlas a mano). |
+| `API_URL` escrita en `environment.ts` durante el build (script + `ARG`) y no un `config.json` en tiempo de ejecución | Lo más simple de explicar; un cambio de variable en Railway ya reconstruye el servicio. |
+| nginx para la tienda | Imagen oficial pequeña que ya trae la sustitución de `${PORT}` en plantillas; la regla de SPA y las cabeceras de caché caben en un archivo corto. |
+| Sin `railway.json` | *Config as Code* está obsoleto en Railway y los servicios nuevos no lo leen; se configura en Settings. |
+| Comprobación de Cloudinary al arrancar | Sin ella, una variable faltante se veía como un 500 en `GET /api/cafes`. |
 
 ## Problemas conocidos y pendientes
+
+- **Despliegue sin probar**: Docker no está instalado en el equipo, así que las imágenes (`backend/Dockerfile`, `frontend/Dockerfile`) y la configuración de nginx no se han construido ni ejecutado; se verificarán en Railway. Lo demás (variables, `DATABASE_URL`, migraciones al iniciar, CORS, build con `API_URL`, respaldo a `index.html`) se probó en local.
+- Los nombres exactos de algunos campos de Railway (Root Directory, Healthcheck Path, Watch Paths) no aparecen literalmente en su documentación (dice "set the root directory option", "input your health endpoint"); `DEPLOY.md` lo advierte.
 
 - **Wompi real sin probar**: con `ModoSimulado = false`, el Web Checkout, la redirección y `ConfirmarPago` están implementados según la documentación, pero no se han probado contra Wompi (no hay llaves de Sandbox). Tampoco se ha recibido un webhook real (la API no está publicada).
 - **Stock y pedidos pendientes**: el stock se descuenta al aprobarse el pago, no al crear el pedido, y no se reservan unidades. Dos clientes pueden tener pedidos pendientes por las mismas últimas unidades; `PrepararPago` comprueba el stock antes de pagar, pero si dos pagos se aprueban casi a la vez, el segundo deja el café en 0 (queda en el log).

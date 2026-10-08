@@ -27,6 +27,8 @@
 	<ItemGroup>
 		<Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
 		<Content Update="appsettings.example.json" CopyToPublishDirectory="Never" />
+		<!-- Los datos del seed (catalogo.json, fotos.json) los usan los scripts, no la API. -->
+		<Content Update="seed\**" CopyToPublishDirectory="Never" />
 	</ItemGroup>
 
 </Project>
