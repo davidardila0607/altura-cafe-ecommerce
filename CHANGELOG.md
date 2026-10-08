@@ -797,3 +797,32 @@ Guía de pedidos del profesor (`docs/guias/guia-pedidos.md`; en el PDF, "Guía 2
 - 74 pruebas e2e (nuevas en `pedidos.e2e.ts`: sin sesión, flujo completo del Cliente con un 409 simulado, pedido ajeno, panel con filtro y detalle, sin desplazamiento horizontal a 375 px; axe en todas las vistas nuevas).
 - Verificado por la API (34 comprobaciones): 401 sin token en los cuatro endpoints, 400 con el carrito vacío, pedido con dos cafés (carrito vacío, estado Pendiente, precios y total correctos, stock sin cambios), el pedido conserva el precio anterior al cambiar el del café, 409 por stock insuficiente y agotado sin crear nada, 409 por café propio, orden de "Mis pedidos", 404 para pedidos ajenos e inexistentes, 403/200 en `Todos` y 409 al borrar un café con pedidos (un café solo en carritos se sigue borrando).
 - Al terminar se borraron los pedidos y usuarios de prueba; el stock y el precio de los 25 cafés quedaron exactamente como antes y Cloudinary sin imágenes huérfanas.
+
+---
+
+## [1.19.0] - 2026-10-07
+
+Guía 3 del profesor (Wompi Sandbox, `docs/guias/guia-3-wompi-sandbox.md`) con modo simulación, dirección de envío, historial de compras y reseñas en el Inicio.
+
+### 🚀 Añadido
+
+- **Guía 3 (Wompi)**: `WompiSettings` (con `ModoSimulado`), referencia `PEDIDO-{id}` en cada pedido (migración `AddWompi`, índice único), `WompiService` con la firma de integridad y la **validación real del checksum** de los eventos, `POST /api/Pedido/{id}/PrepararPago`, `POST /api/Pedido/Webhook` y `ProcesarPagoWompi`. Adaptaciones: 404/409 al preparar el pago, reintento de un pago rechazado con referencia nueva (`PEDIDO-15-2`), monto y moneda verificados, VOIDED y ERROR como rechazo, y **descuento de stock al aprobarse el pago** (una sola vez).
+- **Modo simulación**: `POST /api/Pedido/{id}/SimularPago` arma y firma el evento de Wompi y lo procesa por el mismo camino del webhook; pasarela de pruebas `/pago/simulador` y página de resultado `/pago/resultado` (aprobado, rechazado con "Intentar de nuevo", en proceso). Para Wompi real: Web Checkout y `POST /api/Pedido/{id}/ConfirmarPago` (implementados, sin probar contra Wompi).
+- **Dirección de envío**: `DatosEnvioDto` en `CrearPedido` (migración `AddDireccionPedido`; pedidos anteriores con "No registrada") y formulario "Datos de envío" al confirmar el pedido, con los 32 departamentos y Bogotá D.C.
+- **Botón "Pagar"** en el detalle del pedido y en Mis pedidos.
+- **Historial de compras** (`/admin/historial`, antes `/admin/pedidos`): `GET /api/Pedido/Historial` con filtros por estado, fechas y texto e indicadores de compras pagadas, unidades vendidas e ingresos; panel lateral con el resumen completo de cada compra.
+- **Reseñas en el Inicio**: "Lo que dicen de Altura" reemplaza al cierre "Llegaste a la cumbre"; 10 reseñas de ejemplo (ficticias) en una rueda vertical en bucle con pausa (mouse, foco y botón) y, con movimiento reducido, de 3 en 3 con Anterior/Siguiente.
+- `CafeApi.http` con los endpoints de pago e historial; `DEPLOY.md` con las variables `WompiSettings__*` y la URL de eventos.
+
+### 🔄 Cambiado
+
+- `POST /api/Pedido/CrearPedido` exige los datos de envío en el cuerpo.
+- `GET /api/Pedido/Todos` se reemplazó por `GET /api/Pedido/Historial`.
+- La lista del carrito ya no tiene la confirmación simple: "Confirmar pedido" abre el formulario de envío.
+
+### ✅ Calidad
+
+- `dotnet build` y `ng build` (desarrollo y producción) sin advertencias; 49 pruebas unitarias.
+- 79 pruebas e2e en verde (nuevas: `pagos.e2e.ts` con la compra completa, el rechazo y reintento y el historial, y las reseñas en `altura.e2e.ts`; `pedidos.e2e.ts` actualizada).
+- Verificado por la API (62 comprobaciones): datos de envío inválidos (400), referencia, firma de integridad y monto en centavos, 404/409 de PrepararPago, checksum inválido (401), aprobado con descuento de stock, evento repetido sin doble descuento, DECLINED/VOIDED/ERROR, monto o moneda distintos, reintento con referencia nueva, SimularPago aprobado y rechazado, 404 de SimularPago con `ModoSimulado = false` y del historial: 403 para el Cliente, indicadores y filtros.
+- Al terminar se borraron los pedidos y usuarios de prueba y el stock de los 25 cafés quedó exactamente como antes.
