@@ -1,0 +1,132 @@
+<dialog
+  #dialogo
+  appAtraparFoco
+  class="envio"
+  data-testid="formulario-envio"
+  [attr.aria-labelledby]="id + '-titulo'"
+  [attr.aria-describedby]="id + '-resumen'"
+>
+  <form [formGroup]="formulario" novalidate (ngSubmit)="confirmar()">
+    <h2 [id]="id + '-titulo'">Datos de envío</h2>
+    <p [id]="id + '-resumen'" class="resumen">
+      Se creará un pedido con {{ productosTexto() }} por
+      {{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}. Tu carrito quedará vacío y podrás pagarlo
+      enseguida.
+    </p>
+
+    <div class="grupo">
+      <label [for]="id + '-direccion'" class="etiqueta">Dirección</label>
+      <input
+        [id]="id + '-direccion'"
+        class="campo"
+        formControlName="direccionEnvio"
+        autocomplete="street-address"
+        maxlength="200"
+        placeholder="Calle 45 # 12-30, apto 402"
+        [attr.aria-invalid]="mostrarError('direccionEnvio')"
+        [attr.aria-describedby]="id + '-direccion-error'"
+      />
+      <p [id]="id + '-direccion-error'" class="mensaje-error">
+        @if (mostrarError('direccionEnvio')) {
+          Escribe la dirección de entrega (máximo 200 caracteres).
+        }
+      </p>
+    </div>
+
+    <div class="doble">
+      <div class="grupo">
+        <label [for]="id + '-ciudad'" class="etiqueta">Ciudad o municipio</label>
+        <input
+          [id]="id + '-ciudad'"
+          class="campo"
+          formControlName="ciudad"
+          autocomplete="address-level2"
+          maxlength="80"
+          [attr.aria-invalid]="mostrarError('ciudad')"
+          [attr.aria-describedby]="id + '-ciudad-error'"
+        />
+        <p [id]="id + '-ciudad-error'" class="mensaje-error">
+          @if (mostrarError('ciudad')) {
+            Escribe la ciudad o el municipio.
+          }
+        </p>
+      </div>
+
+      <div class="grupo">
+        <label [for]="id + '-departamento'" class="etiqueta">Departamento</label>
+        <select
+          [id]="id + '-departamento'"
+          class="campo"
+          formControlName="departamento"
+          autocomplete="address-level1"
+          [attr.aria-invalid]="mostrarError('departamento')"
+          [attr.aria-describedby]="id + '-departamento-error'"
+        >
+          <option value="" disabled>Elige uno</option>
+          @for (d of departamentos; track d) {
+            <option [value]="d">{{ d }}</option>
+          }
+        </select>
+        <p [id]="id + '-departamento-error'" class="mensaje-error">
+          @if (mostrarError('departamento')) {
+            Elige el departamento.
+          }
+        </p>
+      </div>
+    </div>
+
+    <div class="grupo">
+      <label [for]="id + '-telefono'" class="etiqueta">Teléfono de contacto</label>
+      <input
+        [id]="id + '-telefono'"
+        class="campo"
+        formControlName="telefono"
+        type="tel"
+        inputmode="numeric"
+        autocomplete="tel-national"
+        maxlength="20"
+        placeholder="300 123 4567"
+        [attr.aria-invalid]="mostrarError('telefono')"
+        [attr.aria-describedby]="id + '-telefono-error'"
+      />
+      <p [id]="id + '-telefono-error'" class="mensaje-error">
+        @if (mostrarError('telefono')) {
+          Escribe un teléfono de 7 a 15 dígitos, solo números.
+        }
+      </p>
+    </div>
+
+    <div class="grupo">
+      <label [for]="id + '-notas'" class="etiqueta">Notas para la entrega <span class="opcional">(opcional)</span></label>
+      <textarea
+        [id]="id + '-notas'"
+        class="campo"
+        formControlName="notasEntrega"
+        maxlength="300"
+        rows="2"
+        placeholder="Torre, portería, horario…"
+        [attr.aria-invalid]="mostrarError('notasEntrega')"
+        [attr.aria-describedby]="id + '-notas-error'"
+      ></textarea>
+      <p [id]="id + '-notas-error'" class="mensaje-error">
+        @if (mostrarError('notasEntrega')) {
+          Las notas no pueden superar los 300 caracteres.
+        }
+      </p>
+    </div>
+
+    @if (error(); as mensaje) {
+      <p class="error-api" role="alert">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        {{ mensaje }}
+      </p>
+    }
+
+    <div class="botones">
+      <button type="button" class="boton boton-contorno" (click)="cerrar()">Cancelar</button>
+      <button type="submit" class="boton boton-primario" [disabled]="enviando()">
+        {{ enviando() ? 'Creando pedido…' : 'Confirmar pedido' }}
+      </button>
+    </div>
+  </form>
+</dialog>

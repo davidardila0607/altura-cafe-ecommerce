@@ -6,7 +6,8 @@ namespace CafeApi.Interfaces
     // CrearPedido devuelve un texto (como la guía); PedidoController lo traduce a un código HTTP.
     public interface IPedidoRepository
     {
-        Task<string> CrearPedido(int usuarioId);
+        // Adaptación (dirección de envío): la guía solo recibe usuarioId.
+        Task<string> CrearPedido(int usuarioId, DatosEnvioDto datos);
 
         Task<List<PedidoDto>> ObtenerPedidos(int usuarioId);
 
@@ -18,7 +19,17 @@ namespace CafeApi.Interfaces
         // para que el frontend pueda abrirlo.
         Task<int?> ObtenerUltimoPedidoId(int usuarioId);
 
-        // ✅ Adaptación F: todos los pedidos con los datos del cliente (panel de administración).
-        Task<List<PedidoAdminDto>> ObtenerTodos();
+        // ✅ Historial de compras del panel (reemplaza a ObtenerTodos, adaptación F):
+        // filtros opcionales e indicadores de las compras pagadas.
+        Task<HistorialDto> ObtenerHistorial(string? estado, DateOnly? desde, DateOnly? hasta, string? texto);
+
+        // ✅ Guía 3, adaptación 4: null si el pedido se puede pagar; si no, el motivo.
+        Task<string?> ValidarPago(int usuarioId, int pedidoId);
+
+        // ✅ Guía 3, paso 12.
+        Task<WompiPagoDto?> PrepararPago(int usuarioId, int pedidoId);
+
+        // ✅ Guía 3, paso 17.
+        Task ProcesarPagoWompi(WompiWebhookDto webhook);
     }
 }

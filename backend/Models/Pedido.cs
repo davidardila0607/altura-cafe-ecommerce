@@ -19,5 +19,18 @@ namespace CafeApi.Models
         public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
         public ICollection<PedidoProducto> Productos { get; set; } = new List<PedidoProducto>();
+
+        // ✅ Guía 3, paso 6: referencia con la que Wompi identifica el pago ("PEDIDO-15") y el id
+        // de la última transacción que nos informó. Si un pago se rechaza y se reintenta, la
+        // referencia cambia a "PEDIDO-15-2" (Wompi no deja reutilizar una referencia ya usada).
+        public string ReferenciaWompi { get; set; } = string.Empty;
+        public string? TransactionIdWompi { get; set; }
+
+        // ✅ Adaptación a la guía de pedidos: adónde se envía el café (llega en DatosEnvioDto).
+        public string DireccionEnvio { get; set; } = string.Empty;
+        public string Ciudad { get; set; } = string.Empty;
+        public string Departamento { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
+        public string? NotasEntrega { get; set; }
     }
 }

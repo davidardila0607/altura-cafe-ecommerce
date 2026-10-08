@@ -20,51 +20,25 @@
     </header>
     <p class="fecha">
       Creado el {{ p.fecha | date: "d 'de' MMMM 'de' y, h:mm a" : undefined : 'es-CO' }}
+      <span class="referencia">Referencia {{ p.referenciaWompi }}</span>
     </p>
 
-    @if (p.estado === 'Pendiente') {
-      <p class="pago-pendiente" role="note" data-testid="pago-pendiente">
-        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-        <span><strong>Pago pendiente.</strong> El pago en línea estará disponible pronto.</span>
-      </p>
+    @if (sePuedePagar(p)) {
+      <div class="pago" [class.rechazado]="p.estado === 'Rechazado'" data-testid="pago-pendiente">
+        <i class="bi" [class]="p.estado === 'Rechazado' ? 'bi bi-x-circle' : 'bi bi-hourglass-split'" aria-hidden="true"></i>
+        <p>
+          @if (p.estado === 'Rechazado') {
+            <strong>El último intento de pago fue rechazado.</strong> No se hizo ningún cobro; puedes intentarlo de nuevo.
+          } @else {
+            <strong>Pago pendiente.</strong> Paga ahora para que preparemos tu café.
+          }
+        </p>
+        <app-boton-pagar [pedidoId]="p.id" [etiqueta]="p.estado === 'Rechazado' ? 'Intentar de nuevo' : 'Pagar'" />
+      </div>
     }
 
     <div class="tarjeta">
-      <h2 class="visually-hidden">Cafés del pedido</h2>
-      <ul class="lineas">
-        @for (item of p.productos; track item.productoId) {
-          <li class="linea" data-testid="linea-pedido">
-            <div class="foto">
-              @if (imagen(item.imagenUrl); as url) {
-                <img [src]="url" alt="" width="160" height="200" loading="lazy" decoding="async" />
-              } @else {
-                <i class="bi bi-cup-hot" aria-hidden="true"></i>
-              }
-            </div>
-            <div class="info">
-              <h3 class="nombre">{{ item.nombre }}</h3>
-              <p class="detalle">
-                {{ item.cantidad }} × {{ item.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
-              </p>
-            </div>
-            <p class="subtotal" data-testid="subtotal-pedido">
-              <span class="visually-hidden">Subtotal: </span>
-              {{ item.precio * item.cantidad | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
-            </p>
-          </li>
-        }
-      </ul>
-
-      <dl class="resumen">
-        <div>
-          <dt>Productos</dt>
-          <dd>{{ unidadesDe(p) }}</dd>
-        </div>
-        <div class="total">
-          <dt>Total</dt>
-          <dd data-testid="total-pedido">{{ p.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</dd>
-        </div>
-      </dl>
+      <app-resumen-pedido [pedido]="p" />
       <p class="nota">Los precios son los del momento en que hiciste el pedido.</p>
     </div>
   } @else {

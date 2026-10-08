@@ -8,7 +8,7 @@ import { refrescarScroll } from '../../core/utils/gsap';
 import { VistaRapida } from '../../shared/vista-rapida/vista-rapida';
 import { Altimetro } from './altimetro/altimetro';
 import { CintaNotas } from './cinta-notas/cinta-notas';
-import { Cierre } from './cierre/cierre';
+import { Resenas } from './resenas/resenas';
 import { Destacados } from './destacados/destacados';
 import { Hero } from './hero/hero';
 import { Origenes } from './origenes/origenes';
@@ -21,7 +21,7 @@ import { Variedades } from './variedades/variedades';
  */
 @Component({
   selector: 'app-inicio',
-  imports: [Hero, Altimetro, Destacados, Proceso, CintaNotas, Origenes, Variedades, Cierre, VistaRapida],
+  imports: [Hero, Altimetro, Destacados, Proceso, CintaNotas, Origenes, Variedades, Resenas, VistaRapida],
   template: `
     <app-hero data-etapa="valle" />
 
@@ -55,7 +55,8 @@ import { Variedades } from './variedades/variedades';
       (reintentar)="variedades.reload()"
     />
 
-    <app-cierre data-etapa="cumbre" />
+    <!-- Cumbre: reseñas de clientes (antes, "Llegaste a la cumbre"). -->
+    <app-resenas data-etapa="cumbre" />
 
     <app-altimetro />
 

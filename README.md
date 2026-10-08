@@ -3,7 +3,7 @@
 E-commerce de café de especialidad colombiano **Altura**:
 
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
-- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT), **carrito de compras** (Guía 2), **pedidos** (guía de pedidos: confirmar el carrito, "Mis pedidos") y un **panel de administración** en `/admin` (inventario, variedades, pedidos y usuarios) para el rol Administrador.
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT), **carrito de compras** (Guía 2), **pedidos con dirección de envío** (guía de pedidos), **pagos** (Guía 3, Wompi, hoy en **modo simulación** con una pasarela de pruebas propia), un cierre del Inicio con **reseñas de clientes** (de ejemplo) y un **panel de administración** en `/admin` (inventario, variedades, historial de compras y usuarios) para el rol Administrador.
 
 El proyecto está preparado para producción, pero todavía **no está desplegado**: los pasos están en [DEPLOY.md](DEPLOY.md).
 
@@ -111,6 +111,7 @@ Abre `appsettings.Development.json` y rellena:
 | `JwtSettings:Issuer` / `Audience` / `DurationInMinutes` | `EcommerceApi` / `EcommerceAngular` / `60` (ya vienen en el ejemplo) |
 | `Admin:Correos` | Los correos que deben registrarse como **Administrador**. Incluye la cuenta compartida: `["desarrollo.testing@gmail.com"]`. Cualquier otro correo queda como Cliente |
 | `CloudinarySettings:CloudName` / `ApiKey` / `ApiSecret` | Credenciales de tu cuenta de Cloudinary |
+| `WompiSettings` | Ya viene en el ejemplo con **marcadores falsos** y `ModoSimulado: true` (pasarela de pruebas). No hace falta cambiarlo; ver [Pagos: modo simulación y Wompi real](#-pagos-modo-simulación-y-wompi-real) |
 
 Para generar la `JwtSettings:Key` en PowerShell (copia el resultado en `appsettings.Development.json`; no lo compartas ni lo subas a Git):
 
@@ -226,7 +227,7 @@ $env:ALTURA_ADMIN_EMAIL = 'e2e-admin@altura.test'; $env:ALTURA_ADMIN_PASSWORD = 
 npm run e2e
 ```
 
-Registran Clientes nuevos desde `/registro` (uno de ellos prueba todo el carrito y otros dos, los pedidos), y crean y borran cafés, una variedad y una imagen en Cloudinary (todo con "e2e" en el nombre). Los pedidos y los usuarios de prueba se borran después en PostgreSQL (los carritos se borran con los usuarios; los pedidos hay que borrarlos antes):
+Registran Clientes nuevos (uno prueba todo el carrito, dos los pedidos y uno el pago con la pasarela de pruebas, que descuenta stock y lo devuelve al terminar), y crean y borran cafés, una variedad y una imagen en Cloudinary (todo con "e2e" en el nombre). Los pedidos y los usuarios de prueba se borran después en PostgreSQL (los carritos se borran con los usuarios; los pedidos hay que borrarlos antes):
 
 ```sql
 DELETE FROM pedido WHERE usuario_id IN (SELECT id FROM usuario WHERE email LIKE 'e2e-%@altura.test');
@@ -255,14 +256,34 @@ En Swagger o `backend/CafeApi.http` están las 5 rutas de `/api/Carrito` con el 
 ## 🧾 Probar un pedido con una cuenta Cliente
 
 1. Con la misma cuenta Cliente, agrega dos cafés al carrito (por ejemplo, 2 unidades de uno y 1 de otro).
-2. Abre el carrito (panel lateral o `/carrito`) y pulsa **Confirmar pedido**. Aparece la confirmación "Se creará un pedido con 3 productos por $ …"; confírmala.
-3. Llegas a `/mis-pedidos/{número}` con el aviso "Pedido creado": estado **Pendiente**, el aviso "Pago pendiente. El pago en línea estará disponible pronto.", cada café con su precio y su subtotal, y el total. El número del carrito vuelve a 0.
-4. En el menú de tu cuenta → **Mis pedidos** ves la lista (el más reciente primero).
-5. El precio queda guardado: si el administrador cambia el precio de un café, tu pedido sigue mostrando el anterior. El stock **no** baja todavía: se descontará cuando el pago se apruebe (guía de Wompi).
-6. Si mientras tanto el stock de un café bajó por debajo de lo que tienes en el carrito, el pedido no se crea y ves "No hay stock suficiente de … (disponibles: N)."; tu carrito queda igual.
-7. Con una cuenta **Administrador**, en `/admin/pedidos` ves todos los pedidos con el nombre y el correo del cliente, filtras por estado y despliegas el detalle de cada uno.
+2. Abre el carrito (panel lateral o `/carrito`) y pulsa **Confirmar pedido**. Se abre **"Datos de envío"**: dirección, ciudad, departamento, teléfono (7 a 15 dígitos) y notas opcionales. Si dejas algo vacío, el formulario te dice qué falta.
+3. Pulsa **Confirmar pedido**: llegas a `/mis-pedidos/{número}` con el aviso "Pedido creado": estado **Pendiente**, la referencia (`PEDIDO-{número}`), el botón **Pagar**, cada café con su precio y su subtotal, el total y la dirección. El número del carrito vuelve a 0.
+4. Pulsa **Pagar**: como estamos en modo simulación, abre la **Pasarela de pruebas** de Altura (con el aviso "Modo simulación: no se procesan pagos reales…"), con la referencia, el total y la firma de integridad.
+5. Pulsa **Simular pago aprobado**: verás "¡Pago aprobado!" con la dirección y el total. El pedido queda **Pagado** y el stock de esos cafés baja.
+6. Para probar un rechazo, haz otro pedido y pulsa **Simular pago rechazado**: verás "El pago fue rechazado" y el botón **Intentar de nuevo** (abre la pasarela otra vez, con la referencia `PEDIDO-{número}-2`).
+7. En el menú de tu cuenta → **Mis pedidos** ves la lista (el más reciente primero); los pendientes y rechazados tienen "Pagar".
+8. El precio queda guardado: si el administrador cambia el precio de un café, tu pedido sigue mostrando el anterior.
+9. Con una cuenta **Administrador**, en **Panel → Historial** ves los indicadores (compras pagadas, unidades vendidas e ingresos), filtras por estado, fechas o texto (cliente, correo o referencia) y, al pulsar una compra, ves el panel con el cliente, la dirección, el teléfono, las notas, los cafés, el total y la transacción.
+
+Para dejar el stock como estaba después de probar, cambia el stock de esos cafés desde **Panel → Inventario**.
 
 En Swagger o `backend/CafeApi.http` están las rutas de `/api/Pedido` (con los casos 400, 401, 403, 404 y 409).
+
+## 💳 Pagos: modo simulación y Wompi real
+
+La Guía 3 integra **Wompi Sandbox**, pero el panel de Wompi exige activar un comercio real y no tenemos llaves. Por eso la API tiene `WompiSettings:ModoSimulado`:
+
+- **`true` (como viene)**: "Pagar" abre la **pasarela de pruebas** de Altura. Sus botones llaman a `POST /api/Pedido/{id}/SimularPago`, que arma el mismo evento que enviaría Wompi, lo firma con el `EventSecret` configurado y lo procesa por el mismo camino del webhook real (validación del checksum, cambio de estado y descuento de stock). No se procesan pagos reales.
+- **`false`**: "Pagar" va al **Web Checkout de Wompi** y el resultado llega por el webhook `POST /api/Pedido/Webhook`.
+
+Para pasar a Wompi real:
+
+1. En el panel de Wompi (*Desarrollo → Programadores → Sandbox*), copia las 4 llaves: pública (`pub_test_…`), privada (`prv_test_…`), de integridad (`test_integrity_…`) y de eventos (`test_events_…`).
+2. Pégalas en `WompiSettings` de `backend/appsettings.Development.json` (nunca en `appsettings.json`) y pon `"ModoSimulado": false`.
+3. `RedirectUrl` debe ser la URL del frontend + `/pago/resultado`.
+4. Publica la API y, en Wompi, pon la **URL de eventos**: `https://TU-API/api/Pedido/Webhook` (ver [DEPLOY.md](DEPLOY.md)).
+
+El modo real está implementado según la documentación de Wompi, pero todavía no se ha probado contra Wompi.
 
 ---
 
@@ -275,15 +296,17 @@ En Swagger o `backend/CafeApi.http` están las rutas de `/api/Pedido` (con los c
 | `/login` | Iniciar sesión (`POST /api/auth/Login`); vuelve a la página anterior |
 | `/registro` | Crear cuenta (`POST /api/auth/Register`) |
 | `/carrito` | Carrito (con sesión): cantidades, subtotales, total, quitar, vaciar y "Confirmar pedido" |
-| `/mis-pedidos` · `/mis-pedidos/{id}` | Pedidos del usuario (con sesión) y el detalle de uno |
-| `/admin/inventario` · `/admin/variedades` · `/admin/pedidos` · `/admin/usuarios` | Panel: cafés (con imagen), variedades, todos los pedidos (filtro por estado) y usuarios (cambio de rol) |
+| `/mis-pedidos` · `/mis-pedidos/{id}` | Pedidos del usuario (con sesión) y el detalle de uno, con "Pagar" |
+| `/pago/simulador` · `/pago/resultado` | Pasarela de pruebas (modo simulación) y resultado del pago |
+| `/admin/inventario` · `/admin/variedades` · `/admin/historial` · `/admin/usuarios` | Panel: cafés (con imagen), variedades, historial de compras (indicadores, filtros y detalle) y usuarios (cambio de rol) |
 
 - Productos, variedades, procesos y presentaciones vienen de la API; nada de eso está escrito en el código (solo los textos de marca y los colores de cada variedad y proceso).
 - El buscador del navbar lleva a `/productos?q=…` desde cualquier vista y filtra por nombre, origen, variedad o proceso sin importar tildes ni mayúsculas (por ejemplo, "honey" o "narino").
 - Los filtros y el orden viven en la URL (por ejemplo `/productos?variedad=caturra&proceso=lavado&presentacion=500`): se pueden compartir y sobreviven a recargar. Cada café muestra su variedad (muestra de color) y su proceso (etiqueta con ícono).
 - "Ver producto" (o cualquier clic en la card) abre la vista rápida: la bolsa "vuela" desde la card y el panel toma el color de la variedad.
 - **Carrito** (Guía 2): cada card y la vista rápida tienen selector de cantidad y "Agregar"; el ícono del navbar muestra las unidades y abre un panel lateral; `/carrito` muestra todo con el total. Si el café es tuyo, está agotado o ya tienes todas sus unidades, el botón lo dice y queda deshabilitado.
-- **Pedidos**: "Confirmar pedido" convierte el carrito en un pedido "Pendiente" (con confirmación) y lleva a su detalle; "Mis pedidos" está en el menú de la cuenta.
+- **Pedidos y pagos**: "Confirmar pedido" pide los datos de envío, convierte el carrito en un pedido "Pendiente" y lleva a su detalle, donde está "Pagar"; "Mis pedidos" está en el menú de la cuenta.
+- **Reseñas**: el Inicio cierra con "Lo que dicen de Altura", 10 reseñas de ejemplo (ficticias) que suben despacio en una rueda; se pausa con el mouse, el teclado o el botón "Pausar reseñas", y con "reducir movimiento" se ven de 3 en 3 con Anterior/Siguiente.
 - Precios en pesos colombianos (`$ 42.000`); disponibilidad "N disponibles", "Quedan N" (5 o menos) o "Agotado".
 - Registro e inicio de sesión reales: la sesión se guarda en el navegador (`localStorage`) y dura lo que el token (60 minutos). Con sesión, el navbar muestra tu inicial y un menú con tu nombre, tu correo, "Mis pedidos", "Panel de administración" (solo Administrador) y "Cerrar sesión".
 - Todo respeta "reducir movimiento" (la página es igual de completa, sin animaciones de desplazamiento) y funciona con teclado.
@@ -293,7 +316,7 @@ En Swagger o `backend/CafeApi.http` están las rutas de `/api/Pedido` (con los c
 
 1. Inicia sesión en `/login` con una cuenta **Administrador** y abre el menú de tu cuenta → **"Panel de administración"** (también: footer → "Acceso administrador", o http://localhost:4200/admin). Sin sesión, te lleva a `/login`; una cuenta Cliente ve "No tienes permiso".
 2. En la tabla, la columna **"Creado por"** muestra quién creó cada café.
-3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés); en **Pedidos**, ver todos los pedidos con su cliente, filtrar por estado y desplegar el detalle; en **Usuarios**, buscar por nombre o correo y cambiar el rol (Administrador ↔ Cliente) con confirmación. Nadie puede quitarse su propio rol, y el rol nuevo se aplica la próxima vez que el usuario inicia sesión.
+3. En **Inventario** puedes buscar, crear, editar (con variedad, **proceso** e imagen jpg/png/webp de hasta 5 MB) y eliminar cafés; en **Variedades**, crear, editar y eliminar (no se puede eliminar una variedad que tiene cafés); en **Historial**, ver las compras con sus indicadores, filtrarlas y abrir el detalle de cada una; en **Usuarios**, buscar por nombre o correo y cambiar el rol (Administrador ↔ Cliente) con confirmación. Nadie puede quitarse su propio rol, y el rol nuevo se aplica la próxima vez que el usuario inicia sesión.
 4. Los cambios se ven en el Inicio y en Productos al recargar. La sesión se cierra sola cuando vence el token o con "Cerrar sesión".
 
 ---
@@ -324,10 +347,14 @@ En Swagger o `backend/CafeApi.http` están las rutas de `/api/Pedido` (con los c
 | PUT | `/api/Carrito/ActualizarCarrito` | Usuario autenticado (404 si no está en el carrito; 409 si supera el stock) |
 | DELETE | `/api/Carrito/EliminarProducto/{productId}` | Usuario autenticado (404 si no está en el carrito) |
 | DELETE | `/api/Carrito/VaciarCarrito` | Usuario autenticado |
-| POST | `/api/Pedido/CrearPedido` | Usuario autenticado (200 `{ mensaje, pedidoId }`; 400 carrito vacío; 409 café propio o sin stock) |
+| POST | `/api/Pedido/CrearPedido` | Usuario autenticado; cuerpo con los datos de envío (200 `{ mensaje, pedidoId }`; 400 datos inválidos o carrito vacío; 409 café propio o sin stock) |
 | GET | `/api/Pedido/GetPedidos` | Usuario autenticado (sus pedidos, el más reciente primero) |
 | GET | `/api/Pedido/GetPedido/{pedidoId}` | Usuario autenticado (404 si no existe o es de otro usuario) |
-| GET | `/api/Pedido/Todos` | Administrador (todos los pedidos con el nombre y el correo del cliente) |
+| GET | `/api/Pedido/Historial` | Administrador (`?estado=&desde=&hasta=&texto=`; indicadores y compras con cliente, envío y productos) |
+| POST | `/api/Pedido/{id}/PrepararPago` | Usuario autenticado (datos firmados para pagar; 404 si es ajeno; 409 si ya está pagado o sin stock) |
+| POST | `/api/Pedido/Webhook` | Público, protegido por el checksum de Wompi (401 si no coincide) |
+| POST | `/api/Pedido/{id}/SimularPago` | Usuario autenticado, solo en modo simulación (`{ "aprobado": true }`) |
+| POST | `/api/Pedido/{id}/ConfirmarPago` | Usuario autenticado, solo con Wompi real (consulta la transacción a Wompi) |
 | GET | `/api/usuarios` | Administrador (sin contraseñas) |
 | PUT | `/api/usuarios/{id}/rol` | Administrador (`{ "rol": "Cliente" }`; 409 si es tu propio rol) |
 | GET | `/api/health` | Público (`{ "estado": "ok" }`) |
@@ -349,7 +376,7 @@ En Swagger o `backend/CafeApi.http` están las rutas de `/api/Pedido` (con los c
 
 ### pedido y pedido_producto (guía de pedidos)
 
-- `pedido`: `id`, `usuario_id`, `total` (pesos sin decimales), `estado` (`Pendiente`, `Pagado` o `Rechazado`; hoy todos nacen `Pendiente`), `fecha` (UTC).
+- `pedido`: `id`, `usuario_id`, `total` (pesos sin decimales), `estado` (`Pendiente`, `Pagado` o `Rechazado`; nace `Pendiente` y el pago lo cambia), `fecha` (UTC), `referencia_wompi` (`PEDIDO-{id}`, única), `transaction_id_wompi`, y los datos de envío: `direccion_envio`, `ciudad`, `departamento`, `telefono` y `notas_entrega`.
 - `pedido_producto`: `id`, `pedido_id`, `producto_id` (el café), `cantidad` (≥ 1) y `precio` (el del momento de la compra). Un café que aparece en un pedido no se puede borrar (409), para conservar el historial.
 
 ### variedades
@@ -425,7 +452,8 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 
 ## 🚧 Próximos Pasos
 
-- Pagos con Wompi (guía 3): el pedido pasará a "Pagado" o "Rechazado" y se descontará el stock
+- Probar Wompi real cuando haya llaves de Sandbox (hoy funciona el modo simulación)
+- Cancelar pedidos, seguimiento del envío y facturación
 - Login con Google, cambio y recuperación de contraseña
 - Desplegar siguiendo [DEPLOY.md](DEPLOY.md)
 

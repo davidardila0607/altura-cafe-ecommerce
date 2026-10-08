@@ -1,6 +1,6 @@
 /**
- * Pedidos (guía de pedidos). Coinciden con los DTOs del backend (JSON en camelCase):
- * PedidoDto, PedidoProductoDto y PedidoAdminDto.
+ * Pedidos (guía de pedidos y guía 3). Coinciden con los DTOs del backend (JSON en camelCase):
+ * PedidoDto, PedidoProductoDto, PedidoAdminDto, HistorialDto y DatosEnvioDto.
  */
 export type EstadoPedido = 'Pendiente' | 'Pagado' | 'Rechazado';
 
@@ -20,13 +20,47 @@ export interface PedidoDto {
   fecha: string;
   estado: EstadoPedido;
   total: number;
+  /** Referencia del pago ante Wompi: "PEDIDO-15" (o "PEDIDO-15-2" si se reintentó). */
+  referenciaWompi: string;
+  direccionEnvio: string;
+  ciudad: string;
+  departamento: string;
+  telefono: string;
+  notasEntrega: string | null;
   productos: PedidoProductoDto[];
 }
 
-/** Un pedido en el panel (GET /api/Pedido/Todos): el mismo PedidoDto más el cliente. */
+/** Un pedido en el historial del panel: el mismo PedidoDto más el cliente, las unidades y la transacción. */
 export interface PedidoAdminDto extends PedidoDto {
   clienteNombre: string;
   clienteEmail: string;
+  unidades: number;
+  transactionIdWompi: string | null;
+}
+
+/** GET /api/Pedido/Historial: indicadores de las compras pagadas y la lista filtrada. */
+export interface HistorialDto {
+  comprasPagadas: number;
+  unidadesVendidas: number;
+  ingresos: number;
+  pedidos: PedidoAdminDto[];
+}
+
+/** Filtros opcionales del historial (las fechas en formato AAAA-MM-DD). */
+export interface FiltrosHistorial {
+  estado: EstadoPedido | '';
+  desde: string;
+  hasta: string;
+  texto: string;
+}
+
+/** Cuerpo de POST /api/Pedido/CrearPedido (DatosEnvioDto). */
+export interface DatosEnvioDto {
+  direccionEnvio: string;
+  ciudad: string;
+  departamento: string;
+  telefono: string;
+  notasEntrega: string | null;
 }
 
 /** Respuesta de POST /api/Pedido/CrearPedido (200). */
@@ -38,4 +72,9 @@ export interface RespuestaCrearPedido {
 /** Unidades de un pedido (suma de las cantidades). */
 export function unidadesDe(pedido: PedidoDto): number {
   return pedido.productos.reduce((suma, p) => suma + p.cantidad, 0);
+}
+
+/** "Pendiente" y "Rechazado" se pueden pagar (un rechazado se reintenta). */
+export function sePuedePagar(pedido: PedidoDto): boolean {
+  return pedido.estado === 'Pendiente' || pedido.estado === 'Rechazado';
 }

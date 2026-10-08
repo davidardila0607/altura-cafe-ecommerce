@@ -25,6 +25,13 @@ Los dos guiones bajos (`__`) equivalen a `:` en `appsettings.json`.
 | `CloudinarySettings__ApiSecret` | API secret de Cloudinary | Sí |
 | `Admin__Correos__0` | `desarrollo.testing@gmail.com` (la cuenta administradora compartida) | Sí, antes de registrarla |
 | `Cors__AllowedOrigins__0` | URL pública del frontend, sin `/` final (por ejemplo `https://altura.netlify.app`) | Sí |
+| `WompiSettings__ModoSimulado` | `true` = pasarela de pruebas de Altura (no se cobra nada); `false` = Wompi real | Sí (si no se define, vale `true`, el valor de `appsettings.json`) |
+| `WompiSettings__PublicKey` | Llave pública de Wompi (`pub_test_…` en Sandbox, `pub_prod_…` en producción) | Solo con Wompi real |
+| `WompiSettings__PrivateKey` | Llave privada (`prv_test_…` / `prv_prod_…`); la usa `ConfirmarPago` para consultar transacciones | Solo con Wompi real |
+| `WompiSettings__IntegritySecret` | Secreto de integridad (`test_integrity_…` / `prod_integrity_…`): firma cada pago | Solo con Wompi real |
+| `WompiSettings__EventSecret` | Secreto de eventos (`test_events_…` / `prod_events_…`): valida el checksum del webhook. En modo simulación también firma los eventos de la pasarela de pruebas: conviene cambiar el marcador por un valor propio | Sí, aun en modo simulación |
+| `WompiSettings__BaseUrl` | `https://sandbox.wompi.co/v1` (Sandbox) o `https://production.wompi.co/v1` (producción); viene en `appsettings.json` | No |
+| `WompiSettings__RedirectUrl` | URL pública del frontend + `/pago/resultado` (por ejemplo `https://altura.netlify.app/pago/resultado`) | Sí |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (es el valor por defecto si no se define) | No |
 | `PORT` | La pone Railway sola; la API escucha en `http://0.0.0.0:$PORT` | No |
 
@@ -93,6 +100,13 @@ Pide el correo y la contraseña de la cuenta administradora, sube las 25 imágen
 
 `Cors__AllowedOrigins__0` debe ser exactamente la URL del frontend (paso 9). Si cambia la URL, actualiza la variable y reinicia la API. Para más orígenes: `Cors__AllowedOrigins__1`, `__2`…
 
+## 8b. Configurar Wompi (Guía 3)
+
+1. Mientras no haya llaves de Wompi, deja `WompiSettings__ModoSimulado=true`: "Pagar" abre la pasarela de pruebas de Altura y no se procesan pagos reales. Pon igual `WompiSettings__RedirectUrl` y un `WompiSettings__EventSecret` propio.
+2. Con llaves: copia en Wompi (*Desarrollo → Programadores*, ambiente Sandbox o Producción) las 4 llaves en las variables `WompiSettings__*`, pon `WompiSettings__ModoSimulado=false` y, si es producción, `WompiSettings__BaseUrl=https://production.wompi.co/v1`. Reinicia la API.
+3. En el mismo panel de Wompi, en **"URL de eventos"**, pon la URL pública de la API + el endpoint del webhook: **`https://TU-API/api/Pedido/Webhook`** (por ejemplo `https://altura-api.up.railway.app/api/Pedido/Webhook`). Debe ser HTTPS y la API debe estar publicada (paso 5).
+4. Prueba con una tarjeta de pruebas de Wompi: el pedido debe pasar a "Pagado" (llega por el webhook) y el stock debe bajar.
+
 ## 9. Compilar y publicar el frontend
 
 1. En `frontend/src/environments/environment.ts` cambia `apiBaseUrl` por la URL real de la API terminada en `/api` (hoy es el marcador `https://TU-API.up.railway.app/api`).
@@ -113,3 +127,4 @@ Pide el correo y la contraseña de la cuenta administradora, sube las 25 imágen
 - [ ] Registrar una cuenta Cliente, agregar un café al carrito y recargar: el carrito sigue ahí.
 - [ ] La cuenta administradora entra a `/admin` y ve "Este café es tuyo" en sus cafés.
 - [ ] Recargar directamente `https://…/productos` no da 404 (redirección a `index.html`).
+- [ ] Un Cliente confirma un pedido con su dirección, pulsa "Pagar" y ve la pasarela que corresponde (pruebas o Wompi); al aprobar, el pedido queda "Pagado" y aparece en el historial del panel.

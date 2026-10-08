@@ -1,0 +1,56 @@
+@let p = pedido();
+
+<h2 class="visually-hidden">Cafés del pedido</h2>
+<ul class="lineas">
+  @for (item of p.productos; track item.productoId) {
+    <li class="linea" data-testid="linea-pedido">
+      <div class="foto">
+        @if (imagen(item.imagenUrl); as url) {
+          <img [src]="url" alt="" width="160" height="200" loading="lazy" decoding="async" />
+        } @else {
+          <i class="bi bi-cup-hot" aria-hidden="true"></i>
+        }
+      </div>
+      <div>
+        <p class="nombre">{{ item.nombre }}</p>
+        <p class="detalle">
+          {{ item.cantidad }} × {{ item.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+        </p>
+      </div>
+      <p class="subtotal" data-testid="subtotal-pedido">
+        <span class="visually-hidden">Subtotal: </span>
+        {{ item.precio * item.cantidad | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}
+      </p>
+    </li>
+  }
+</ul>
+
+<dl class="totales">
+  <div>
+    <dt>Productos</dt>
+    <dd>{{ unidades() }}</dd>
+  </div>
+  <div class="total">
+    <dt>Total</dt>
+    <dd data-testid="total-pedido">{{ p.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</dd>
+  </div>
+</dl>
+
+@if (mostrarEnvio()) {
+  <section class="envio" data-testid="envio-pedido" [attr.aria-labelledby]="'envio-' + p.id">
+    <h2 [id]="'envio-' + p.id" class="subtitulo">
+      <i class="bi bi-geo-alt" aria-hidden="true"></i>
+      Dirección de envío
+    </h2>
+    @if (sinDireccion()) {
+      <p class="suave">Este pedido se hizo antes de que la tienda pidiera la dirección.</p>
+    } @else {
+      <p>{{ p.direccionEnvio }}</p>
+      <p>{{ p.ciudad }}, {{ p.departamento }}</p>
+      <p class="suave">Teléfono {{ p.telefono }}</p>
+      @if (p.notasEntrega) {
+        <p class="suave">Notas: {{ p.notasEntrega }}</p>
+      }
+    }
+  </section>
+}

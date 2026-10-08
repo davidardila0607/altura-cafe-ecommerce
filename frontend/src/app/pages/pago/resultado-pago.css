@@ -1,0 +1,87 @@
+/* Resultado del pago: una sola tarjeta; el sello del estado es lo primero que se ve. */
+.pagina {
+  max-width: 44rem;
+  padding-block: calc(4.5rem + var(--esp-7)) var(--esp-9);
+}
+
+.tarjeta {
+  --tono: var(--estado-pendiente);
+  padding: var(--esp-7) var(--esp-6) var(--esp-6);
+  border-radius: 24px;
+  background: var(--papel);
+  box-shadow: var(--sombra-1);
+}
+
+.tarjeta[data-estado='Pagado'] {
+  --tono: var(--estado-pagado);
+}
+
+.tarjeta[data-estado='Rechazado'] {
+  --tono: var(--estado-rechazado);
+}
+
+/* Sello circular con el ícono del estado. Entra con una escala corta (respuesta a la acción de pagar). */
+.sello {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: var(--esp-4);
+  border-radius: 50%;
+  background: var(--tono);
+  color: #fff;
+  font-size: 1.9rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sello {
+    transition:
+      transform 420ms var(--ease-salida),
+      opacity 200ms ease;
+
+    @starting-style {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+  }
+}
+
+.titulo {
+  font-size: var(--fs-700);
+  font-weight: 800;
+  font-stretch: 78%;
+  letter-spacing: -0.035em;
+  line-height: var(--lh-titulo);
+}
+
+.texto {
+  max-width: 34rem;
+  margin-top: var(--esp-3);
+  color: var(--texto-suave);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  margin-top: var(--esp-5);
+}
+
+.resumen {
+  margin-top: var(--esp-6);
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--linea);
+}
+
+.bloque-esqueleto {
+  height: 12rem;
+  margin-top: var(--esp-5);
+  border-radius: var(--radio-tarjeta);
+}
+
+@media (max-width: 575.98px) {
+  .tarjeta {
+    padding-inline: var(--esp-4);
+  }
+}

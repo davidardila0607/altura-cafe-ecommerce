@@ -27,6 +27,13 @@
             <span class="total">{{ p.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</span>
             <i class="bi bi-chevron-right flecha" aria-hidden="true"></i>
           </a>
+          @if (sePuedePagar(p)) {
+            <app-boton-pagar
+              class="pagar"
+              [pedidoId]="p.id"
+              [etiqueta]="p.estado === 'Rechazado' ? 'Intentar de nuevo' : 'Pagar'"
+            />
+          }
         </li>
       }
     </ul>

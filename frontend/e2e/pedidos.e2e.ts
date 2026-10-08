@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { APIRequestContext, Locator, Page } from '@playwright/test';
 import { randomBytes } from 'node:crypto';
-import { API, esperarAnimaciones, expect, limpiar, test } from './fixtures';
+import { API, esperarAnimaciones, expect, limpiar, llenarEnvio, test } from './fixtures';
 
 /*
  * Guía de pedidos: confirmar el pedido desde el carrito, Mis pedidos y pedidos en el panel.
@@ -79,37 +79,51 @@ test.describe('Pedidos del Cliente y del panel @una-vez', () => {
     await tarjeta(page, 'Pitalito', 340).getByRole('button', { name: 'Agregar Pitalito 340 g al carrito' }).click();
     await expect(contador(page)).toHaveText('2');
 
-    // Si la API rechaza el pedido (409), se muestra su mensaje y el carrito queda igual.
-    await page.route(`${API}/Pedido/CrearPedido`, (ruta) =>
-      ruta.fulfill({ status: 409, json: { mensaje: 'No hay stock suficiente de Pitalito (disponibles: 0).' } }),
-    );
+    // "Confirmar pedido" pide los datos de envío; sin llenarlos, el formulario marca los errores.
     await page.getByRole('button', { name: 'Carrito, 2 unidades' }).click();
     const panel = page.getByRole('dialog', { name: 'Tu carrito' });
     await panel.getByTestId('confirmar-pedido').click();
-    const confirmacion = page.getByRole('dialog', { name: '¿Confirmar el pedido?' });
-    await expect(confirmacion).toBeVisible();
-    expect(limpiar(await confirmacion.locator('p').textContent())).toBe(
-      'Se creará un pedido con 2 productos por $ 95.000. Tu carrito quedará vacío.',
+    const formulario = page.getByRole('dialog', { name: 'Datos de envío' });
+    await expect(formulario).toBeVisible();
+    expect(limpiar(await formulario.locator('.resumen').textContent())).toBe(
+      'Se creará un pedido con 2 productos por $ 95.000. Tu carrito quedará vacío y podrás pagarlo enseguida.',
     );
-    await revisarAxe(page, 'confirmación del pedido');
-    await confirmacion.getByRole('button', { name: 'Confirmar pedido' }).click();
-    await expect(panel.getByRole('alert')).toHaveText(/No hay stock suficiente de Pitalito/);
+    await formulario.getByRole('button', { name: 'Confirmar pedido' }).click();
+    await expect(formulario.getByText('Escribe la dirección de entrega (máximo 200 caracteres).')).toBeVisible();
+    await expect(formulario.getByLabel('Dirección')).toBeFocused();
+    await formulario.getByLabel('Teléfono de contacto').fill('12ab');
+    await expect(formulario.getByText('Escribe un teléfono de 7 a 15 dígitos, solo números.')).toBeVisible();
+    await revisarAxe(page, 'datos de envío con errores');
+    await llenarEnvio(page);
+
+    // Si la API rechaza el pedido (409), el formulario muestra su mensaje y el carrito queda igual.
+    await page.route(`${API}/Pedido/CrearPedido`, (ruta) =>
+      ruta.fulfill({ status: 409, json: { mensaje: 'No hay stock suficiente de Pitalito (disponibles: 0).' } }),
+    );
+    await formulario.getByRole('button', { name: 'Confirmar pedido' }).click();
+    await expect(formulario.getByRole('alert')).toHaveText(/No hay stock suficiente de Pitalito/);
     await expect(panel.getByTestId('linea-carrito')).toHaveCount(2);
     await expect(contador(page)).toHaveText('2');
     await page.unroute(`${API}/Pedido/CrearPedido`);
 
-    // Ahora sí: el pedido se crea y lleva a su detalle.
-    await panel.getByTestId('confirmar-pedido').click();
-    await confirmacion.getByRole('button', { name: 'Confirmar pedido' }).click();
+    // Ahora sí: el pedido se crea con la dirección y lleva a su detalle, con el botón "Pagar".
+    await formulario.getByRole('button', { name: 'Confirmar pedido' }).click();
     await expect(page).toHaveURL(/\/mis-pedidos\/\d+$/);
     pedidoId = Number(page.url().split('/').pop());
     await expect(page.getByTestId('aviso').filter({ hasText: 'Pedido creado' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Pedido #${pedidoId}`);
     await expect(page.getByRole('main').getByTestId('estado-pedido')).toHaveText('Pendiente');
-    await expect(page.getByTestId('pago-pendiente')).toHaveText(/Pago pendiente\. El pago en línea estará disponible pronto\./);
+    await expect(page.getByText(`Referencia PEDIDO-${pedidoId}`)).toBeVisible();
+    await expect(page.getByTestId('pago-pendiente')).toContainText('Pago pendiente.');
+    await expect(page.getByTestId('pago-pendiente').getByTestId('boton-pagar')).toHaveText(/Pagar/);
     await expect(page.getByTestId('linea-pedido')).toHaveCount(2);
     await expect(page.getByTestId('linea-pedido').filter({ hasText: 'Mesa de los Santos' })).toContainText(/1 ×\s\$\s46\.000/);
     await expect(page.getByTestId('total-pedido')).toHaveText(/\$\s95\.000/);
+    const envio = page.getByTestId('envio-pedido');
+    await expect(envio).toContainText('Calle 45 # 12-30, apto 402');
+    await expect(envio).toContainText('Bucaramanga, Santander');
+    await expect(envio).toContainText('Teléfono 3001234567');
+    await expect(envio).toContainText('Notas: Dejar en portería');
     await expect(contador(page)).toHaveCount(0); // el carrito quedó vacío
     await revisarAxe(page, 'detalle del pedido');
 
@@ -123,11 +137,15 @@ test.describe('Pedidos del Cliente y del panel @una-vez', () => {
     await expect(fila).toContainText('Pendiente');
     await expect(fila).toContainText('2 productos');
     await expect(fila).toContainText(/\$\s95\.000/);
+    // El pedido pendiente tiene "Pagar" en su fila (fuera del enlace al detalle).
+    await expect(fila.locator('..').getByTestId('boton-pagar')).toHaveText(/Pagar/);
     await revisarAxe(page, 'mis pedidos');
     await fila.click();
     await expect(page).toHaveURL(new RegExp(`/mis-pedidos/${pedidoId}$`));
 
-    // Un Cliente no entra a los pedidos del panel.
+    // Un Cliente no entra al historial del panel (ni por la ruta vieja).
+    await page.goto('/admin/historial');
+    await expect(page).toHaveURL(/\/login\?permiso=denegado$/);
     await page.goto('/admin/pedidos');
     await expect(page).toHaveURL(/\/login\?permiso=denegado$/);
   });
@@ -153,35 +171,26 @@ test.describe('Pedidos del Cliente y del panel @una-vez', () => {
       expect([200, 400]).toContain(registro.status());
     });
 
-    test('/admin/pedidos muestra el pedido con el cliente, filtra por estado y despliega el detalle', async ({ page }) => {
-      await iniciarSesion(page, admin, '/admin/pedidos');
-      await expect(page.getByRole('navigation', { name: 'Administración' }).getByRole('link', { name: 'Pedidos' })).toHaveAttribute('aria-current', 'page');
+    test('la ruta vieja /admin/pedidos lleva al historial, que muestra el pedido pendiente', async ({ page }) => {
+      await iniciarSesion(page, admin, '/admin/historial');
+      await page.goto('/admin/pedidos');
+      await expect(page).toHaveURL(/\/admin\/historial$/);
+      await expect(page.getByRole('navigation', { name: 'Administración' }).getByRole('link', { name: 'Historial' })).toHaveAttribute('aria-current', 'page');
 
-      const fila = page.getByTestId('fila-pedido-admin').filter({ hasText: `#${pedidoId}` });
+      const fila = page.getByTestId('fila-historial').filter({ hasText: `PEDIDO-${pedidoId}` });
       await expect(fila).toContainText(clienteA.nombre);
       await expect(fila).toContainText(clienteA.email);
       await expect(fila).toContainText('Pendiente');
       await expect(fila).toContainText(/\$\s95\.000/);
 
-      // Detalle desplegable.
-      const boton = fila.getByRole('button', { name: `Detalle del pedido ${pedidoId}` });
-      await expect(boton).toHaveAttribute('aria-expanded', 'false');
-      await boton.click();
-      await expect(boton).toHaveAttribute('aria-expanded', 'true');
-      const detalle = page.getByTestId('detalle-pedido-admin');
-      await expect(detalle).toContainText('Mesa de los Santos');
-      await expect(detalle).toContainText('Pitalito');
-      await revisarAxe(page, 'pedidos del panel');
-
-      // Filtro por estado.
-      const filtro = page.getByRole('group', { name: 'Filtrar por estado' });
-      await filtro.getByRole('button', { name: /^Pendiente/ }).click();
-      await expect(filtro.getByRole('button', { name: /^Pendiente/ })).toHaveAttribute('aria-pressed', 'true');
+      // Filtro por estado: el pedido está Pendiente.
+      const estados = page.getByRole('group', { name: 'Estado' });
+      await estados.getByRole('button', { name: 'Pendiente' }).click();
+      await expect(estados.getByRole('button', { name: 'Pendiente' })).toHaveAttribute('aria-pressed', 'true');
       await expect(fila).toBeVisible();
-      await filtro.getByRole('button', { name: /^Rechazado/ }).click();
-      await expect(page.getByTestId('fila-pedido-admin')).toHaveCount(0);
-      await expect(page.getByText('No hay pedidos en estado Rechazado.')).toBeVisible();
-      await filtro.getByRole('button', { name: /^Todos/ }).click();
+      await estados.getByRole('button', { name: 'Pagado' }).click();
+      await expect(fila).toHaveCount(0);
+      await estados.getByRole('button', { name: 'Todos' }).click();
       await expect(fila).toBeVisible();
 
       // A 375 px no hay desplazamiento horizontal (la navegación del panel tiene cuatro secciones).

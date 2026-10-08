@@ -5,7 +5,8 @@ import { provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Auth } from '../auth/auth';
 import { CarritoDto } from '../models/carrito';
-import { PedidoDto, unidadesDe } from '../models/pedido';
+import { DatosEnvioDto, PedidoDto, sePuedePagar, unidadesDe } from '../models/pedido';
+import { urlCheckoutWompi } from './pagos';
 import { Carrito } from './carrito';
 import { Pedidos } from './pedidos';
 
@@ -29,6 +30,14 @@ const CARRITO: CarritoDto = {
 };
 
 const VACIO: CarritoDto = { carritoId: 1, productos: [], total: 0, totalUnidades: 0 };
+
+const ENVIO: DatosEnvioDto = {
+  direccionEnvio: 'Calle 45 # 12-30',
+  ciudad: 'Bucaramanga',
+  departamento: 'Santander',
+  telefono: '3001234567',
+  notasEntrega: null,
+};
 
 describe('Pedidos', () => {
   let pedidos: Pedidos;
@@ -55,9 +64,11 @@ describe('Pedidos', () => {
 
   afterEach(() => http.verify());
 
-  it('crea el pedido con POST /Pedido/CrearPedido y el contador del carrito vuelve a 0', async () => {
-    const promesa = pedidos.crear();
-    http.expectOne(`${URL}/CrearPedido`).flush({ mensaje: 'Pedido creado correctamente.', pedidoId: 12 });
+  it('crea el pedido con POST /Pedido/CrearPedido y los datos de envío; el contador vuelve a 0', async () => {
+    const promesa = pedidos.crear(ENVIO);
+    const peticion = http.expectOne(`${URL}/CrearPedido`);
+    expect(peticion.request.body).toEqual(ENVIO);
+    peticion.flush({ mensaje: 'Pedido creado correctamente.', pedidoId: 12 });
     await Promise.resolve();
     http.expectOne(`${URL_CARRITO}/GetCarrito`).flush(VACIO);
 
@@ -66,7 +77,7 @@ describe('Pedidos', () => {
   });
 
   it('si la API responde 409, lanza el error y el carrito queda igual', async () => {
-    const promesa = pedidos.crear();
+    const promesa = pedidos.crear(ENVIO);
     http
       .expectOne(`${URL}/CrearPedido`)
       .flush({ mensaje: 'No puedes comprar tus propios productos.' }, { status: 409, statusText: 'Conflict' });
@@ -83,11 +94,46 @@ describe('Pedidos', () => {
       fecha: '2026-10-07T20:00:00Z',
       estado: 'Pendiente',
       total: 154000,
+      referenciaWompi: 'PEDIDO-1',
+      ...ENVIO,
       productos: [
         { productoId: 51, nombre: 'Mesa de los Santos', imagenUrl: null, cantidad: 2, precio: 46000 },
         { productoId: 52, nombre: 'Mesa de los Santos', imagenUrl: null, cantidad: 1, precio: 62000 },
       ],
     };
     expect(unidadesDe(pedido)).toBe(3);
+    expect(sePuedePagar(pedido)).toBe(true);
+    expect(sePuedePagar({ ...pedido, estado: 'Pagado' })).toBe(false);
+  });
+
+  it('pide el historial solo con los filtros que tienen valor', () => {
+    pedidos.historial({ estado: 'Pagado', desde: '2026-10-01', hasta: '', texto: ' ana ' }).subscribe();
+    const peticion = http.expectOne((r) => r.url === `${URL}/Historial`);
+    expect(peticion.request.params.keys()).toEqual(['estado', 'desde', 'texto']);
+    expect(peticion.request.params.get('texto')).toBe('ana');
+    peticion.flush({ comprasPagadas: 0, unidadesVendidas: 0, ingresos: 0, pedidos: [] });
+  });
+});
+
+describe('urlCheckoutWompi', () => {
+  it('arma la URL del Web Checkout con los parámetros de la documentación de Wompi', () => {
+    const url = new globalThis.URL(
+      urlCheckoutWompi({
+        publicKey: 'pub_test_ABC',
+        reference: 'PEDIDO-15',
+        amountInCents: 4500000,
+        currency: 'COP',
+        integritySignature: 'abc123',
+        redirectUrl: 'http://localhost:4200/pago/resultado',
+        modoSimulado: false,
+      }),
+    );
+    expect(url.origin + url.pathname).toBe('https://checkout.wompi.co/p/');
+    expect(url.searchParams.get('public-key')).toBe('pub_test_ABC');
+    expect(url.searchParams.get('currency')).toBe('COP');
+    expect(url.searchParams.get('amount-in-cents')).toBe('4500000');
+    expect(url.searchParams.get('reference')).toBe('PEDIDO-15');
+    expect(url.searchParams.get('signature:integrity')).toBe('abc123');
+    expect(url.searchParams.get('redirect-url')).toBe('http://localhost:4200/pago/resultado');
   });
 });

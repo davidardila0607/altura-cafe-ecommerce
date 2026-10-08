@@ -48,6 +48,16 @@ export async function cargarImagenesDeCards(page: Page): Promise<void> {
   }
 }
 
+/** Llena el formulario "Datos de envío" del carrito (guía de pedidos, adaptación de envío). */
+export async function llenarEnvio(page: Page): Promise<void> {
+  const formulario = page.getByRole('dialog', { name: 'Datos de envío' });
+  await formulario.getByLabel('Dirección').fill('Calle 45 # 12-30, apto 402');
+  await formulario.getByLabel('Ciudad o municipio').fill('Bucaramanga');
+  await formulario.getByLabel('Departamento').selectOption('Santander');
+  await formulario.getByLabel('Teléfono de contacto').fill('300 123 4567');
+  await formulario.getByLabel(/Notas para la entrega/).fill('Dejar en portería');
+}
+
 /** Registra cada petición a la API hecha por la página. */
 export function vigilarPeticionesApi(page: Page): string[] {
   const peticiones: string[] = [];

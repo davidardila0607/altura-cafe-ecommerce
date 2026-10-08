@@ -1,0 +1,139 @@
+/* Pasarela de pruebas: un comprobante de Altura (papel, bosque y cereza), sin marca de terceros.
+   Izquierda: el cobro y las acciones. Derecha: lo que se está pagando. */
+.pagina {
+  max-width: 68rem;
+  padding-block: calc(4.5rem + var(--esp-6)) var(--esp-9);
+}
+
+/* Aviso de simulación en el tono miel de "Pendiente": se ve, pero no alarma. */
+.simulacion {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-5);
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px dashed color-mix(in srgb, var(--estado-pendiente) 60%, transparent);
+  border-radius: var(--radio-campo);
+  background: color-mix(in srgb, var(--estado-pendiente) 8%, var(--papel));
+}
+
+.simulacion .bi {
+  color: var(--estado-pendiente);
+  font-size: var(--fs-500);
+  line-height: 1.2;
+}
+
+h1 {
+  margin-bottom: var(--esp-5);
+}
+
+.comprobante {
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  gap: var(--esp-5);
+  align-items: start;
+}
+
+.cobro,
+.pedido {
+  padding: var(--esp-6);
+  border-radius: 24px;
+  background: var(--papel);
+  box-shadow: var(--sombra-1);
+}
+
+.pedido {
+  padding-top: var(--esp-2);
+}
+
+.concepto {
+  color: var(--texto-suave);
+}
+
+.monto {
+  margin-block: var(--esp-1) var(--esp-5);
+  font-size: var(--fs-700);
+  font-weight: 800;
+  font-stretch: 78%;
+  letter-spacing: -0.035em;
+  line-height: var(--lh-titulo);
+}
+
+.datos {
+  display: grid;
+  gap: var(--esp-3);
+  margin: 0 0 var(--esp-5);
+  padding-top: var(--esp-4);
+  border-top: 1px dashed var(--linea-fuerte);
+}
+
+.datos dt {
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+}
+
+.datos dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Sin esto, la firma (una sola palabra de 64 caracteres) ensancha la columna y se sale. */
+.datos > div {
+  min-width: 0;
+}
+
+.mono {
+  font-family: var(--fuente-mono);
+  font-size: var(--fs-200);
+}
+
+/* La firma completa son 64 caracteres: se corta con "…" y se ve entera al pasar el mouse. */
+.firma {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error {
+  display: flex;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-4);
+  color: var(--error);
+  font-weight: 600;
+}
+
+.acciones {
+  display: grid;
+  gap: var(--esp-3);
+}
+
+.cancelar {
+  justify-self: center;
+  margin-top: var(--esp-1);
+}
+
+.vacio {
+  display: grid;
+  justify-items: start;
+  gap: var(--esp-4);
+  padding: var(--esp-6);
+  border-radius: 24px;
+  background: var(--papel);
+}
+
+.bloque-esqueleto {
+  height: 16rem;
+  margin-top: var(--esp-4);
+  border-radius: var(--radio-tarjeta);
+}
+
+@media (max-width: 859.98px) {
+  .comprobante {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cobro,
+  .pedido {
+    padding-inline: var(--esp-4);
+  }
+}

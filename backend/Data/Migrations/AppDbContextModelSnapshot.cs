@@ -177,6 +177,24 @@ namespace CafeApi.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Ciudad")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("ciudad");
+
+                    b.Property<string>("Departamento")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("departamento");
+
+                    b.Property<string>("DireccionEnvio")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("direccion_envio");
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -187,10 +205,32 @@ namespace CafeApi.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha");
 
+                    b.Property<string>("NotasEntrega")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("notas_entrega");
+
+                    b.Property<string>("ReferenciaWompi")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("referencia_wompi");
+
+                    b.Property<string>("Telefono")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("telefono");
+
                     b.Property<decimal>("Total")
                         .HasPrecision(12)
                         .HasColumnType("numeric(12,0)")
                         .HasColumnName("total");
+
+                    b.Property<string>("TransactionIdWompi")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("transaction_id_wompi");
 
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
@@ -198,6 +238,11 @@ namespace CafeApi.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_pedido");
+
+                    b.HasIndex("ReferenciaWompi")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pedido_referencia_wompi")
+                        .HasFilter("referencia_wompi <> ''");
 
                     b.HasIndex("UsuarioId")
                         .HasDatabaseName("ix_pedido_usuario_id");

@@ -15,8 +15,8 @@ El proyecto es universitario y quienes lo entregan deben poder explicar cada par
 
 E-commerce de café de especialidad **Altura** (proyecto universitario en grupo):
 
-- **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés (25 en el seed), sus variedades (9), procesos (3) y presentaciones, y las imágenes de producto en Cloudinary.
-- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, **Login y Registro reales** (Guía 1: usuarios en la base de datos, contraseñas con hash y JWT propio), **carrito de compras** (Guía 2: ícono con contador, panel lateral y página `/carrito`), **pedidos** (guía de pedidos: "Confirmar pedido" desde el carrito, `/mis-pedidos` y su detalle) y un **panel de administración** (`/admin`: inventario, variedades, pedidos y usuarios) solo para el rol Administrador.
+- **backend/**: API REST en ASP.NET Core 10 + EF Core + PostgreSQL. Gestiona el catálogo de cafés (25 en el seed), sus variedades (9), procesos (3) y presentaciones, las imágenes de producto en Cloudinary, el carrito, los pedidos y sus pagos (Wompi o la pasarela de pruebas).
+- **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: Inicio narrativo (subir la montaña con un altímetro), catálogo de Productos con filtros en la URL y vista rápida, **Login y Registro reales** (Guía 1: usuarios en la base de datos, contraseñas con hash y JWT propio), **carrito de compras** (Guía 2: ícono con contador, panel lateral y página `/carrito`), **pedidos** con dirección de envío (guía de pedidos: "Confirmar pedido" desde el carrito, `/mis-pedidos` y su detalle), **pagos** (Guía 3, Wompi; hoy en **modo simulación** con una pasarela de pruebas propia), un Inicio que cierra con **reseñas de clientes** (de ejemplo) y un **panel de administración** (`/admin`: inventario, variedades, historial de compras y usuarios) solo para el rol Administrador.
 
 El proyecto está **preparado para producción pero no desplegado**: los pasos están en `DEPLOY.md`.
 
@@ -35,7 +35,7 @@ CafeApi/
 ├── frontend/                Proyecto Angular altura-web (package.json, angular.json, src/, public/, e2e/,
 │                            playwright.config.ts, herramientas/generar-paisaje.mjs)
 ├── docs/guias/              Guías del profesor (guía 1: usuarios y JWT; guía 2: carrito de compras; pedidos;
-│                            guía 3: Wompi, todavía sin implementar)
+│                            guía 3: Wompi Sandbox, implementada con modo simulación)
 ├── .gitignore               Reglas de .NET, Node/Angular y Playwright
 ├── CLAUDE.md                Esta guía
 ├── README.md                Puesta en marcha paso a paso
@@ -58,7 +58,7 @@ Etapas del Inicio (`ETAPAS_ASCENSO` en `core/data/contenido-marca.ts`; son narra
 | De la montaña a tu taza | Finca | 1.700 |
 | Orígenes (mapa) | Cordillera | 1.900 |
 | Variedades | Cafetal | 2.000 |
-| Cierre | Cumbre | 2.100 |
+| Reseñas ("Lo que dicen de Altura") | Cumbre | 2.100 |
 
 ## Sistema de diseño
 
@@ -72,10 +72,10 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 | `--niebla-honda` | `#D6DDD2` | Bandas alternas, fondos de imagen, cabecera de tablas |
 | `--papel` | `#F5F6F1` | Superficies: cards, paneles, formularios |
 | `--blanco-niebla` | `#FBFCF8` | Fondo de campos |
-| `--bosque` | `#13281F` | Texto; secciones oscuras (cierre, footer, cinta, cabecera del panel) |
+| `--bosque` | `#13281F` | Texto; secciones oscuras (footer, cinta, cabecera del panel) |
 | `--musgo` | `#3E5C45` | Disponibilidad, visto de campo válido |
 | `--helecho` / `--liquen` / `--liquen-hondo` | `#8FA58F` / `#C9D3C6` / `#B7C7B3` | Solo decorativos: crestas, esqueletos, mapa |
-| `--alba` / `--horizonte` | `#F2D7C4` / `#EBE6DC` | Cielo del amanecer (solo decorativo) |
+| `--alba` / `--horizonte` | `#F2D7C4` / `#EBE6DC` | Cielo del amanecer. `--alba` es además el fondo de la sección de reseñas (el amanecer en la cumbre; texto bosque 13:1, texto suave 5,9:1; el cereza solo en las estrellas, que son gráficos con su texto aparte) |
 | `--cereza` | `#B8322A` | **Único acento**: botón principal (texto blanco 5,9:1), enlaces, "Quedan N", marca del altímetro (4,8:1 sobre niebla) |
 | `--cereza-hover` / `-activo` | `#9E2A23` / `#86231D` | Estados del botón principal |
 | `--error` | `#A3271F` | Errores de formulario y avisos |
@@ -86,6 +86,8 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 **Colores por variedad** (`--variedad-*` y `core/data/contenido-marca.ts`; los tres usos, texto sobre papel, texto sobre niebla y fondo con texto blanco, cumplen AA ≥ 4,5:1, verificado): Castillo `#7A4A26` (tostado), Caturra `#3B6B34` (verde hoja), Colombia `#A2482A` (teja), Típica `#7E5A10` (ocre), Tabi `#4A5868` (pizarra), Bourbon Rojo `#9E2433` (cereza), Bourbon Amarillo `#7A6400` (mostaza oscuro), Bourbon Rosado `#B03A6B` (rosa), Geisha `#2D6A5E` (verde jade). Una variedad nueva de la API usa `#13281F`.
 
 **Colores por proceso** (`--proceso-*` y `marcaProceso()`; mismas comprobaciones AA): Lavado `#2E6A8A` (agua) con ícono `bi-droplet`, Honey `#875700` (miel) con `bi-hexagon`, Fermentado `#6E2E4A` (vino) con `bi-hourglass-split`. Un proceso nuevo usa el color neutro y `bi-circle`.
+
+**Estados de un pedido** (`--estado-pendiente` miel `#875700`, `--estado-pagado` musgo, `--estado-rechazado` rojo de error; `shared/estado-pedido`): píldora con ícono y fondo de papel teñido al 8 % (opaco, para pasar AA también sobre niebla). Los mismos tonos se usan en el aviso de pago del detalle, la pasarela de pruebas y el sello de la página de resultado.
 
 **Etiquetas de café** (`shared/etiqueta-cafe`): la **variedad** es texto en su color con una muestra cuadrada; el **proceso** es una píldora con borde y fondo tenue de su color y su ícono. Así se distinguen a simple vista aunque compartan tono (por ejemplo, Geisha y Lavado).
 
@@ -116,7 +118,7 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 | Altímetro: número y marca de la regla | Scroll | Ligado al scroll | — | `altimetro.ts` (ScrollTrigger) |
 | Galería del proceso: la pista se desplaza en horizontal; fotos de 115 % a 100 % | Scroll (sección anclada con `sticky`, 400vh) | Ligado al scroll (`scrub: 0.6`) | Lineal | `proceso.ts` (≥ 900 px) |
 | Cinta de notas de cata | Continuo (pausa con el mouse encima) | 60 s por vuelta | Lineal | `cinta-notas.ts` |
-| Revelado de cards (90 ms entre cada una), filas de variedades y foto del cierre | Entrar en pantalla (IntersectionObserver) | 700–900 ms | `--ease-salida` | directiva `appRevelar` |
+| Revelado de cards (90 ms entre cada una) y filas de variedades | Entrar en pantalla (IntersectionObserver) | 700–900 ms | `--ease-salida` | directiva `appRevelar` |
 | Inclinación 3D + brillo de la card; zoom de la bolsa 4 % | Mover el mouse | 500 ms / 700 ms | `--ease-salida` | directiva `appInclinar` (solo puntero fino) |
 | Botón magnético (hasta 10 px hacia el cursor) | Mover el mouse | 360 ms | `--ease-salida` | directiva `appMagnetico` |
 | Pulsación de botones y chips (`scale(.97)`) | `:active` | 160 ms | `--ease-salida` | `styles.css` |
@@ -136,7 +138,9 @@ Sistema propio en `frontend/src/styles.css` (**sin Bootstrap**). Tokens en tres 
 | Panel lateral del carrito (entra desde la derecha) | Abrir | 420 ms | `--ease-cajon` | `boton-carrito.css` (`@starting-style`; sin desplazamiento con movimiento reducido) |
 | Pulso del contador del carrito (`scale` 1 → 1,3 → 1) | Cambia el número de unidades | 320 ms | `--ease-salida` | `boton-carrito.ts` (Web Animations API; no con movimiento reducido) |
 | Avisos de la tienda ("Agregado al carrito", "Pedido creado"; sube 8 px + fundido) | Aparecer | 260 ms | `--ease-salida` | `zona-avisos.ts` (`@starting-style`) |
-| Flecha de "Detalle" en `/admin/pedidos` (gira 180°) | Desplegar / plegar el detalle | 240 ms | `--ease-salida` | `pedidos-admin.css` (sin transición con movimiento reducido) |
+| Rueda de reseñas: dos columnas suben sin fin (la segunda desfasada media vuelta), bordes con máscara de gradiente | Continuo; se pausa con el mouse, el foco o el botón "Pausar reseñas" | 7 s por tarjeta (35 s por vuelta) | `linear` (marquesina) | `resenas.css` (`translateY(-50%)` sobre la lista duplicada; con movimiento reducido no se renderiza: 3 reseñas con Anterior/Siguiente) |
+| Sello del resultado del pago (escala 0,8 → 1 + fundido) | Llegar a `/pago/resultado` | 420 ms | `--ease-salida` | `resultado-pago.css` (`@starting-style`; nada con movimiento reducido) |
+| Indicador "Preparando pago…" (giro) | Pulsar "Pagar" | 700 ms por vuelta | `linear` | `boton-pagar.ts` (con movimiento reducido gira más lento, 1,6 s) |
 
 ## Librerías y por qué
 
@@ -158,7 +162,7 @@ Se usaron como referencia visual (búsqueda en el catálogo con el MCP de 21st);
 | Hero Parallax (manuarora700), Hero Scrub (jean.duthil13) | Capas del hero con parallax ligado al scroll |
 | Text Reveal (ddoemonn), Vertical Cut Reveal (cnippet-dev) | Entrada letra por letra de "Altura" |
 | Optimized Tilt Card (sh20raj), Glare Card (manuarora700), Tilt (ibelick) | Inclinación 3D con brillo de las cards (solo con mouse) |
-| Magnetic Button (bundui), Magnetic (ibelick) | Botones magnéticos del hero y del cierre |
+| Magnetic Button (bundui), Magnetic (ibelick) | Botones magnéticos del hero |
 | Infinite Text Marquee (preetsuthar17), Marquee (tom_ui) | Cinta de notas de cata |
 | Horizontal Scroll Gallery (pulkitxm), Scroll Horizontal Gallery (motiondotdev) | Galería "De la montaña a tu taza" anclada |
 | Page Transition (su2491251) | Transición de ruta y vuelo de la bolsa |
@@ -192,6 +196,7 @@ AuthController  →  Interfaces/IUsuarioRepository  →  Repositories/UsuarioRep
 UsuariosController  →  Interfaces/IUsuarioRepository  →  Repositories/UsuarioRepository  →  AppDbContext (lista y cambio de rol)
 CarritoController  →  Interfaces/ICarritoRepository  →  Repositories/CarritoRepository  →  AppDbContext (carrito, carrito_producto, cafes)
 PedidoController   →  Interfaces/IPedidoRepository   →  Repositories/PedidoRepository   →  AppDbContext (carrito, pedido, pedido_producto, cafes, usuario)
+PedidoController / PedidoRepository  →  Interfaces/IWompiService  →  Repositories/WompiService  →  firmas SHA-256 y API de Wompi (HttpClient)
 ```
 
 - **Controllers/**: validan (DataAnnotations + reglas como "la variedad existe"), mapean DTO ↔ entidad y deciden el código HTTP. No hay capa de servicios de negocio (decisión del grupo: se mantiene Controller → Repository).
@@ -289,6 +294,11 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 | total | numeric(12,0) | suma de precio × cantidad, calculada al crear |
 | estado | varchar(20) | obligatorio, `CHECK (estado IN ('Pendiente','Pagado','Rechazado'))` (`ck_pedido_estado`); hoy todos nacen `Pendiente`; los otros dos los asignará la guía de Wompi |
 | fecha | timestamptz | UTC, `DateTime.UtcNow` al crear |
+| referencia_wompi | varchar(50) | Guía 3: `PEDIDO-{id}` (o `PEDIDO-{id}-2`, `-3`… al reintentar un pago rechazado); único sin contar la vacía (`ux_pedido_referencia_wompi`, filtro `referencia_wompi <> ''`) |
+| transaction_id_wompi | varchar(100) | Guía 3, opcional: la última transacción informada por Wompi (o `SIM-<guid>` en modo simulación) |
+| direccion_envio / ciudad / departamento | varchar(200) / (80) / (80) | Obligatorios (adaptación de envío); los pedidos anteriores quedaron con "No registrada" |
+| telefono | varchar(15) | Obligatorio, 7 a 15 dígitos (lo valida `DatosEnvioDto`) |
+| notas_entrega | varchar(300) | Opcional |
 
 **pedido_producto**
 
@@ -299,6 +309,10 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 | producto_id | integer | FK → cafes, `ON DELETE RESTRICT` (índice `ix_pedido_producto_producto_id`): un café con pedidos no se borra |
 | cantidad | integer | `CHECK (cantidad >= 1)` (`ck_pedido_producto_cantidad`) |
 | precio | numeric(12,0) | precio del café **en el momento de la compra** |
+
+**Migración `AddWompi`** (Guía 3): agrega `referencia_wompi` (NOT NULL) y `transaction_id_wompi` a `pedido`, asigna `'PEDIDO-' || id` a los pedidos que ya existían con un `UPDATE` y crea el índice único filtrado. No toca otras tablas.
+
+**Migración `AddDireccionPedido`**: agrega las 5 columnas de envío; las obligatorias se crean con el valor por defecto "No registrada" (para las filas existentes) y después se quita ese valor por defecto con `ALTER COLUMN … DROP DEFAULT`: los pedidos nuevos siempre traen sus datos.
 
 **Migración `AddPedidos`**: solo crea `pedido` y `pedido_producto` con sus índices, FKs y `CHECK`; no toca otras tablas (revisado antes de aplicarla). Al contrario que en `carrito_producto` (CASCADE hacia `cafes`), aquí la FK al café es `RESTRICT`. El carrito anterior en inglés (`Cart`, `CartItem`, `ICartRepository`, `CartRepository` ADO.NET con `NotImplementedException` y 4 DTOs) nunca estuvo en el DbContext ni en DI y se eliminó.
 
@@ -330,10 +344,14 @@ Semilla (`HasData`, con descripción): 1 Lavado, 2 Honey, 3 Fermentado. Es una *
 | PUT | /api/Carrito/ActualizarCarrito | JWT | 200 `{ mensaje }`; 400; 401; 404 "El producto no está en el carrito."; 409 sin unidades |
 | DELETE | /api/Carrito/EliminarProducto/{productId} | JWT | 200 `{ mensaje }`; 401; 404 |
 | DELETE | /api/Carrito/VaciarCarrito | JWT | 200 `{ mensaje: "Carrito vaciado." }`, 401 |
-| POST | /api/Pedido/CrearPedido | JWT | 200 `{ mensaje: "Pedido creado correctamente.", pedidoId }`; 400 "El carrito está vacío."; 401; 409 "No puedes comprar tus propios productos." / "No hay stock suficiente de NOMBRE (disponibles: N)." / "NOMBRE está agotado." |
+| POST | /api/Pedido/CrearPedido | JWT | Cuerpo `DatosEnvioDto` (direccionEnvio, ciudad, departamento, telefono, notasEntrega). 200 `{ mensaje: "Pedido creado correctamente.", pedidoId }`; 400 datos de envío inválidos (`ValidationProblem` en español) o "El carrito está vacío."; 415 sin cuerpo JSON; 401; 409 "No puedes comprar tus propios productos." / "No hay stock suficiente de NOMBRE (disponibles: N)." / "NOMBRE está agotado." |
 | GET | /api/Pedido/GetPedidos | JWT | 200 `PedidoDto[]` (los del usuario, el más reciente primero), 401 |
 | GET | /api/Pedido/GetPedido/{pedidoId} | JWT | 200 `PedidoDto`; 401; 404 `{ mensaje: "Pedido no encontrado." }` (no existe o es de otro usuario) |
-| GET | /api/Pedido/Todos | Inventario | 200 `PedidoAdminDto[]` (PedidoDto + clienteNombre + clienteEmail), 401, 403 |
+| GET | /api/Pedido/Historial | Inventario | `?estado=&desde=AAAA-MM-DD&hasta=AAAA-MM-DD&texto=` (todos opcionales). 200 `HistorialDto` { comprasPagadas, unidadesVendidas, ingresos, pedidos: `PedidoAdminDto[]` }; 400 estado desconocido o desde > hasta; 401; 403 |
+| POST | /api/Pedido/{id}/PrepararPago | JWT | 200 `WompiPagoDto` { publicKey, reference, amountInCents, currency, integritySignature, redirectUrl, modoSimulado }; 401; 404 "Pedido no encontrado." (no existe o es ajeno); 409 "Este pedido ya fue pagado." / sin stock / agotado. Un pedido Rechazado vuelve a Pendiente con referencia nueva |
+| POST | /api/Pedido/Webhook | Público (lo protege el checksum) | Evento `transaction.updated` de Wompi. 401 si el checksum no coincide; 200 siempre que sea válido (aunque no cambie nada) |
+| POST | /api/Pedido/{id}/SimularPago | JWT, **solo con `ModoSimulado` = true** (si no, 404) | `{ aprobado: bool }` → 200 `{ estado, transactionId: "SIM-…" }`; 404/409 como PrepararPago |
+| POST | /api/Pedido/{id}/ConfirmarPago | JWT, **solo con Wompi real** (`ModoSimulado` = false; si no, 404) | `{ transactionId }` → consulta la transacción a Wompi y la aplica. 200 `{ estado, transactionId }`; 404 pedido o transacción no encontrados; 409 "La transacción no corresponde a este pedido." |
 | GET | /api/usuarios | Usuarios | 200 `UsuarioAdminDto[]` (id, nombre, email, rol, cafesCreados; nunca el password), 401, 403 |
 | PUT | /api/usuarios/{id}/rol | Usuarios | 200 `{ mensaje: "Rol actualizado." }`; 400 rol distinto de Administrador/Cliente; 401; 403; 404 "El usuario no existe."; 409 "No puedes quitarte tu propio rol de administrador." |
 | GET | /api/health | Público | 200 `{ estado: "ok" }` (monitoreo del hosting) |
@@ -351,7 +369,7 @@ Reglas relevantes:
 
 - `backend/Seguridad/Roles.cs`: constantes `Administrador` y `Cliente` (los valores del claim `role`).
 - `backend/Seguridad/Politicas.cs`: las políticas `GestionInventario` y `GestionUsuarios` (las dos `RequireRole(Roles.Administrador)`), registradas en `Program.cs` con `Politicas.Registrar(builder.Services.AddAuthorizationBuilder())`.
-- Los controladores piden la **política**, no un rol: `[Authorize(Policy = Politicas.GestionInventario)]` (también `GET /api/Pedido/Todos`), `[Authorize(Policy = Politicas.GestionUsuarios)]` (todo `UsuariosController`). El carrito y los pedidos propios solo piden `[Authorize]` (cualquier rol).
+- Los controladores piden la **política**, no un rol: `[Authorize(Policy = Politicas.GestionInventario)]` (también `GET /api/Pedido/Historial`), `[Authorize(Policy = Politicas.GestionUsuarios)]` (todo `UsuariosController`). El carrito y los pedidos propios solo piden `[Authorize]` (cualquier rol).
 - En el frontend, `core/auth/permisos.ts` tiene `inventario.gestionar` y `usuarios.gestionar`.
 
 **Agregar un rol nuevo (por ejemplo "Editor") que gestione el inventario**, sin tocar controladores:
@@ -364,10 +382,10 @@ Reglas relevantes:
 ## Panel de administración
 
 - **Entrar**: con la misma sesión de la tienda. Menú de cuenta del navbar → "Panel de administración" (solo aparece al rol Administrador), footer → "Acceso administrador" o `http://localhost:4200/admin`. Sin sesión, el guard lleva a `/login?volver=/admin…`; con una cuenta Cliente, a `/login?permiso=denegado`, que muestra "No tienes permiso para entrar al panel de administración.".
-- **Rutas**: `/admin/inventario` (cafés), `/admin/variedades`, `/admin/pedidos`, `/admin/usuarios`. Todo `/admin` está protegido con `canMatch` por permiso (`/admin/usuarios` además con `usuarios.gestionar`) y se carga de forma diferida. La pantalla `/admin/ingresar` se eliminó.
+- **Rutas**: `/admin/inventario` (cafés), `/admin/variedades`, `/admin/historial` (la ruta vieja `/admin/pedidos` redirige aquí), `/admin/usuarios`. Todo `/admin` está protegido con `canMatch` por permiso (`/admin/usuarios` además con `usuarios.gestionar`) y se carga de forma diferida. La pantalla `/admin/ingresar` se eliminó.
 - **Inventario**: lista con búsqueda (sin tildes), columna **"Creado por"** (`usuarioNombre`), crear y editar en un panel lateral (nombre, variedad, presentación, origen, stock, precio e imagen con vista previa; tipo jpg/png/webp y 5 MB se validan antes de subir), eliminar con confirmación "Esta acción es irreversible", avisos de éxito y mensajes en español para 400, 401, 403, 404 y 409.
 - **Variedades**: crear, editar y eliminar (409 si tiene cafés).
-- **Pedidos** (guía de pedidos, solo lectura): tabla con número, cliente (nombre y correo), fecha (`dd/MM/yyyy, h:mm a`), estado, total y "Detalle" desplegable (`aria-expanded`; cafés con cantidad × precio y subtotal). Filtro por estado con botones en píldora (`aria-pressed`) y el número de pedidos de cada uno. Cambiar el estado lo hará la guía de Wompi.
+- **Historial de compras** (solo lectura; ver la sección "Historial de compras"): indicadores, filtros por estado, fechas y texto, tabla y panel lateral con el resumen completo de cada compra.
 - Eliminar un café que aparece en un pedido muestra el 409 "No se puede eliminar un café que tiene pedidos.".
 - **Usuarios** (Guía 2): tabla con nombre, correo, rol (etiqueta: Administrador en bosque, Cliente con borde), "Cafés creados" y buscador por nombre o correo (sin tildes). "Hacer Administrador" / "Hacer Cliente" con confirmación; la fila propia dice "(tú)" y su botón está deshabilitado (si aun así llega un 409, se muestra el mensaje de la API). Aviso fijo: "El nuevo rol se aplica la próxima vez que el usuario inicie sesión." No se pueden borrar usuarios.
 - **Sesión**: token en `localStorage` (sobrevive a cerrar la pestaña); se cierra sola al expirar el JWT (`JwtSettings:DurationInMinutes`, 60). Un 401 de la API a una petición con sesión la cierra y lleva a `/login` ("Tu sesión terminó. Vuelve a iniciar sesión."); un 403 muestra "No tienes permiso para esta acción". "Cerrar sesión" en el panel lleva a `/login`.
@@ -505,7 +523,7 @@ Implementación de `docs/guias/guia-pedidos.md` (en el PDF del profesor aparece 
 - **Qué es un pedido**: la "foto" de un carrito en el momento de confirmarlo. `pedido` guarda de quién es, cuándo se hizo, el total y su estado; `pedido_producto` guarda cada café con su cantidad y su precio. Hoy todos nacen **Pendiente** (todavía no hay pago).
 - **Por qué se guarda el precio**: el precio del café puede cambiar después. Si el pedido leyera el precio actual, un pedido de ayer cambiaría de total hoy. Por eso `CrearPedido` copia `Cafe.Precio` en `PedidoProducto.Precio`, y "Mis pedidos" muestra siempre ese precio guardado (verificado: se cambió el precio de un café y el pedido conservó el anterior).
 - **Qué pasa con el carrito**: `CrearPedido` agrega el pedido y borra las filas de `carrito_producto` del usuario en **un solo `SaveChangesAsync`**: o pasan las dos cosas o ninguna. El carrito (la fila de `carrito`) sigue existiendo, vacío. Si algo falla (carrito vacío, café propio, sin stock), se devuelve el motivo **antes** de guardar y el carrito queda igual.
-- **Por qué todavía no se descuenta el stock**: un pedido "Pendiente" aún no está pagado. Si se descontara al crearlo, un pedido que nunca se paga dejaría unidades "atrapadas". El stock se descontará cuando el pago se apruebe (guía de Wompi). Mientras tanto, `CrearPedido` sí **comprueba** que haya stock suficiente (adaptación A).
+- **Por qué no se descuenta el stock al crear el pedido**: un pedido "Pendiente" aún no está pagado. Si se descontara al crearlo, un pedido que nunca se paga dejaría unidades "atrapadas". El stock se descuenta cuando el pago se aprueba (Guía 3, adaptación 7). `CrearPedido` sí **comprueba** que haya stock suficiente (adaptación A).
 - **Nadie ve pedidos ajenos**: el usuario sale del token y `ObtenerPedido` filtra por `Id` **y** `UsuarioId`. El pedido de otra persona, para la API, simplemente no existe (404).
 
 **Paso de la guía → archivo**
@@ -533,7 +551,7 @@ Implementación de `docs/guias/guia-pedidos.md` (en el PDF del profesor aparece 
 | C | `CrearPedido` sigue devolviendo el texto de la guía y se agregó un segundo método mínimo, `ObtenerUltimoPedidoId(usuarioId)` (lee solo la columna `id` del pedido más reciente del usuario). El controlador lo llama después de un `CrearPedido` exitoso y responde `{ mensaje, pedidoId }` | Es lo más simple que no cambia la firma de la guía: un `out` no se puede usar en métodos `async` y devolver una tupla cambiaría `Task<string>`. El frontend usa el id para abrir `/mis-pedidos/{id}`. |
 | D | El controlador traduce el texto a códigos HTTP, siempre con `{ mensaje }`: carrito vacío → 400; café propio, sin stock o agotado → 409; éxito → 200 `{ mensaje, pedidoId }`; `GetPedido` inexistente o ajeno → 404 "Pedido no encontrado." | Igual que la adaptación 7 de la Guía 1 y la D de la Guía 2: con `Ok()` siempre, el frontend no sabría si algo falló, y `GetPedido` devolvería un 204 vacío. |
 | E | `DELETE /api/cafes/{id}` responde 409 "No se puede eliminar un café que tiene pedidos." (lo comprueba `TienePedidosAsync` antes de borrar; si un pedido aparece entre la comprobación y el borrado, la FK `RESTRICT` da 23503 y también se responde 409). Un café que solo está en carritos se sigue borrando | Conservar el historial: un pedido no puede quedar con un café que ya no existe. Sin la comprobación, la FK daría un 500. |
-| F | `GET /api/Pedido/Todos` con la política `GestionInventario`: todos los pedidos (más recientes primero) con `ClienteNombre` y `ClienteEmail`, en `PedidoAdminDto : PedidoDto` | La página `/admin/pedidos`. Heredar de `PedidoDto` evita repetir sus propiedades. |
+| F | `GET /api/Pedido/Todos` con la política `GestionInventario`: todos los pedidos con `ClienteNombre` y `ClienteEmail`, en `PedidoAdminDto : PedidoDto`. **Después lo reemplazó `GET /api/Pedido/Historial`** (ver "Historial de compras") | La página del panel. Heredar de `PedidoDto` evita repetir sus propiedades. |
 
 **Correcciones de errores del PDF**
 
@@ -554,10 +572,94 @@ Implementación de `docs/guias/guia-pedidos.md` (en el PDF del profesor aparece 
 
 **Reglas de los pedidos (frontend)**
 
-- **"Confirmar pedido"** (`shared/carrito/lista-carrito`, en el panel lateral y en `/carrito`): habilitado cuando hay cafés. Abre una confirmación (`<dialog>`) "Se creará un pedido con N productos por $ TOTAL. Tu carrito quedará vacío." (N = unidades). Al confirmar: `Pedidos.crear()` → recarga el carrito (el contador vuelve a 0) → aviso "Pedido creado" → `/mis-pedidos/{pedidoId}`. Un 400 o 409 muestra el mensaje de la API bajo la lista y el carrito queda igual.
+- **"Confirmar pedido"** (`shared/carrito/lista-carrito`, en el panel lateral y en `/carrito`): habilitado cuando hay cafés. Abre el formulario **"Datos de envío"** (`shared/carrito/formulario-envio`, ver "Dirección de envío") con el resumen "Se creará un pedido con N productos por $ TOTAL…" (N = unidades). Al confirmar: `Pedidos.crear(datos)` → recarga el carrito (el contador vuelve a 0) → aviso "Pedido creado" → `/mis-pedidos/{pedidoId}`, donde está "Pagar". Un 400 o 409 se muestra dentro del formulario y el carrito queda igual.
 - **`/mis-pedidos`** (guard `requiereSesion`; enlace "Mis pedidos" en el menú de la cuenta): una fila por pedido (enlace al detalle) con "Pedido #id", fecha (`d 'de' MMMM 'de' y`, es-CO), estado, hasta 3 fotos pequeñas, "N productos" y total en COP. Estado vacío con "Ver cafés" (`/productos`).
-- **`/mis-pedidos/:id`** (guard `requiereSesion`): fecha y hora, estado, aviso "Pago pendiente. El pago en línea estará disponible pronto." si está Pendiente, cada café (imagen, nombre, cantidad × precio guardado, subtotal = precio × cantidad) y total. El 404 (o un id que no es número) muestra "Pedido no encontrado" con "Ver mis pedidos": el `rxResource` convierte el 404 en `null` con `catchError`.
+- **`/mis-pedidos/:id`** (guard `requiereSesion`): fecha y hora, referencia, estado, aviso de pago con el botón **"Pagar"** si está Pendiente (o "Intentar de nuevo" si fue Rechazado), y el resumen (`shared/resumen-pedido`): cada café (imagen, nombre, cantidad × precio guardado, subtotal), total y dirección de envío. El 404 (o un id que no es número) muestra "Pedido no encontrado" con "Ver mis pedidos": el `rxResource` convierte el 404 en `null` con `catchError`.
 - **Etiqueta de estado** (`shared/estado-pedido`): píldora con ícono y color propio (Pendiente `bi-hourglass-split` en miel, Pagado `bi-check-circle` en musgo, Rechazado `bi-x-circle` en el rojo de error), tokens `--estado-*` en `styles.css`. Fondo opaco (papel teñido al 8 %) para que pase AA sobre la niebla de la página.
+
+## Guía 3: Wompi (con modo simulación)
+
+Implementación de `docs/guias/guia-3-wompi-sandbox.md` (guía del profesor). Se respetaron sus nombres (`WompiSettings`, `ReferenciaWompi`, `TransactionIdWompi`, `WompiWebhookDto`, `WompiData`, `WompiTransaction`, `WompiSignature`, `IWompiService`, `GenerarFirmaIntegridad`, `ValidarEvento`, `WompiPagoDto`, `PrepararPago`, `ProcesarPagoWompi`), las rutas `POST /api/Pedido/{id}/PrepararPago` y `POST /api/Pedido/Webhook` y la migración `AddWompi`. **No tenemos llaves reales de Sandbox** (el panel de Wompi exige activar un comercio real), así que se agregó un **modo simulación**: todo el código de la guía está y se ejecuta, pero el "checkout" es una pasarela de pruebas de Altura.
+
+**En palabras sencillas**
+
+- **Referencia**: el nombre con el que Wompi identifica el pago, `PEDIDO-15`. Se asigna justo después de crear el pedido (el Id lo da la base de datos). Wompi no deja reutilizar una referencia que ya tuvo una transacción finalizada, así que un pago rechazado se reintenta con `PEDIDO-15-2`, `PEDIDO-15-3`…
+- **Firma de integridad**: el navegador no puede decidir cuánto cobrar. El backend calcula SHA-256 de `referencia + monto en centavos + moneda + IntegritySecret` (en ese orden, sin separadores) y se la entrega al checkout; si alguien cambia el monto en el navegador, la firma ya no coincide y Wompi rechaza el pago. El secreto nunca sale del servidor. El monto va en **centavos**: 45.000 COP = 4.500.000.
+- **Webhook**: cuando una transacción termina, Wompi llama a `POST /api/Pedido/Webhook` con un evento `transaction.updated`. Es la fuente de verdad del pago (la redirección del navegador es solo informativa). La API responde 200 a todo evento válido: si recibe otro código, Wompi reintenta.
+- **Validación del checksum**: el webhook es público, así que cualquiera podría enviar un "pago aprobado" falso. Cada evento trae `signature.properties` (por ejemplo `transaction.id`, `transaction.status`, `transaction.amount_in_cents`) y `signature.checksum`. Se concatenan los **valores** de esas propiedades (leídos de `data`, en ese orden), luego el `timestamp` y luego el **EventSecret**; se calcula SHA-256 y debe coincidir con el checksum (Wompi lo muestra en mayúsculas: se compara sin distinguirlas). Si no coincide → 401 y no cambia nada.
+- **Al aprobarse**: el pedido pasa a "Pagado" solo si el monto y la moneda son los del pedido, y en el mismo guardado se descuenta el stock. Si el mismo evento llega dos veces, el segundo no hace nada (un pedido pagado ya no cambia).
+- **Modo simulación** (`WompiSettings:ModoSimulado = true`): "Pagar" lleva a `/pago/simulador`, la **pasarela de pruebas** de Altura (con el aviso "Modo simulación: no se procesan pagos reales…"). Sus botones llaman a `POST /api/Pedido/{id}/SimularPago`, que **arma el mismo evento que enviaría Wompi** (id `SIM-<guid>`, la referencia, APPROVED o DECLINED, el monto en centavos, COP), lo **firma con el EventSecret** con la fórmula de arriba y lo pasa por el **mismo camino del webhook real** (`RecibirEvento` → `ValidarEvento` → `ProcesarPagoWompi`). No hay lógica de pago duplicada: lo único simulado es quién envía el evento.
+
+**Cómo pasar a Wompi real**
+
+1. Crear la cuenta de comercio en Wompi y copiar, de *Desarrollo → Programadores → Sandbox*, las 4 llaves: `pub_test_…`, `prv_test_…`, `test_integrity_…` y `test_events_…`.
+2. Pegarlas en `WompiSettings` (local: `appsettings.Development.json`; producción: variables `WompiSettings__PublicKey`, `__PrivateKey`, `__IntegritySecret`, `__EventSecret`; ver `DEPLOY.md`). `BaseUrl` sigue siendo `https://sandbox.wompi.co/v1` (producción: `https://production.wompi.co/v1` con las llaves `prod_`).
+3. Poner `ModoSimulado` en `false` (`WompiSettings__ModoSimulado=false`). `SimularPago` deja de existir (404) y "Pagar" va al Web Checkout.
+4. Poner `RedirectUrl` con la URL pública del frontend + `/pago/resultado`.
+5. Publicar la API y, en el panel de Wompi, poner la **URL de eventos**: `https://TU-API/api/Pedido/Webhook` (la API debe ser pública con HTTPS).
+
+Con Wompi real, el frontend arma la URL `https://checkout.wompi.co/p/?public-key=…&currency=COP&amount-in-cents=…&reference=…&signature:integrity=…&redirect-url=…` (`urlCheckoutWompi` en `core/services/pagos.ts`). Al terminar, Wompi vuelve a `/pago/resultado?id=<transacción>`; como no trae el número del pedido, `Pagos.pagar()` lo guarda antes en `sessionStorage`. La página llama a `POST /api/Pedido/{id}/ConfirmarPago`, que consulta la transacción a Wompi (`GET {BaseUrl}/transactions/{id}` con `Authorization: Bearer <llave privada>`) y la aplica con `ProcesarPagoWompi`; el webhook la habría aplicado igual (es idempotente). **Pendiente**: nada de esto se ha probado contra Wompi (no hay llaves); solo se comprobó que con llaves de marcador Wompi Sandbox responde 404 y la API lo maneja.
+
+**Paso de la guía → archivo**
+
+| Paso | Archivo |
+|---|---|
+| 2. WompiSettings | `backend/Models/WompiSettings.cs` (+ `ModoSimulado`) |
+| 3. appsettings | `backend/appsettings.json`, `appsettings.example.json` (marcadores), `appsettings.Development.json` (ignorado; marcadores `…_SIMULADO`) |
+| 4. Registro | `backend/Program.cs` (`Configure<WompiSettings>`, `AddScoped<IWompiService, WompiService>`, `AddHttpClient`) |
+| 6. Pedido | `backend/Models/Pedido.cs`, `Data/Configurations/PedidoConfiguration.cs` |
+| 7. Migración | `backend/Data/Migrations/*_AddWompi.cs` |
+| 8. Referencia | `backend/Repositories/PedidoRepository.cs` (`CrearPedido`) |
+| 9. DTOs del webhook | `backend/DTOs/WompiWebhookDto.cs` |
+| 10. IWompiService / WompiService | `backend/Interfaces/IWompiService.cs`, `backend/Repositories/WompiService.cs` (en `Repositories/`, como dice la guía) |
+| 11. WompiPagoDto | `backend/DTOs/WompiPagoDto.cs` (+ `SimularPagoDto`, `ConfirmarPagoDto`) |
+| 12–14. PrepararPago | `backend/Interfaces/IPedidoRepository.cs`, `Repositories/PedidoRepository.cs` |
+| 15–16. Endpoints | `backend/Controllers/PedidoController.cs` (`PrepararPago`, `Webhook`, `SimularPago`, `ConfirmarPago`) |
+| 17. ProcesarPagoWompi | `backend/Repositories/PedidoRepository.cs` |
+| 18. URL de eventos | `DEPLOY.md` (no se configura hasta publicar) |
+| Frontend | `core/models/pago.ts`, `core/services/pagos.ts`, `shared/boton-pagar`, `pages/pago/` (`pasarela-pruebas`, `resultado-pago`), `shared/resumen-pedido` |
+
+**Adaptaciones respecto a la guía**
+
+| # | Adaptación | Motivo |
+|---|---|---|
+| 1 | **Modo simulación**: `WompiSettings.ModoSimulado`, `WompiPagoDto.ModoSimulado`, `POST /api/Pedido/{id}/SimularPago` (solo con `ModoSimulado = true`; si no, 404) y la pasarela `/pago/simulador`. También `POST /api/Pedido/{id}/ConfirmarPago` (solo con Wompi real) y `IWompiService.ConsultarTransaccion` | Sin llaves de Sandbox no se puede abrir el checkout ni recibir eventos. La simulación ejerce el mismo código del webhook. |
+| 2 | `[JsonPropertyName("amount_in_cents")]` en `WompiTransaction` | Wompi envía *snake_case*; el resto de nombres coincide sin distinguir mayúsculas. |
+| 3 | `ValidarEvento` valida de verdad el checksum (la guía devuelve `true`); el cálculo está en `CalcularChecksumEvento`, que también usa la simulación para firmar | Seguridad: sin validación, cualquiera marcaría pedidos como pagados. |
+| 4 | `PrepararPago` solo para pedidos Pendiente o Rechazado (un Rechazado vuelve a Pendiente con referencia nueva `-2`, `-3`…); 409 "Este pedido ya fue pagado."; 404 "Pedido no encontrado." (no existe o es ajeno); 409 si falta stock. Las comprobaciones están en `ValidarPago`, aparte, para no cambiar la firma de `PrepararPago` | La guía devuelve `Ok(null)` en todos los casos. Wompi no deja reutilizar una referencia finalizada. |
+| 5 | Monto en centavos y moneda (`COP`) deben coincidir con el pedido para marcarlo Pagado | Un evento con otro monto no debe pagar el pedido. |
+| 6 | VOIDED y ERROR también → Rechazado; PENDING no cambia nada | Son los estados finales que documenta Wompi. |
+| 7 | Al pasar a Pagado por primera vez se descuenta el stock en el mismo `SaveChangesAsync`; un pedido ya pagado no cambia más (idempotencia). Si un café no alcanza, queda en 0 y se registra en el log | El stock baja cuando el pago es real (no al crear el pedido). |
+| — | `RecibirEvento` (privado): un solo camino para webhook y simulación; el webhook valida antes de mirar el tipo de evento | Evitar duplicar la lógica. |
+| — | `CrearPedido` guarda pedido y referencia en una transacción de base de datos; el índice único de la referencia excluye la vacía | Entre los dos guardados la referencia está vacía; dos pedidos simultáneos chocarían sin el filtro. |
+
+**Correcciones de errores del PDF**: el constructor del repositorio usa `ApplicationDbContext` (aquí `AppDbContext`); a la línea `Configure<WompiSettings>(…)` le falta un paréntesis en el PDF; `ValidarEvento` devuelve `true` sin validar (corregido, adaptación 3); el PDF guarda `WompiService` en `Repositories/` aunque es un servicio (se respetó).
+
+**Verificado contra la documentación (docs.wompi.co)**: Web Checkout en `https://checkout.wompi.co/p/` con `public-key`, `currency`, `amount-in-cents`, `reference`, `signature:integrity` y `redirect-url`; firma de integridad `<Referencia><Monto><Moneda><Secreto>`; evento con `signature.properties` y `checksum` (fórmula de arriba; el ejemplo oficial va en mayúsculas); estados finales APPROVED, DECLINED, VOIDED, ERROR; Wompi agrega `?id=<transacción>` a la URL de retorno; consultar una transacción exige la llave privada; las referencias no se reutilizan. Contradicción con el plan de trabajo: ninguna de fondo; solo se precisó que el checksum se compara sin distinguir mayúsculas.
+
+## Dirección de envío
+
+Adaptación a la guía de pedidos (no estaba en la guía): el pedido guarda adónde se envía.
+
+- **Backend**: `DatosEnvioDto` (dirección obligatoria, máx. 200; ciudad obligatoria, máx. 80; departamento obligatorio, máx. 80; teléfono obligatorio de 7 a 15 dígitos, solo números; notas opcionales, máx. 300; mensajes en español). Es el cuerpo de `POST /api/Pedido/CrearPedido`: si algo no cumple, `[ApiController]` responde 400 antes de llegar al repositorio. `CrearPedido(usuarioId, datos)` (la firma de la guía cambia) guarda los datos con `Trim()`; el resto de la lógica de la guía no cambió. `PedidoDto` incluye referencia y envío.
+- **Frontend**: `shared/carrito/formulario-envio` es un `<dialog>` con formulario reactivo: dirección, ciudad o municipio, departamento (lista de los 32 departamentos y Bogotá D.C., `core/data/departamentos.ts`), teléfono (acepta espacios al escribir y los quita al enviar) y notas. Errores bajo cada campo; al enviar con errores, el foco va al primero. Es un componente aparte (y no parte de `ListaCarrito`) por el presupuesto de 4 kB de CSS por componente. La dirección se muestra en el detalle, en la pasarela, en el resultado del pago y en el historial (`shared/resumen-pedido`); los pedidos anteriores dicen que se hicieron antes de pedir la dirección.
+
+## Historial de compras
+
+Reemplaza a la página "Pedidos" del panel (y a `GET /api/Pedido/Todos`). Solo Administrador (política `GestionInventario`: el Cliente recibe 403 en la API y "No tienes permiso" en la ruta).
+
+- **API**: `GET /api/Pedido/Historial?estado=&desde=&hasta=&texto=`. Por defecto todos, del más reciente al más antiguo. Las fechas son días de Colombia (UTC-5 todo el año: el 7 de octubre va de las 05:00 UTC del 7 a las 05:00 UTC del 8). El texto busca con `ILIKE` (sin distinguir mayúsculas) en el nombre y el correo del cliente y en la referencia (se escapan `%` y `_`). Cada fila (`PedidoAdminDto`): id, referencia, fecha, estado, cliente, unidades, total, productos (precio guardado), dirección, teléfono, notas y `TransactionIdWompi`. **Indicadores**: compras pagadas, unidades vendidas e ingresos (suma de los pedidos Pagado) del rango de fechas y el texto; **no dependen del filtro de estado**, para que no queden en cero al mirar los pendientes. Se calculan en la base de datos (`COUNT` y `SUM`).
+- **Frontend** (`pages/admin/historial`, ruta `/admin/historial`; `/admin/pedidos` redirige): tres indicadores en una franja con divisores (no tres tarjetas), filtros (estado en botones con `aria-pressed`, "Desde" y "Hasta" con `input type="date"` que se limitan entre sí, buscador) y "Quitar filtros"; tabla con referencia, fecha y hora (`dd/MM/yyyy, h:mm a`), cliente, unidades, total y estado. Toda la fila abre el **panel lateral** (`<dialog>`, mismo estilo que el inventario; la referencia es un botón para el teclado): estado, cliente, transacción y el resumen (cafés, total y dirección). Estados de carga (esqueletos), error ("Reintentar") y vacío ("Ninguna compra coincide con los filtros." con "Quitar filtros").
+
+## Reseñas del Inicio
+
+La sección de cierre ("Llegaste a la cumbre", su texto, el botón y la foto) se reemplazó por **"Lo que dicen de Altura"** (`pages/inicio/resenas`), con `data-etapa="cumbre"` (el altímetro sigue terminando en Cumbre, 2.100 msnm).
+
+- **Las 10 reseñas son ficticias**: contenido de marca de un proyecto académico (`core/data/resenas.ts`), sin una plataforma de reseñas detrás. Los cafés que mencionan sí son del catálogo. Promedio 4,8 (8 de cinco estrellas y 2 de cuatro), calculado de esos datos. Avatares con la inicial sobre tonos suaves de la paleta (alba, liquen, helecho, niebla honda) y la letra en bosque.
+- **Fondo**: degradado del papel de la sección anterior al **alba**; contra el bosque del footer (con su cresta) se leen como dos bloques. Se eligió alba sobre niebla porque niebla es el fondo de toda la página y no marcaba el cierre, y sobre horizonte porque este es casi beige y se confunde con el papel.
+- **Rueda** (con movimiento): dos columnas de 5 tarjetas suben sin fin a 7 s por tarjeta; la segunda va desfasada media vuelta y en móvil se oculta. Cada columna tiene la lista **dos veces** (la copia con `aria-hidden`) y la pista sube exactamente `-50 %` (la separación es `padding-bottom` de cada tarjeta, no `gap`, para que las dos copias midan igual y el empalme no salte). Máscara de gradiente en cada columna (no en la rueda, para no recortar su contorno de foco). Se pausa con el mouse, al enfocarla con el teclado (`tabindex="0"`, `role="region"` con `aria-label`) y con el botón **"Pausar reseñas"** (WCAG 2.2.2 pide poder detener todo movimiento automático de más de 5 s; el botón cambia a "Reanudar reseñas").
+- **Movimiento reducido**: la rueda no se dibuja; se ven 3 reseñas con "Anterior" y "Siguiente" (`aria-controls`) y "Reseñas 1 a 3 de 10" (`aria-live`). La última página empieza antes para mostrar siempre 3.
+- Las estrellas son íconos `aria-hidden` con su texto aparte ("5 de 5 estrellas"). Sin marca, logo ni colores de plataformas de reseñas reales.
 
 ## Cuenta administradora compartida
 
@@ -594,6 +696,9 @@ Copia `appsettings.example.json` → `appsettings.Development.json` y rellena:
 | `Admin:Correos` | Correos que se registran como Administrador (comparados en minúsculas). Local: `davidardila0607@gmail.com`, `desarrollo.testing@gmail.com` (la cuenta compartida) y `e2e-admin@altura.test` (este último **solo para las pruebas automáticas**) |
 | `Cors:AllowedOrigins` | Orígenes del frontend permitidos por CORS. Viene en `appsettings.json` con `http://localhost:4200`; en producción, `Cors__AllowedOrigins__0` |
 | `CloudinarySettings:CloudName` / `ApiKey` / `ApiSecret` | Cuenta de Cloudinary |
+| `WompiSettings:PublicKey` / `PrivateKey` / `IntegritySecret` / `EventSecret` | Llaves de Wompi (Guía 3). Hoy, **marcadores claramente falsos** (`pub_test_SIMULADO`, `prv_test_SIMULADO`, `test_integrity_SIMULADO_local`, `test_events_SIMULADO_local`); con ellos funciona el modo simulación (la firma y el checksum se calculan igual) |
+| `WompiSettings:BaseUrl` / `RedirectUrl` | `https://sandbox.wompi.co/v1` / `http://localhost:4200/pago/resultado` |
+| `WompiSettings:ModoSimulado` | `true`: pasarela de pruebas de Altura. `false`: Wompi real (ver "Guía 3: Wompi") |
 | `Logging:LogLevel` | `Information` / `Microsoft.AspNetCore: Warning` |
 
 Generar una `JwtSettings:Key` (PowerShell):
@@ -702,7 +807,8 @@ Solo se usaron fotos gratuitas (se descartaron las de Unsplash+). La primera ele
 | `registro` | Registro (`POST /api/auth/Register`) | Crear cuenta \| Altura |
 | `carrito` | Carrito (layout `Sitio`, guard `requiereSesion`) | Tu carrito \| Altura |
 | `mis-pedidos` · `mis-pedidos/:id` | Mis pedidos y detalle (layout `Sitio`, guard `requiereSesion`) | Mis pedidos \| Altura · Detalle del pedido \| Altura |
-| `admin` → `admin/inventario`, `admin/variedades`, `admin/pedidos`, `admin/usuarios` | Panel (guard `canMatch` por permiso, layout `Admin`; usuarios con `usuarios.gestionar`) | Inventario \| Altura · Variedades \| Altura · Pedidos \| Altura · Usuarios \| Altura |
+| `pago/simulador` · `pago/resultado` | Pasarela de pruebas (`?pedido=&referencia=&monto=&firma=`) y resultado del pago (`?id=&pedido=`) (layout `Sitio`, guard `requiereSesion`) | Pasarela de pruebas \| Altura · Resultado del pago \| Altura |
+| `admin` → `admin/inventario`, `admin/variedades`, `admin/historial` (`admin/pedidos` redirige), `admin/usuarios` | Panel (guard `canMatch` por permiso, layout `Admin`; usuarios con `usuarios.gestionar`) | Inventario \| Altura · Variedades \| Altura · Historial de compras \| Altura · Usuarios \| Altura |
 | `**` | redirige a `''` | — |
 
 Transición entre rutas con `withViewTransitions()`; las navegaciones que solo cambian query params y el movimiento reducido marcan `<html class="transicion-instantanea">`. Durante el vuelo de la bolsa se marca `<html class="transicion-vuelo">` (solo la bolsa tiene nombre; el resto hace un fundido corto).
@@ -711,22 +817,23 @@ Transición entre rutas con `withViewTransitions()`; las navegaciones que solo c
 
 - `core/auth/`: `permisos.ts` (mapa centralizado permiso → roles: `inventario.gestionar`, `usuarios.gestionar`), `token.ts` (`leerToken`: traduce los claims de .NET, con nombres en URI larga, a id, nombre, email, roles y expiración), `auth.ts` (servicio `Auth` con signals: `registrar`, `iniciarSesion`, sesión en `localStorage`, cierre al expirar, `tienePermiso`), `interceptor.ts` (Bearer solo a la API; 401 → cierra sesión y lleva a `/login`; 403 → aviso), `guard.ts` (`requierePermiso(permiso)`, `canMatch`: sin sesión → `/login?volver=`, sin permiso → `/login?permiso=denegado`; `requiereSesion` para `/carrito`).
 - `core/models/`: `Cafe`/`CafeGuardar` (con `procesoId`/`procesoNombre`), `Variedad`/`VariedadGuardar`, `Proceso`, `Presentacion`, `Sesion`/`RespuestaLogin`/`RespuestaRegistro`, `CarritoDto`/`CarritoProductoDto`/`AddProductDto` y `PedidoDto`/`PedidoProductoDto`/`PedidoAdminDto`/`RespuestaCrearPedido` (mismos nombres que el backend; `unidadesDe(pedido)`), y `UsuarioAdmin`/`Rol`. `Cafe` incluye `usuarioId` y `usuarioNombre`. Si cambia un DTO del backend, actualiza estos modelos.
-- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel y de la tienda, con enlace opcional), `Carrito` (Guía 2, ver "Reglas del carrito"), `Pedidos` (`crear`, `misPedidos`, `pedido`, `todos`; ver "Reglas de los pedidos") y `Usuarios` (`GET /api/usuarios`, `PUT /api/usuarios/{id}/rol`).
-- `core/data/`: `mapa-colombia.ts` (Natural Earth) y `contenido-marca.ts` (texto, color y notas de cata de las 9 variedades; texto, color, ícono y "en taza" de los 3 procesos con `marcaProceso()`; fotos del sitio, pasos del proceso, `ETAPAS_ASCENSO`). **Los productos, las variedades y los procesos siempre vienen de la API**; aquí solo está el texto de marca, asociado por nombre normalizado.
+- `core/services/` (`@Service()`): `Cafes` y `Variedades` (lectura pública + crear/actualizar/eliminar), `Procesos` (`GET /api/procesos`), `Presentaciones`, `Imagenes` (subir/borrar), `Avisos` (avisos breves del panel y de la tienda, con enlace opcional), `Carrito` (Guía 2, ver "Reglas del carrito"), `Pedidos` (`crear(datos)`, `misPedidos`, `pedido`, `historial(filtros)`; ver "Reglas de los pedidos"), `Pagos` (`preparar`, `simular`, `confirmar`, `pagar`; `urlCheckoutWompi`) y `Usuarios` (`GET /api/usuarios`, `PUT /api/usuarios/{id}/rol`).
+- `core/data/`: `mapa-colombia.ts` (Natural Earth), `departamentos.ts` (formulario de envío), `resenas.ts` (reseñas de ejemplo, ficticias) y `contenido-marca.ts` (texto, color y notas de cata de las 9 variedades; texto, color, ícono y "en taza" de los 3 procesos con `marcaProceso()`; fotos del sitio, pasos del proceso, `ETAPAS_ASCENSO`). **Los productos, las variedades y los procesos siempre vienen de la API**; aquí solo está el texto de marca, asociado por nombre normalizado.
 - `core/utils/`: `gsap.ts` (`cargarGsap`, `refrescarScroll`), `medios.ts` (`matchMedia` seguro, `movimientoReducido`, `punteroFino`, `navegadorCompleto`), `imagenes.ts` (las fotos de producto se piden con el recorte `c_crop,g_center,w_0.86,h_0.86` antes de `f_auto,q_auto,w_N`: la bolsa llena más la card y mide lo mismo en la card, la vista rápida y el vuelo), `texto.ts`, `transicion.ts`, `validadores.ts` (`PATRON_CORREO`, `camposCoinciden`, `entero`), `errores.ts` (`mensajeDeError`: mensaje en español por código HTTP; en 404 y 409 usa el `{ mensaje }` de la API si viene).
-- `layout/sitio`: navbar fijo (se vuelve sólido con un sensor de IntersectionObserver), `<router-outlet>`, footer con cresta y "Acceso administrador" y `ZonaAvisos` ("Agregado al carrito"). `layout/admin`: cabecera del panel (usuario, "Ver tienda", "Cerrar sesión"), navegación (Inventario, Variedades, Pedidos y, con permiso, Usuarios; se envuelve en móvil) y avisos.
-- `pages/inicio/`: `Hero` (crestas + palabra + parallax), `Altimetro`, `Destacados`, `Proceso` (galería anclada), `CintaNotas` (marquee con datos de la API), `Origenes` (mapa; 5 regiones con cafés), `Variedades` (cuadrícula de 9 fichas: 3/2/1 columnas, muestra de color, texto y enlace con el número de cafés), `Cierre`. Cada sección lleva `data-etapa`.
+- `layout/sitio`: navbar fijo (se vuelve sólido con un sensor de IntersectionObserver), `<router-outlet>`, footer con cresta y "Acceso administrador" y `ZonaAvisos` ("Agregado al carrito"). `layout/admin`: cabecera del panel (usuario, "Ver tienda", "Cerrar sesión"), navegación (Inventario, Variedades, Historial y, con permiso, Usuarios; se envuelve en móvil) y avisos.
+- `pages/inicio/`: `Hero` (crestas + palabra + parallax), `Altimetro`, `Destacados`, `Proceso` (galería anclada), `CintaNotas` (marquee con datos de la API), `Origenes` (mapa; 5 regiones con cafés), `Variedades` (cuadrícula de 9 fichas: 3/2/1 columnas, muestra de color, texto y enlace con el número de cafés), `Resenas` + `TarjetaResena` (cierre, ver "Reseñas del Inicio"). Cada sección lleva `data-etapa`.
 - `pages/productos/`: `Productos` + `Filtros` + `GuiaProcesos` + `catalogo.ts` (lógica pura de filtros ↔ URL `?q=&variedad=&proceso=&presentacion=&origen=&disponibles=1&orden=`, orden, búsqueda sin tildes por nombre, origen, variedad **o proceso**, `contarPor`). Estado en un signal, View Transitions al filtrar y hoja `<dialog>` de filtros en móvil.
   - **Filtros** (barra lateral y hoja móvil, mismo componente): Variedad, Proceso y Origen son **listas verticales**, una fila por opción con su marca (muestra de color, ícono del proceso o `bi-geo-alt`), el nombre y el número de cafés alineado a la derecha; la fila activa tiene fondo `--tinte-activo`, negrita y una barra corta de su color a la izquierda. Filas de 40 px (44 px con puntero táctil). Presentación son tres botones del mismo ancho (Todas · 340 g · 500 g). Con más de 6 variedades se muestran 5 y "Ver las 9 variedades" (`aria-expanded`); la elegida nunca se esconde. La barra lateral es fija al bajar y, si es más alta que la pantalla, tiene su propio scroll.
   - **Bloque "Tres procesos, tres tazas"** (`GuiaProcesos`): arriba de la grilla, a todo el ancho de la columna de productos, debajo de la barra "25 cafés / Ordenar por". Compacto (~200 px en escritorio): título y bajada a la izquierda y los tres procesos en columnas con ícono, descripción y "Ver N cafés"; en móvil, los procesos van en una fila con desplazamiento horizontal. "Ver N cafés" aplica el mismo filtro de la barra lateral (`?proceso=`); el proceso activo se tiñe de su color y su botón queda como píldora (`aria-pressed`); pulsarlo otra vez quita el filtro.
   - **Grilla uniforme**: todas las cards miden lo mismo (3 columnas a ≥1200 px, 2 en tableta, 1 en móvil). Para que los textos queden alineados entre cards, cada fila de la card ocupa una sola línea: variedad + gramos, nombre (con "…" si no cabe), origen + etiqueta de proceso, precio + disponibilidad. Una e2e mide que alto, imagen, nombre, origen y precio estén en la misma posición en las 25 cards.
   - Al filtrar, la URL se escribe con `scroll: 'manual'` (opción por navegación del router de Angular 22): la página no salta arriba; al cambiar de ruta sí se sube, como siempre.
 - `pages/login`, `pages/registro`: formularios reactivos conectados a la API (Guía 1). Registro valida igual que `UsuarioDto` (nombre obligatorio de hasta 100 caracteres, correo válido, contraseña de 6 o más, confirmación) y al terminar lleva a `/login?cuenta=creada` ("Cuenta creada. Ahora inicia sesión."); un 400 muestra el mensaje del backend. Login vuelve a `?volver=` (solo rutas internas) o al Inicio; un 401 muestra "Usuario o contraseña incorrectos.".
-- `pages/admin/`: `pedidos` (guía de pedidos), `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`), `usuarios` (`usuarios-admin.ts`, Guía 2) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
+- `pages/admin/`: `historial` (historial de compras), `inventario` (formulario con selects de variedad **y proceso**, obligatorios; la tabla muestra "variedad · proceso · gramos" y el buscador también encuentra por proceso), `variedades` (`variedades-admin.ts`), `usuarios` (`usuarios-admin.ts`, Guía 2) y los estilos compartidos `lista-admin.css` y `formulario-admin.css`.
 - `pages/carrito`: página `/carrito` (`PaginaCarrito`) con `ListaCarrito` y "Seguir comprando".
 - `pages/mis-pedidos`: `MisPedidos` (`/mis-pedidos`) y `DetallePedido` (`/mis-pedidos/:id`, el id llega como `input()` por `withComponentInputBinding`).
-- `pages/admin/pedidos`: `PedidosAdmin` (`/admin/pedidos`, estilos de `lista-admin.css` + `pedidos-admin.css`).
-- `shared/`: `Navbar` (con `BotonCarrito` junto a `MenuUsuario`), `carrito/` (`BotonCarrito` con el panel lateral y `ListaCarrito`), `AgregarCarrito` (selector + botón y sus estados), `ZonaAvisos`, `MenuUsuario` (cuenta del navbar: sin sesión, ícono a `/login?volver=`; con sesión, la inicial y un menú *disclosure* con nombre, correo, "Mis pedidos", "Panel de administración" solo para Administrador y "Cerrar sesión"; se cierra con Escape, clic fuera o al navegar; es un componente aparte por el presupuesto de 4 kB del CSS del navbar), `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `EstadoPedidoEtiqueta` (`shared/estado-pedido`, estado de un pedido), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; `AgregarCarrito`; Escape se atiende en `keydown`), `SelectorCantidad` (con `etiqueta` y `compacto` para las listas; nunca muestra más que el máximo), `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
+- `pages/pago`: `PasarelaPruebas` (`/pago/simulador`) y `ResultadoPago` (`/pago/resultado`, con `resource()`: en modo real confirma la transacción y después lee el pedido).
+- `pages/admin/historial`: `HistorialAdmin` (`/admin/historial`, estilos de `lista-admin.css` + `formulario-admin.css` + `historial-admin.css`).
+- `shared/`: `Navbar` (con `BotonCarrito` junto a `MenuUsuario`), `carrito/` (`BotonCarrito` con el panel lateral y `ListaCarrito`), `AgregarCarrito` (selector + botón y sus estados), `ZonaAvisos`, `MenuUsuario` (cuenta del navbar: sin sesión, ícono a `/login?volver=`; con sesión, la inicial y un menú *disclosure* con nombre, correo, "Mis pedidos", "Panel de administración" solo para Administrador y "Cerrar sesión"; se cierra con Escape, clic fuera o al navegar; es un componente aparte por el presupuesto de 4 kB del CSS del navbar), `Footer`, `Logo`, `EtiquetaCafe` (variedad o proceso, ver "Sistema de diseño"), `EstadoPedidoEtiqueta` (`shared/estado-pedido`, estado de un pedido), `BotonPagar` (`shared/boton-pagar`), `ResumenPedido` (`shared/resumen-pedido`: cafés, total y dirección), `FormularioEnvio` (`shared/carrito/formulario-envio`), `TarjetaCafe` (toda la card es clicable; emite el `Cafe`; imagen con `data-bolsa`; etiquetas de variedad y proceso, gramos junto al origen), `VistaRapida` (datos de la lista al instante + `GET /api/cafes/{id}`; vuelo de la bolsa; color de la variedad; etiquetas de variedad y proceso y, en la ficha, el proceso con su "en taza"; `AgregarCarrito`; Escape se atiende en `keydown`), `SelectorCantidad` (con `etiqueta` y `compacto` para las listas; nunca muestra más que el máximo), `EstadoError`, `PaisajeAcceso` (amanecer con niebla de Login/Registro/ingreso), `acceso/acceso.css` (estilos compartidos de los formularios de acceso), directivas `Revelar`, `AtraparFoco`, `movimiento/Inclinar` y `movimiento/Magnetico`.
 - `src/environments/`: `apiBaseUrl` (`http://localhost:5031/api` en desarrollo; marcador `https://TU-API.up.railway.app/api` en producción, a cambiar al desplegar) y `cloudinaryBase`.
 
 **Comandos (desde `frontend/`):**
@@ -745,9 +852,10 @@ node herramientas/generar-paisaje.mjs   # regenera crestas y curvas de nivel (pu
 Si se cambia `angular.json` (estilos, fuentes), **reinicia `ng serve`**: no recarga ese archivo en caliente.
 
 **e2e** (`frontend/e2e/*.e2e.ts`, dos proyectos de Playwright: `chromium` con movimiento y `movimiento-reducido` con `prefers-reduced-motion: reduce`; etiquetas `@movimiento`, `@reducido`, `@una-vez`):
-- `altura.e2e.ts`: Inicio (3 destacados de la API con Cloudinary, 9 variedades con enlace al catálogo, altímetro, mapa con 5 orígenes → catálogo filtrado, galería anclada / fila con movimiento reducido), navegación (estado activo, navbar sólido, menú móvil, login ↔ registro), Productos (25 cafés; variedad + proceso + presentación combinados en la URL; "Ver las 9 variedades"; bloque de procesos arriba de la grilla que filtra, marca el activo y no mueve la página; cards del mismo tamaño y alineadas; sin desplazamiento horizontal a 375 px; búsquedas "narino", "honey" y "rosado"; recarga; cards con etiquetas; vista rápida con proceso y color de variedad; vuelo de la bolsa; hoja de filtros en móvil), API caída, formularios sin peticiones a la API, axe-core en todas las vistas a 1440 y 375 px, capturas y grabación.
+- `altura.e2e.ts`: Inicio (3 destacados de la API con Cloudinary, 9 variedades con enlace al catálogo, reseñas: la rueda sube sola, se pausa con el mouse y con el botón, 10 reseñas más su copia oculta; con movimiento reducido, 3 estáticas con Anterior/Siguiente; altímetro, mapa con 5 orígenes → catálogo filtrado, galería anclada / fila con movimiento reducido), navegación (estado activo, navbar sólido, menú móvil, login ↔ registro), Productos (25 cafés; variedad + proceso + presentación combinados en la URL; "Ver las 9 variedades"; bloque de procesos arriba de la grilla que filtra, marca el activo y no mueve la página; cards del mismo tamaño y alineadas; sin desplazamiento horizontal a 375 px; búsquedas "narino", "honey" y "rosado"; recarga; cards con etiquetas; vista rápida con proceso y color de variedad; vuelo de la bolsa; hoja de filtros en móvil), API caída, formularios sin peticiones a la API, axe-core en todas las vistas a 1440 y 375 px, capturas y grabación.
 - `carrito.e2e.ts` (Guía 2): sin sesión, "Agregar", el ícono del carrito y `/carrito` llevan a `/login`; un Cliente nuevo se registra, agrega desde una card y desde la vista rápida (el contador cambia), llega al límite de stock ("Ya tienes todas las unidades disponibles"), usa el panel, cambia cantidades en `/carrito` (subtotales y total en COP), recarga (el carrito persiste), quita, vacía con confirmación y no entra a `/admin/usuarios`; con el Administrador de pruebas: un café suyo muestra "Este café es tuyo" y en `/admin/usuarios` busca al Cliente, le cambia el rol con confirmación y lo devuelve (su propia fila está deshabilitada); axe del panel, de `/carrito` y de `/admin/usuarios`.
-- `pedidos.e2e.ts` (guía de pedidos): sin sesión, `/mis-pedidos` y `/mis-pedidos/1` llevan a `/login`; dos Clientes nuevos se registran por la API (`e2e-pedidos-a/b-<número>@altura.test`); el Cliente A agrega dos cafés desde las cards, prueba un 409 simulado con `page.route` (mensaje de la API y carrito intacto), confirma el pedido ("Se creará un pedido con 2 productos por $ 95.000"), llega al detalle con "Pedido creado", Pendiente, el aviso de pago pendiente y el total, el contador queda en 0, lo ve en "Mis pedidos" desde el menú y no entra a `/admin/pedidos`; el Cliente B ve "Pedido no encontrado" en el pedido de A y su lista vacía; el Administrador de pruebas ve el pedido con nombre y correo del cliente, despliega el detalle, filtra por estado y no hay desplazamiento horizontal a 375 px. axe de la confirmación, el detalle, Mis pedidos (con y sin pedidos), "no encontrado" y `/admin/pedidos`. Como el 409 simulado y el 404 dejan "Failed to load resource" en consola, ese bloque usa `permitirErroresDeRed`.
+- `pagos.e2e.ts` (Guía 3 e historial; **necesita las variables del Administrador de pruebas**, porque los pagos aprobados descuentan stock real y al terminar lo devuelve por la API): un Cliente nuevo agrega 2 Pitalito y 1 La Unión, confirma con datos de envío, pulsa "Pagar", ve la pasarela de pruebas (aviso, referencia, monto $ 149.000), "Simular pago aprobado" → "¡Pago aprobado!" con dirección y total; el stock bajó 2 y 1; en Mis pedidos queda Pagado y sin "Pagar". Otro pedido: "Simular pago rechazado" → "El pago fue rechazado" → "Intentar de nuevo" (referencia `PEDIDO-{id}-2`) → aprobado; el Cliente no entra a `/admin/historial`. El Administrador busca al cliente en el historial (2 compras, 4 unidades, $ 198.000), filtra por estado y por fechas (hoy y un rango vacío), quita filtros y abre el panel con cliente, transacción `SIM-`, productos, total y dirección. axe en la pasarela, el resultado aprobado y rechazado, el historial y el panel.
+- `pedidos.e2e.ts` (guía de pedidos): sin sesión, `/mis-pedidos` y `/mis-pedidos/1` llevan a `/login`; dos Clientes nuevos se registran por la API (`e2e-pedidos-a/b-<número>@altura.test`); el Cliente A agrega dos cafés desde las cards, abre "Datos de envío" (errores en español y foco en el primero; teléfono inválido), prueba un 409 simulado con `page.route` (mensaje dentro del formulario y carrito intacto), confirma el pedido ("Se creará un pedido con 2 productos por $ 95.000…"), llega al detalle con "Pedido creado", Pendiente, la referencia, "Pagar", el total y la dirección, el contador queda en 0, lo ve en "Mis pedidos" (con "Pagar") y no entra a `/admin/historial` ni a `/admin/pedidos`; el Cliente B ve "Pedido no encontrado" en el pedido de A y su lista vacía; el Administrador de pruebas entra por la ruta vieja `/admin/pedidos` (redirige al historial), ve el pedido pendiente con el cliente, filtra por estado y no hay desplazamiento horizontal a 375 px. axe del formulario con errores, el detalle, Mis pedidos (con y sin pedidos) y "no encontrado". Como el 409 simulado y el 404 dejan "Failed to load resource" en consola, ese bloque usa `permitirErroresDeRed`.
 - `admin.e2e.ts` (usuarios y panel; autocontenido, no depende del catálogo): sin sesión `/admin` → `/login?volver=`; registrar un Cliente desde `/registro` (y el 400 "El usuario ya existe."); contraseña incorrecta (401); el Cliente inicia sesión y vuelve a la página anterior, el menú muestra su nombre y correo sin "Panel de administración", la sesión sobrevive a recargar, `/admin` → "No tienes permiso", cerrar sesión desde el menú; el Administrador entra al panel desde el menú, crea un café con imagen y proceso, **"Creado por" muestra su nombre**, lo edita (el dueño no cambia) y lo elimina (la imagen desaparece de Cloudinary); variedades (crear, duplicada 409, no eliminar con cafés —crea uno por la API—, eliminar); 403 y 401 simulados; axe del login, el menú de cuenta y el panel; cerrar sesión en el panel. **Necesita variables de entorno** con la cuenta Administrador de pruebas, cuyo correo debe estar en `Admin:Correos` (si la cuenta no existe, se registra sola; sin las variables, se omite):
 
 ```powershell
@@ -791,6 +899,13 @@ Antes de cada análisis de axe, `esperarAnimaciones` (`e2e/fixtures.ts`) espera 
 | Guía de pedidos: angular-developer | `@Service()` `Pedidos`, `rxResource` con `params` para el detalle (el 404 se convierte en `null` con `catchError`), `input()` del `:id` por `withComponentInputBinding`, guard `requiereSesion` en las dos rutas nuevas y prueba unitaria del servicio. |
 | Guía de pedidos: ui-ux-pro-max (`ui-styling`), design-taste-frontend, emil-design-eng | Mis pedidos como lista de filas-enlace sobre papel (como `/carrito`), estado con ícono además de color, confirmación solo en la acción importante (crear el pedido), un solo acento (cereza) en "Confirmar pedido", sin animaciones nuevas en vistas frecuentes salvo la flecha del detalle (240 ms, nada con movimiento reducido). Los patrones de `ui-styling` (shadcn/Tailwind) se hicieron con el CSS propio. |
 | Guía de pedidos: webapp-testing | Capturas a 1440 y 375 px con Playwright para revisar las pantallas (así apareció el desbordamiento de la navegación del panel); las pruebas se escribieron con `@playwright/test`, como el resto del proyecto. |
+
+| Guía 3: dotnet-webapi, create-datadriven-aspnetcore, database-schema-designer, optimizing-ef-core-queries | Mismo patrón Controller → Repository; índice único filtrado de la referencia, migraciones revisadas y aplicadas (`AddWompi` con `UPDATE` de los pedidos existentes; `AddDireccionPedido` con valor por defecto temporal); historial con `COUNT`/`SUM` en la base de datos y proyección; `ValidarPago` lee solo estado, nombre y stock. Donde contradecían la guía (records, `CancellationToken`, ProblemDetails, servicios en `Services/`), ganó la guía. |
+| Guía 3: angular-developer | Servicios `Pedidos` y `Pagos` con `@Service()`, `resource()` para el resultado del pago, `rxResource` con filtros como `params` en el historial, `input()` de query params (`withComponentInputBinding`), formulario reactivo del envío, rutas nuevas con `requiereSesion` y redirección de la ruta vieja del panel. |
+| Guía 3: ui-ux-pro-max (`ui-styling`), design-taste-frontend, frontend-design | Pasarela como "comprobante" de Altura (sin marca de Wompi), resultado con el sello del estado como protagonista, historial con indicadores en franja (no tres tarjetas iguales) y panel lateral del sistema; sin colores nuevos. design-taste-frontend limita a una marquesina por página y el Inicio ya tiene la cinta de notas: **ganó el pedido de la rueda de reseñas**. frontend-design desaconseja etiquetas sobre los títulos: se dejó el kicker "Experiencias de clientes" porque lo pedía el plan, en minúsculas y sin mayúsculas sostenidas. |
+| Reseñas: find-animation-opportunities, animation-vocabulary, emil-design-eng, improve-animations | El efecto es una marquesina vertical con máscara (*marquee* + *mask*): curva `linear`, solo `transform`, pausa con `animation-play-state`. Pasa el filtro de frecuencia (Inicio, ocasional) con condiciones: pausa con mouse, foco y botón, y nada con movimiento reducido. La auditoría con improve-animations (en lugar de **review-animations, que no está instalada**) quitó un `aria-pressed` contradictorio del botón de pausa. |
+| impeccable (solo sus guías de audit y polish) | Contraste del fondo alba, objetivos de 44 px (el botón de referencia del historial medía ~30 px), estados de carga, vacío y error, y desbordes a 375 px (fechas del historial, firma de la pasarela). |
+| Guía 3: webapp-testing | Capturas a 1440 y 375 px del flujo de pago, el historial y el Inicio; así aparecieron la firma que se salía del comprobante, las fechas que desbordaban en móvil y la máscara que no desvanecía el borde inferior. |
 
 Contradicciones resueltas a favor del brief: design-taste-frontend exige modo oscuro y desaconseja cursores propios (se mantuvo un solo tema claro y no hay cursor propio); ui-ux-pro-max propuso un estilo genérico (se descartó); ui-styling presupone React/Tailwind (se usó Angular con CSS propio); impeccable considera amateur `feTurbulence` (se quitó el grano). En la etapa anterior (rediseño editorial) se usaron también estas skills; esa identidad (Fraunces, crema/terracota) quedó reemplazada.
 
@@ -863,6 +978,14 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 | `ListaCarrito` compartida entre el panel lateral y `/carrito` | Mismo comportamiento en los dos sitios; ids únicos por instancia porque pueden coexistir. El contenido del panel solo se dibuja mientras está abierto. |
 | Política `GestionUsuarios` aparte de `GestionInventario` | Hoy ambas son "Administrador", pero se podría dar inventario a un "Editor" sin dejarle cambiar roles. |
 | No poder quitarse el propio rol (409 en la API y botón deshabilitado) | Evita que el panel se quede sin administradores por un clic propio. |
+| Modo simulación que firma y procesa el evento por el mismo camino del webhook | Sin llaves de Sandbox, es la forma de probar (y explicar) la validación del checksum, el cambio de estado y el descuento de stock reales, sin código de pago paralelo. |
+| `ValidarPago` aparte de `PrepararPago` | Las respuestas 404/409 sin cambiar la firma `Task<WompiPagoDto?>` de la guía. |
+| Referencia con sufijo al reintentar (`PEDIDO-15-2`) | Wompi no acepta una referencia que ya tuvo una transacción finalizada. |
+| Descuento de stock al aprobar el pago, idempotente | Un pedido sin pagar no debe quitar unidades; Wompi puede repetir eventos. |
+| Historial con indicadores que ignoran el filtro de estado | Mirar los pendientes no debe dejar "Ingresos" en cero. |
+| Fechas del historial en días de Colombia (UTC-5) | Las fechas se guardan en UTC; el administrador piensa en días locales. |
+| Rueda de reseñas en CSS (sin librerías) con la lista duplicada | Un `@keyframes` de `transform` es lo más simple de explicar y corre en el compositor. |
+| Botón "Pausar reseñas" además de la pausa con mouse y foco | WCAG 2.2.2 (movimiento automático de más de 5 s) y para táctil. |
 | Pedidos fieles a la guía (nombres, rutas `api/[controller]`, `string` en el repositorio) con 6 adaptaciones (A–F) | Ver "Guía de pedidos". Gana la guía frente a las skills. |
 | `pedido_producto` con `RESTRICT` hacia `cafes` (en el carrito es `CASCADE`) | Un pedido es historial: no puede perder sus cafés. El borrado de un café con pedidos responde 409. |
 | El stock no se descuenta al crear el pedido, solo se comprueba | Un pedido pendiente no está pagado; el stock bajará con el pago aprobado (guía de Wompi). |
@@ -872,10 +995,16 @@ Contradicciones resueltas a favor del brief: design-taste-frontend exige modo os
 
 ## Problemas conocidos y pendientes
 
-- **Pagos pendientes (guía de Wompi)**: los pedidos nacen "Pendiente" y se quedan así; ni el carrito ni el pedido descuentan stock ni reservan unidades. Dos clientes pueden tener pedidos pendientes por las mismas últimas unidades: `CrearPedido` solo comprueba el stock de ese momento.
+- **Wompi real sin probar**: con `ModoSimulado = false`, el Web Checkout, la redirección y `ConfirmarPago` están implementados según la documentación, pero no se han probado contra Wompi (no hay llaves de Sandbox). Tampoco se ha recibido un webhook real (la API no está publicada).
+- **Stock y pedidos pendientes**: el stock se descuenta al aprobarse el pago, no al crear el pedido, y no se reservan unidades. Dos clientes pueden tener pedidos pendientes por las mismas últimas unidades; `PrepararPago` comprueba el stock antes de pagar, pero si dos pagos se aprueban casi a la vez, el segundo deja el café en 0 (queda en el log).
+- Dos eventos aprobados del mismo pedido que lleguen exactamente a la vez podrían leer los dos "Pendiente" y descontar dos veces (no hay bloqueo de fila); con eventos que llegan uno detrás de otro, la idempotencia funciona (verificado).
+- `POST /api/Pedido/CrearPedido` sin cuerpo ni `Content-Type` responde 415 (comportamiento estándar de ASP.NET Core), no 400; con JSON vacío o datos inválidos, 400.
+- Las reseñas del Inicio son de ejemplo (ficticias); en una tienda real deben venir de compradores verificados.
+- La rueda de reseñas sigue animando cuando está fuera de pantalla (animación de `transform`, barata para el navegador); no se pausa con IntersectionObserver para no agregar código.
 - Si un usuario confirma el pedido dos veces casi a la vez (por ejemplo, desde dos pestañas), las dos peticiones pueden leer el mismo carrito: la segunda falla al borrar filas que ya no existen (500 en esa petición; el primer pedido queda bien). El botón se deshabilita mientras se crea el pedido, así que desde una sola pestaña no pasa.
 - `ObtenerUltimoPedidoId` toma el pedido más reciente del usuario: si ese mismo usuario creara otro pedido entre las dos consultas (dos pestañas), el `pedidoId` devuelto sería el del otro pedido (los dos son suyos).
-- No se pueden borrar ni cancelar pedidos por la API (fuera de alcance: cancelar, envíos y facturación). Para borrar usuarios de prueba hay que borrar antes sus pedidos (ver la limpieza de las e2e).
+- No se pueden borrar ni cancelar pedidos por la API (fuera de alcance: cancelar, seguimiento de envíos y facturación). Para borrar usuarios de prueba hay que borrar antes sus pedidos (ver la limpieza de las e2e).
+- Problemas encontrados en la Guía 3: (1) la firma de integridad (64 caracteres sin espacios) ensanchaba la columna de la pasarela (`min-width: 0`); (2) los `input type="date"` desbordaban el historial a 375 px; (3) la máscara de la rueda se aplicaba al alto total de la columna (el doble de la lista) y el borde inferior no se desvanecía (fila de la rueda con `minmax(0, 1fr)` y `overflow: hidden`); (4) el foco al primer campo con error no llegaba porque `aria-invalid` se pinta un instante después (se busca por el control); (5) un `const URL` en una prueba tapaba la clase `URL` del navegador.
 - Problemas encontrados en la guía de pedidos: (1) la etiqueta de estado "Pendiente" con fondo transparente no llegaba a 4,5:1 sobre la niebla (fondo opaco); (2) con el cuarto enlace ("Pedidos"), la navegación del panel desbordaba a 375 px en todas sus páginas (ahora se envuelve; lo comprueba una e2e); (3) en Git Bash los heredocs con comillas y acentos siguen fallando: los archivos se escribieron con el editor.
 - Si llegan a la vez las dos primeras peticiones de carrito de un usuario nuevo, ambas pueden intentar crear el carrito; el índice único `ux_carrito_usuario_id` rechaza la segunda (500 en esa petición; la siguiente funciona). Es poco probable porque el frontend pide `GetCarrito` una vez al iniciar sesión.
 - Si un café del carrito queda con menos stock que la cantidad elegida, `GetCarrito` lo muestra igual; al cambiar la cantidad, la API exige que no supere el stock nuevo.
