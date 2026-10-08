@@ -5,7 +5,7 @@ E-commerce de café de especialidad colombiano **Altura**:
 - **backend/**: API REST en ASP.NET Core 10 con Entity Framework Core, PostgreSQL y Cloudinary para las imágenes.
 - **frontend/**: aplicación Angular 22 (`altura-web`), concepto **"Ascenso"**: el Inicio es subir la montaña (con un altímetro), catálogo de cafés con filtros y vista rápida, **registro e inicio de sesión reales** (usuarios en PostgreSQL, contraseñas con hash y JWT), **carrito de compras** (Guía 2), **pedidos con dirección de envío** (guía de pedidos), **pagos** (Guía 3, Wompi, hoy en **modo simulación** con una pasarela de pruebas propia), un cierre del Inicio con **reseñas de clientes** (de ejemplo) y un **panel de administración** en `/admin` (inventario, variedades, historial de compras y usuarios) para el rol Administrador.
 
-El proyecto está preparado para producción, pero todavía **no está desplegado**: los pasos están en [DEPLOY.md](DEPLOY.md).
+El proyecto está preparado para desplegarse en **Railway** (un solo repositorio con dos servicios, `backend` y `frontend`, más PostgreSQL), pero todavía **no está desplegado**: la guía paso a paso está en [DEPLOY.md](DEPLOY.md).
 
 Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (rama principal: `main`).
 
@@ -455,7 +455,7 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 - Probar Wompi real cuando haya llaves de Sandbox (hoy funciona el modo simulación)
 - Cancelar pedidos, seguimiento del envío y facturación
 - Login con Google, cambio y recuperación de contraseña
-- Desplegar siguiendo [DEPLOY.md](DEPLOY.md)
+- Desplegar en Railway siguiendo [DEPLOY.md](DEPLOY.md) (Dockerfiles, variables y guía ya preparados)
 
 ---
 
