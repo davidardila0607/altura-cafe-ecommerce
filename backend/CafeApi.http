@@ -494,3 +494,71 @@ Content-Type: application/json
 {
   "rol": "Cliente"
 }
+
+### ===== Pedidos (guía de pedidos) =====
+# Todas las rutas exigen un token. El pedido se crea con lo que hay en el carrito
+# del Cliente, que queda vacío. El stock no se descuenta (lo hará la guía de Wompi).
+# Cambia 51 y 52 por ids reales de GET /api/cafes.
+
+### Crear pedido sin token - 401
+POST {{baseUrl}}/api/Pedido/CrearPedido
+
+### Ver mis pedidos sin token - 401
+GET {{baseUrl}}/api/Pedido/GetPedidos
+
+### Ver un pedido sin token - 401
+GET {{baseUrl}}/api/Pedido/GetPedido/1
+
+### Crear pedido con el carrito vacío - 400 { mensaje: "El carrito está vacío." }
+POST {{baseUrl}}/api/Pedido/CrearPedido
+Authorization: Bearer {{tokenCliente}}
+
+### Preparar el carrito: 2 unidades de un café...
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 51,
+  "cantidad": 2
+}
+
+### ...y 1 unidad de otro
+POST {{baseUrl}}/api/Carrito/AgregarProducto
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "productId": 52,
+  "cantidad": 1
+}
+
+### Crear pedido (Cliente) - 200 { mensaje: "Pedido creado correctamente.", pedidoId }
+# @name crearPedido
+POST {{baseUrl}}/api/Pedido/CrearPedido
+Authorization: Bearer {{tokenCliente}}
+
+### Mis pedidos - 200 PedidoDto[] (el más reciente primero)
+GET {{baseUrl}}/api/Pedido/GetPedidos
+Authorization: Bearer {{tokenCliente}}
+
+### Un pedido - 200 PedidoDto (estado "Pendiente", precios del momento de la compra)
+GET {{baseUrl}}/api/Pedido/GetPedido/{{crearPedido.response.body.$.pedidoId}}
+Authorization: Bearer {{tokenCliente}}
+
+### Pedido que no existe (o de otro usuario) - 404 { mensaje: "Pedido no encontrado." }
+GET {{baseUrl}}/api/Pedido/GetPedido/999999
+Authorization: Bearer {{tokenCliente}}
+
+### Todos los pedidos (Administrador) - 200 con clienteNombre y clienteEmail
+GET {{baseUrl}}/api/Pedido/Todos
+Authorization: Bearer {{token}}
+
+### Todos los pedidos con la cuenta Cliente - 403
+GET {{baseUrl}}/api/Pedido/Todos
+Authorization: Bearer {{tokenCliente}}
+
+### Eliminar un café que está en un pedido (Administrador) - 409
+# { detail: "No se puede eliminar un café que tiene pedidos." }
+DELETE {{baseUrl}}/api/cafes/51
+Authorization: Bearer {{token}}

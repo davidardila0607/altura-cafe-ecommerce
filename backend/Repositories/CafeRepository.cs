@@ -99,6 +99,13 @@ namespace CafeApi.Repositories
             });
         }
 
+        public async Task<bool> TienePedidosAsync(
+            int id,
+            CancellationToken cancellationToken)
+        {
+            return await _context.PedidoProducto.AnyAsync(pp => pp.ProductoId == id, cancellationToken);
+        }
+
         public async Task<bool> ImagenEnUsoAsync(
             string publicId,
             CancellationToken cancellationToken)

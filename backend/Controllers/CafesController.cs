@@ -24,6 +24,9 @@ namespace CafeApi.Controllers
         private const string MensajeProcesoInexistente =
             "El proceso indicado no existe.";
 
+        private const string MensajeCafeConPedidos =
+            "No se puede eliminar un café que tiene pedidos.";
+
         private readonly ICafeRepository _cafeRepository;
 
         private readonly IVariedadRepository _variedadRepository;
@@ -296,10 +299,35 @@ namespace CafeApi.Controllers
                 return NotFound();
             }
 
+            // ✅ Adaptación E de la guía de pedidos: un café que aparece en un pedido no se
+            // borra (FK RESTRICT), para no perder el historial. Se comprueba antes para
+            // responder 409 con un mensaje claro. Si solo está en carritos, se borra
+            // y desaparece de ellos (CASCADE).
+            if (await _cafeRepository.TienePedidosAsync(id, cancellationToken))
+            {
+                return Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: "Café con pedidos",
+                    detail: MensajeCafeConPedidos
+                );
+            }
+
             var publicId = cafe.ImagenPublicId;
 
-            // ✅ Borrado físico.
-            await _cafeRepository.DeleteAsync(cafe, cancellationToken);
+            try
+            {
+                // ✅ Borrado físico.
+                await _cafeRepository.DeleteAsync(cafe, cancellationToken);
+            }
+            catch (DbUpdateException ex) when (ex.EsViolacionDeClaveForanea())
+            {
+                // ✅ Se creó un pedido con este café entre la comprobación y el borrado.
+                return Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: "Café con pedidos",
+                    detail: MensajeCafeConPedidos
+                );
+            }
 
             _logger.LogInformation(
                 "Se eliminó correctamente el café con Id: {Id}",

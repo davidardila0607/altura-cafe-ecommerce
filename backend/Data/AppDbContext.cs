@@ -30,6 +30,11 @@ namespace CafeApi.Data
 
         public DbSet<CarritoProducto> CarritoProducto { get; set; }
 
+        // ✅ Guía de pedidos, paso 3: tablas pedido y pedido_producto (nombres de la guía).
+        public DbSet<Pedido> Pedido { get; set; }
+
+        public DbSet<PedidoProducto> PedidoProducto { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // ✅ Aplica todas las clases IEntityTypeConfiguration
