@@ -1,0 +1,127 @@
+/* Lo propio de /admin/pedidos (lo común está en lista-admin.css). */
+
+/* ===== Filtro por estado: botones en píldora con el número de pedidos ===== */
+.filtro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-5);
+}
+
+.opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: 2.75rem;
+  padding: 0 var(--esp-4);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio-pildora);
+  background: var(--papel);
+  color: var(--texto);
+  font-weight: 650;
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-presion) var(--ease-salida);
+}
+
+.opcion:active {
+  transform: scale(0.97);
+}
+
+.opcion[aria-pressed='true'] {
+  border-color: var(--bosque);
+  background: var(--bosque);
+  color: var(--texto-claro);
+}
+
+.cuenta {
+  font-family: var(--fuente-mono);
+  font-size: var(--fs-100);
+  opacity: 0.8;
+}
+
+/* ===== Filas ===== */
+.cliente {
+  display: block;
+  font-weight: 650;
+}
+
+.correo {
+  display: block;
+  color: var(--texto-suave);
+}
+
+.giro {
+  transition: rotate 240ms var(--ease-salida);
+}
+
+.accion[aria-expanded='true'] .giro {
+  rotate: 180deg;
+}
+
+/* El detalle es una fila aparte; [hidden] debe ganar al display: grid del móvil. */
+.tabla tr.fila-detalle[hidden] {
+  display: none;
+}
+
+.fila-detalle td {
+  background: var(--niebla);
+}
+
+.tabla tbody tr.fila-detalle:hover td {
+  background: var(--niebla);
+}
+
+.productos {
+  display: grid;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.productos li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 8rem;
+  gap: var(--esp-4);
+}
+
+.producto {
+  font-weight: 650;
+}
+
+.cantidad {
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.subtotal {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.unidades {
+  margin-top: var(--esp-3);
+  color: var(--texto-suave);
+}
+
+@media (max-width: 759.98px) {
+  /* Sin columna de imagen: cada dato ocupa todo el ancho de la tarjeta. */
+  .tabla td:not(.celda-imagen) {
+    grid-column: 1 / -1;
+  }
+
+  .productos li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .cantidad {
+    grid-row: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .giro {
+    transition: none;
+  }
+}

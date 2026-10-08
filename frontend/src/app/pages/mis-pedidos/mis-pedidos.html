@@ -1,0 +1,41 @@
+<section class="contenedor pagina" aria-labelledby="mis-pedidos-titulo">
+  <h1 id="mis-pedidos-titulo" class="titulo-seccion">Mis pedidos</h1>
+
+  @if (pedidos.isLoading()) {
+    <div aria-busy="true">
+      <p class="visually-hidden" role="status">Cargando tus pedidos…</p>
+      @for (n of [1, 2, 3]; track n) {
+        <span class="esqueleto fila-esqueleto" aria-hidden="true"></span>
+      }
+    </div>
+  } @else if (pedidos.error()) {
+    <app-estado-error titulo="No pudimos cargar tus pedidos" (reintentar)="pedidos.reload()" />
+  } @else if (pedidos.hasValue() && pedidos.value().length > 0) {
+    <ul class="lista">
+      @for (p of pedidos.value(); track p.id) {
+        <li>
+          <a class="pedido" [routerLink]="['/mis-pedidos', p.id]" data-testid="fila-pedido">
+            <span class="numero">Pedido #{{ p.id }}</span>
+            <span class="fecha">{{ p.fecha | date: "d 'de' MMMM 'de' y" : undefined : 'es-CO' }}</span>
+            <app-estado-pedido class="estado" [estado]="p.estado" />
+            <span class="fotos" aria-hidden="true">
+              @for (url of miniaturas(p); track $index) {
+                <img [src]="url" alt="" width="96" height="120" loading="lazy" decoding="async" />
+              }
+            </span>
+            <span class="unidades">{{ unidadesTexto(p) }}</span>
+            <span class="total">{{ p.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' : 'es-CO' }}</span>
+            <i class="bi bi-chevron-right flecha" aria-hidden="true"></i>
+          </a>
+        </li>
+      }
+    </ul>
+  } @else {
+    <div class="vacio" data-testid="pedidos-vacio">
+      <i class="bi bi-receipt" aria-hidden="true"></i>
+      <p class="vacio-titulo">Todavía no tienes pedidos</p>
+      <p class="vacio-texto">Agrega cafés al carrito y confirma tu pedido: aparecerá aquí.</p>
+      <a class="boton boton-primario" routerLink="/productos">Ver cafés</a>
+    </div>
+  }
+</section>

@@ -14,6 +14,12 @@
     <p class="nombre">{{ sesion.nombre }}</p>
     <p class="email">{{ sesion.email }}</p>
     <ul class="opciones">
+      <li>
+        <a routerLink="/mis-pedidos">
+          <i class="bi bi-receipt" aria-hidden="true"></i>
+          Mis pedidos
+        </a>
+      </li>
       @if (auth.tienePermiso('inventario.gestionar')) {
         <li>
           <a routerLink="/admin">

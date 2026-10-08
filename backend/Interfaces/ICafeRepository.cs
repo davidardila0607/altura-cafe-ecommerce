@@ -43,6 +43,13 @@ namespace CafeApi.Interfaces
             CancellationToken cancellationToken
         );
 
+        // ✅ Adaptación E de la guía de pedidos: true si el café aparece en algún pedido
+        // (entonces no se puede borrar, para conservar el historial).
+        Task<bool> TienePedidosAsync(
+            int id,
+            CancellationToken cancellationToken
+        );
+
         // ✅ true si algún café usa esa imagen de Cloudinary.
         Task<bool> ImagenEnUsoAsync(
             string publicId,

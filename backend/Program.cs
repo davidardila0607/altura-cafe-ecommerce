@@ -120,6 +120,9 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 // ✅ Guía 2, paso 7: carrito de compras.
 builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 
+// ✅ Guía de pedidos, paso 7: pedidos creados a partir del carrito.
+builder.Services.AddScoped<IPedidoRepository, PedidoRepository>();
+
 // ✅ Registro del servicio Cloudinary.
 builder.Services.AddScoped<
 ICloudinaryService,

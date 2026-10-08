@@ -128,13 +128,6 @@
   font-weight: 750;
 }
 
-.proximamente {
-  padding: 0.1rem 0.55rem;
-  border-radius: var(--radio-pildora);
-  background: rgb(255 255 255 / 0.22);
-  font-size: var(--fs-100);
-}
-
 .nota {
   color: var(--texto-suave);
   font-size: var(--fs-200);

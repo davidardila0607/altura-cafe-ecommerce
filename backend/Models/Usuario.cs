@@ -22,5 +22,8 @@ namespace CafeApi.Models
 
         // ✅ Guía 2, paso 4: el carrito del usuario (se crea la primera vez que lo usa).
         public Carrito? Carrito { get; set; }
+
+        // ✅ Guía de pedidos, paso 4: los pedidos que hizo este usuario.
+        public ICollection<Pedido> Pedidos { get; set; } = new List<Pedido>();
     }
 }
