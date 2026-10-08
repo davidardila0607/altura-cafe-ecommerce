@@ -1,0 +1,213 @@
+:host {
+  display: block;
+}
+
+/* Fondo: el alba de la cumbre. Viene del papel de la sección anterior y termina en alba, para que
+   el footer (bosque, con su cresta) se lea como otro bloque, bien separado. */
+.resenas {
+  padding-block: var(--seccion);
+  background: linear-gradient(var(--papel), var(--alba) 18rem);
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: var(--esp-7) clamp(2rem, 6vw, 6rem);
+  align-items: center;
+}
+
+.kicker {
+  margin-bottom: var(--esp-3);
+  color: var(--texto-suave);
+  font-weight: 650;
+}
+
+.calificacion {
+  margin-top: var(--esp-6);
+}
+
+.promedio {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.numero {
+  font-size: var(--fs-800);
+  font-weight: 800;
+  font-stretch: 75%;
+  letter-spacing: -0.04em;
+  line-height: var(--lh-display);
+}
+
+.estrellas {
+  display: flex;
+  gap: 0.2rem;
+  color: var(--cereza);
+  font-size: var(--fs-500);
+}
+
+.base {
+  margin-top: var(--esp-2);
+  color: var(--texto-suave);
+}
+
+/* ===== La rueda ===== */
+.rueda-envoltorio {
+  display: grid;
+  justify-items: end;
+  gap: var(--esp-3);
+}
+
+.rueda {
+  --por-tarjeta: 7s;
+  --tarjetas: 5;
+  --duracion: calc(var(--por-tarjeta) * var(--tarjetas));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* Una sola fila del alto de la rueda: cada columna es una "ventana" de ese alto. */
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--esp-4);
+  width: 100%;
+  height: 36rem;
+  overflow: hidden;
+}
+
+.rueda:focus-visible {
+  outline: 2px solid var(--bosque);
+  outline-offset: 4px;
+}
+
+.columna {
+  min-width: 0;
+  overflow: hidden;
+  /* Las tarjetas aparecen y se van desvaneciéndose arriba y abajo. La máscara va en la columna
+     y no en la rueda para no recortar el contorno de foco de la rueda. */
+  mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+}
+
+/* La pista contiene la lista dos veces: subir el 50 % es subir exactamente una lista. */
+.pista {
+  animation: subir var(--duracion) linear infinite;
+}
+
+/* La segunda columna empieza media vuelta adelantada, para que no vayan a la par. */
+.desfasada .pista {
+  animation-delay: calc(var(--duracion) / -2);
+}
+
+.rueda:hover .pista,
+.rueda:focus-within .pista,
+.rueda.pausada .pista {
+  animation-play-state: paused;
+}
+
+@keyframes subir {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Margen (no gap): así las dos copias miden exactamente lo mismo y el empalme no salta. */
+.lista li {
+  padding-bottom: var(--esp-4);
+}
+
+.pausa {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: 2.75rem;
+  padding: 0 var(--esp-3);
+  border: 0;
+  border-radius: var(--radio-pildora);
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+  font-weight: 650;
+}
+
+.pausa:hover {
+  background: var(--tinte-activo);
+  color: var(--texto);
+}
+
+/* ===== Movimiento reducido: 3 reseñas y Anterior / Siguiente ===== */
+.lista-estatica {
+  display: grid;
+  gap: var(--esp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Anterior | posición | Siguiente; en pantallas angostas, la posición arriba y los botones abajo. */
+.controles {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'anterior posicion siguiente';
+  align-items: center;
+  gap: var(--esp-3);
+  margin-top: var(--esp-5);
+}
+
+.controles .boton:first-child {
+  grid-area: anterior;
+}
+
+.controles .boton:last-child {
+  grid-area: siguiente;
+}
+
+.posicion {
+  grid-area: posicion;
+  color: var(--texto-suave);
+  font-size: var(--fs-200);
+  text-align: center;
+}
+
+@media (max-width: 479.98px) {
+  .controles {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'posicion posicion'
+      'anterior siguiente';
+  }
+}
+
+/* Respaldo por si la preferencia cambia con la página abierta. */
+@media (prefers-reduced-motion: reduce) {
+  .pista {
+    animation: none;
+  }
+}
+
+@media (max-width: 899.98px) {
+  .rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* En móvil y tableta, una sola columna más baja. */
+  .rueda {
+    grid-template-columns: minmax(0, 1fr);
+    height: 28rem;
+  }
+
+  .desfasada {
+    display: none;
+  }
+
+  .rueda-envoltorio {
+    justify-items: stretch;
+  }
+
+  .pausa {
+    justify-self: end;
+  }
+}

@@ -65,7 +65,7 @@ test.describe('Inicio', () => {
     await expect(page.locator('#proceso')).toBeFocused();
     await expect(page.locator('#proceso')).toBeInViewport();
 
-    for (const titulo of ['Selección de la casa', 'De la montaña a tu taza', 'Orígenes', 'Las variedades de la casa', 'Llegaste a la cumbre.']) {
+    for (const titulo of ['Selección de la casa', 'De la montaña a tu taza', 'Orígenes', 'Las variedades de la casa', 'Lo que dicen de Altura']) {
       await expect(page.getByRole('heading', { level: 2, name: titulo })).toBeAttached();
     }
     // Los cuatro pasos del proceso.
@@ -97,6 +97,65 @@ test.describe('Inicio', () => {
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await expect(altimetro(page).locator('.numero')).toHaveText('2.100');
     await expect(altimetro(page).locator('.etapa')).toHaveText('Cumbre');
+  });
+
+  test('reseñas: la rueda se desplaza sola, se pausa con el mouse y con el botón, y la copia del bucle está oculta @movimiento', async ({ page }) => {
+    await page.goto('/');
+    const seccion = page.getByTestId('resenas');
+    await seccion.scrollIntoViewIfNeeded();
+    await expect(seccion.getByRole('heading', { level: 2 })).toHaveText('Lo que dicen de Altura');
+    await expect(seccion.getByText('Experiencias de clientes')).toBeVisible();
+    await expect(seccion.locator('.numero')).toHaveText('4,8');
+    await expect(seccion.getByText('de 5 · basado en las reseñas de nuestros clientes')).toBeVisible();
+
+    const rueda = page.getByRole('region', { name: /Reseñas de clientes/ });
+    await expect(rueda).toBeVisible();
+    // 10 reseñas visibles para los lectores de pantalla; sus copias para el empalme, ocultas.
+    await expect(rueda.locator('ul.lista:not([aria-hidden="true"]) > li')).toHaveCount(10);
+    await expect(rueda.locator('ul.lista[aria-hidden="true"] > li')).toHaveCount(10);
+    await expect(rueda.getByText('5 de 5 estrellas').first()).toBeAttached();
+
+    const posicion = () => rueda.locator('.pista').first().evaluate((pista) => new DOMMatrix(getComputedStyle(pista).transform).m42);
+    await page.mouse.move(5, 5);
+    const antes = await posicion();
+    await expect.poll(posicion, { message: 'la rueda debe subir sola' }).toBeLessThan(antes - 1);
+
+    // Con el mouse encima se detiene.
+    await rueda.hover();
+    const enPausa = await posicion();
+    await page.waitForTimeout(600);
+    expect(await posicion()).toBe(enPausa);
+
+    // Con el botón también (para teclado y táctil).
+    await page.mouse.move(5, 5);
+    await page.getByRole('button', { name: 'Pausar reseñas' }).click();
+    const conBoton = await posicion();
+    await page.waitForTimeout(600);
+    expect(await posicion()).toBe(conBoton);
+    await page.getByRole('button', { name: 'Reanudar reseñas' }).click();
+    await expect.poll(posicion).toBeLessThan(conBoton - 1);
+  });
+
+  test('reseñas con movimiento reducido: 3 estáticas con Anterior y Siguiente @reducido', async ({ page }) => {
+    await page.goto('/');
+    const seccion = page.getByTestId('resenas');
+    await seccion.scrollIntoViewIfNeeded();
+    await expect(page.getByTestId('rueda-resenas')).toHaveCount(0);
+    const estaticas = page.getByTestId('resenas-estaticas');
+    await expect(estaticas.locator('li')).toHaveCount(3);
+    await expect(estaticas).toContainText('Reseñas 1 a 3 de 10');
+    await expect(estaticas.getByRole('button', { name: 'Anterior' })).toBeDisabled();
+    await expect(estaticas.locator('li').first()).toContainText('Laura M.');
+
+    await estaticas.getByRole('button', { name: 'Siguiente' }).click();
+    await expect(estaticas).toContainText('Reseñas 4 a 6 de 10');
+    await expect(estaticas.locator('li').first()).toContainText('Julián T.');
+    await estaticas.getByRole('button', { name: 'Siguiente' }).click();
+    await estaticas.getByRole('button', { name: 'Siguiente' }).click();
+    await expect(estaticas).toContainText('Reseñas 8 a 10 de 10');
+    await expect(estaticas.getByRole('button', { name: 'Siguiente' })).toBeDisabled();
+    await estaticas.getByRole('button', { name: 'Anterior' }).click();
+    await expect(estaticas).toContainText('Reseñas 7 a 9 de 10');
   });
 
   test('el mapa de orígenes muestra los cafés de la región y lleva al catálogo filtrado', async ({ page }) => {

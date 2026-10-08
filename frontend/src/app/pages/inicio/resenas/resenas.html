@@ -1,0 +1,80 @@
+<section class="resenas" aria-labelledby="resenas-titulo" data-testid="resenas">
+  <div class="contenedor rejilla">
+    <div class="texto">
+      <p class="kicker">Experiencias de clientes</p>
+      <h2 id="resenas-titulo" class="titulo-seccion">Lo que dicen de Altura</h2>
+      <div class="calificacion">
+        <p class="promedio">
+          <span class="numero">{{ promedio }}</span>
+          <span class="estrellas" aria-hidden="true">
+            @for (n of [1, 2, 3, 4, 5]; track n) {
+              <i class="bi" [class.bi-star-fill]="n <= estrellasPromedio" [class.bi-star]="n > estrellasPromedio"></i>
+            }
+          </span>
+        </p>
+        <p class="base">de 5 · basado en las reseñas de nuestros clientes</p>
+      </div>
+    </div>
+
+    @if (!reducido) {
+      <div class="rueda-envoltorio">
+        <!-- tabindex="0": con el teclado se puede enfocar la rueda, y al enfocarla se pausa. -->
+        <div
+          class="rueda"
+          [class.pausada]="pausada()"
+          role="region"
+          tabindex="0"
+          aria-label="Reseñas de clientes. Se desplazan solas; enfócalas o pasa el mouse para pausarlas."
+          data-testid="rueda-resenas"
+        >
+          @for (columna of columnas; track $index; let segunda = $odd) {
+            <div class="columna" [class.desfasada]="segunda">
+              <div class="pista">
+                <ul class="lista">
+                  @for (r of columna; track r.nombre) {
+                    <li><app-tarjeta-resena [resena]="r" /></li>
+                  }
+                </ul>
+                <!-- Copia para el empalme del bucle: los lectores de pantalla no la leen dos veces. -->
+                <ul class="lista" aria-hidden="true">
+                  @for (r of columna; track r.nombre) {
+                    <li><app-tarjeta-resena [resena]="r" /></li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+        </div>
+        <button type="button" class="pausa" (click)="pausada.set(!pausada())">
+          <i class="bi" [class.bi-pause-fill]="!pausada()" [class.bi-play-fill]="pausada()" aria-hidden="true"></i>
+          {{ pausada() ? 'Reanudar reseñas' : 'Pausar reseñas' }}
+        </button>
+      </div>
+    } @else {
+      <div class="estatica" data-testid="resenas-estaticas">
+        <ul id="resenas-lista" class="lista-estatica">
+          @for (r of visibles(); track r.nombre) {
+            <li><app-tarjeta-resena [resena]="r" /></li>
+          }
+        </ul>
+        <div class="controles">
+          <button type="button" class="boton boton-contorno" aria-controls="resenas-lista" [disabled]="pagina() === 0" (click)="anterior()">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            Anterior
+          </button>
+          <p class="posicion" aria-live="polite">Reseñas {{ inicio() + 1 }} a {{ inicio() + visibles().length }} de {{ resenas.length }}</p>
+          <button
+            type="button"
+            class="boton boton-contorno"
+            aria-controls="resenas-lista"
+            [disabled]="pagina() === paginas - 1"
+            (click)="siguiente()"
+          >
+            Siguiente
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</section>
