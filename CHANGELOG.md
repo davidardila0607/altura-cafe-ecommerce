@@ -4,6 +4,8 @@ Todos los cambios importantes de este proyecto serán documentados aquí.
 
 El formato está basado en Keep a Changelog.
 
+Altura se inició a partir de **CafeApi** (repositorio `pablorja/CafeApi`); las primeras versiones de este registro corresponden a esa etapa. Autores: David Ardila y Pablo Santamaría.
+
 ---
 
 ## [1.0.0] - 2026-09-26

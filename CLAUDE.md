@@ -20,7 +20,9 @@ E-commerce de café de especialidad **Altura** (proyecto universitario en grupo)
 
 El proyecto está **preparado para producción pero no desplegado**: los pasos están en `DEPLOY.md`.
 
-Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El repositorio anterior (`pablorja/CafeApi`) ya no se usa. No se hace force push ni se reescribe el historial.
+**Autores**: David Ardila y Pablo Santamaría.
+
+Repositorio: https://github.com/davidardila0607/altura-cafe-ecommerce (privado). Es el **único** repositorio del proyecto; la rama principal es **`main`** (sigue a `origin/main`). El proyecto se inició a partir de CafeApi (repositorio `pablorja/CafeApi`), que ya no se usa. No se hace force push ni se reescribe el historial.
 
 ## Estructura del repositorio
 

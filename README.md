@@ -459,6 +459,6 @@ POST /api/cafes o PUT /api/cafes/{id}  (imagenUrl + imagenPublicId)
 
 ---
 
-## 👨‍💻 Autor
+## 👨‍💻 Autores
 
-Pablo Santamaría
+David Ardila, Pablo Santamaría
